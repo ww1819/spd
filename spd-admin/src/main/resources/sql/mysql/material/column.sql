@@ -105,7 +105,7 @@ CALL add_table_column('sys_user', 'message_reminder_popup_keys', 'varchar(128)',
 /
 CALL add_table_column('sys_post', 'message_reminder_popup_keys', 'varchar(128)', 'message reminder login popup keys warehouse department data', NULL);
 /
-CALL add_table_column('sys_user', 'home_page_keys', 'varchar(64)', 'home page auth keys simple,full; empty=default full', NULL);
+CALL add_table_column('sys_user', 'home_page_keys', 'varchar(64)', 'home page auth keys simple,full,purchase,warehouse,department; empty=default full', NULL);
 /
 
 -- ???????????bas_apply?????del_flag?????int?????????????????????????????0??

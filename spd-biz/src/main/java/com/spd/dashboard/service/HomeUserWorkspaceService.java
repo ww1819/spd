@@ -19,7 +19,7 @@ import com.spd.common.utils.uuid.UUID7;
 import com.spd.dashboard.mapper.HomeUserWorkspaceMapper;
 
 /**
- * 首页默认风格（简洁/完整）、菜单点击统计
+ * 首页默认风格（默认/完整/采购/库房/科室）、菜单点击统计
  */
 @Service
 public class HomeUserWorkspaceService
@@ -229,6 +229,10 @@ public class HomeUserWorkspaceService
         if ("full".equals(v) || "complete".equals(v))
         {
             return "full";
+        }
+        if ("purchase".equals(v) || "warehouse".equals(v) || "department".equals(v))
+        {
+            return v;
         }
         return "simple";
     }

@@ -666,7 +666,7 @@ public class SysUserController extends BaseController
     }
 
     /**
-     * 仅更新用户首页设置权限（simple / full）
+     * 仅更新用户首页设置权限（simple / full / purchase / warehouse / department）
      */
     @PreAuthorize("@ss.hasPermi('system:user:edit')")
     @Log(title = "用户管理", businessType = BusinessType.GRANT)

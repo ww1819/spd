@@ -194,6 +194,58 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                  left join fd_warehouse w on stk.warehouse_id = w.id
                  left join fd_supplier s on stk.supplier_id = s.id
                  left join fd_material m on stk.material_id = m.id
+                 left join fd_factory f on f.factory_id = COALESCE(stk.factory_id, m.factory_id)
+                 left join stk_io_bill rk on rk.bill_no = stk.receipt_order_no
+                     and rk.bill_type = 101
+                     and (rk.del_flag = 0 or rk.del_flag is null)
+                     and rk.tenant_id = stk.tenant_id
+                 left join sys_user cu on rk.create_by = cu.user_id
+    </sql>
+
+    <!-- 更多检索：生产厂家 / 注册证号 / 制单人（模糊 + 简码；字母默认大小写不敏感）
+         厂家按耗材档案 factory_id 匹配（与列表展示 material.fdFactory 一致），并兼容库存行 factory_id / 快照 -->
+    <sql id="stkInventoryMoreKeywordWhere">
+        <if test="factoryKeyword != null and factoryKeyword != ''">
+            and (
+                exists (
+                    select 1 from fd_factory fx
+                    where fx.factory_id = m.factory_id
+                      and (
+                          ifnull(fx.factory_name, '') like concat('%', #{factoryKeyword}, '%')
+                          or ifnull(fx.factory_code, '') like concat('%', #{factoryKeyword}, '%')
+                          or ifnull(fx.factory_referred_code, '') like concat('%', #{factoryKeyword}, '%')
+                      )
+                )
+                or exists (
+                    select 1 from fd_factory fx
+                    where fx.factory_id = stk.factory_id
+                      and (
+                          ifnull(fx.factory_name, '') like concat('%', #{factoryKeyword}, '%')
+                          or ifnull(fx.factory_code, '') like concat('%', #{factoryKeyword}, '%')
+                          or ifnull(fx.factory_referred_code, '') like concat('%', #{factoryKeyword}, '%')
+                      )
+                )
+                or exists (
+                    select 1 from fd_factory fx
+                    where fx.factory_id = stk.material_factory_id
+                      and (
+                          ifnull(fx.factory_name, '') like concat('%', #{factoryKeyword}, '%')
+                          or ifnull(fx.factory_code, '') like concat('%', #{factoryKeyword}, '%')
+                          or ifnull(fx.factory_referred_code, '') like concat('%', #{factoryKeyword}, '%')
+                      )
+                )
+            )
+        </if>
+        <if test="registerNo != null and registerNo != ''">
+            and ifnull(m.register_no, '') like concat('%', #{registerNo}, '%')
+        </if>
+        <if test="createrName != null and createrName != ''">
+            and (
+                ifnull(cu.nick_name, '') like concat('%', #{createrName}, '%')
+                or ifnull(cu.user_name, '') like concat('%', #{createrName}, '%')
+                or ifnull(cu.referred_name, '') like concat('%', #{createrName}, '%')
+            )
+        </if>
     </sql>
 
     <sql id="selectStkInventoryMaterialVo">
@@ -282,7 +334,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
-        <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%'))</if>
+        <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%') or ifnull(s.referred_code, '') like concat('%', #{supplierKeyword}, '%'))</if>
+        <include refid="stkInventoryMoreKeywordWhere"/>
         <if test="isBilling != null">
             <choose>
                 <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>
@@ -328,7 +381,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
-        <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%'))</if>
+        <if test="supplierKeyword != null and supplierKeyword != ''"> and (s.code like concat('%', #{supplierKeyword}, '%') or s.name like concat('%', #{supplierKeyword}, '%') or ifnull(s.referred_code, '') like concat('%', #{supplierKeyword}, '%'))</if>
+        <include refid="stkInventoryMoreKeywordWhere"/>
         <if test="isBilling != null">
             <choose>
                 <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>

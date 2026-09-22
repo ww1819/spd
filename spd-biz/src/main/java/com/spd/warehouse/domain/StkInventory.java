@@ -139,6 +139,12 @@ public class StkInventory extends BaseEntity
     /** 查询参数：供应商编码/名称（模糊） */
     private String supplierKeyword;
 
+    /** 查询参数：生产厂家编码/名称/简码（模糊，大小写不敏感） */
+    private String factoryKeyword;
+
+    /** 查询参数：注册证号（模糊，大小写不敏感） */
+    private String registerNo;
+
     /** 查询参数：排除的明细组合，格式 materialId__warehouseId 逗号分隔 */
     private String excludeMaterialWarehousePairs;
 
@@ -182,7 +188,7 @@ public class StkInventory extends BaseEntity
     /** 低值定数包院内码（入库审核生成） */
     private String lvInhospitalPackageCode;
 
-    /** 制单人昵称（关联入库单制单人 sys_user.nick_name） */
+    /** 制单人昵称（关联入库单制单人 sys_user.nick_name；查询时亦可作制单人模糊关键词：昵称/账号/简码） */
     private String createrName;
 
     /** 审核人昵称（关联入库单审核人 sys_user.nick_name） */
@@ -485,6 +491,22 @@ public class StkInventory extends BaseEntity
 
     public void setSupplierKeyword(String supplierKeyword) {
         this.supplierKeyword = supplierKeyword;
+    }
+
+    public String getFactoryKeyword() {
+        return factoryKeyword;
+    }
+
+    public void setFactoryKeyword(String factoryKeyword) {
+        this.factoryKeyword = factoryKeyword;
+    }
+
+    public String getRegisterNo() {
+        return registerNo;
+    }
+
+    public void setRegisterNo(String registerNo) {
+        this.registerNo = registerNo;
     }
 
     public String getExcludeMaterialWarehousePairs() {

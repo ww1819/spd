@@ -927,6 +927,10 @@ public class SysUserServiceImpl implements ISysUserService
         return set.toArray(new String[0]);
     }
 
+    /** 允许的首页 keys：simple=默认，full=完整，purchase/warehouse/department=角色首页 */
+    private static final java.util.Set<String> HOME_PAGE_KEY_ALLOW = new java.util.HashSet<>(
+        java.util.Arrays.asList("simple", "full", "purchase", "warehouse", "department"));
+
     /** 规范化并拼接首页 keys；空数组存空串表示未单独授权（前端默认完整） */
     public static String joinHomePageKeys(String[] keys) {
         if (keys == null || keys.length == 0) {
@@ -938,8 +942,11 @@ public class SysUserServiceImpl implements ISysUserService
                 continue;
             }
             String t = k.trim().toLowerCase();
-            if ("simple".equals(t) || "full".equals(t) || "complete".equals(t)) {
-                set.add("complete".equals(t) ? "full" : t);
+            if ("complete".equals(t)) {
+                t = "full";
+            }
+            if (HOME_PAGE_KEY_ALLOW.contains(t)) {
+                set.add(t);
             }
         }
         if (set.isEmpty()) {
@@ -963,8 +970,11 @@ public class SysUserServiceImpl implements ISysUserService
                 continue;
             }
             String k = p.trim().toLowerCase();
-            if ("simple".equals(k) || "full".equals(k) || "complete".equals(k)) {
-                set.add("complete".equals(k) ? "full" : k);
+            if ("complete".equals(k)) {
+                k = "full";
+            }
+            if (HOME_PAGE_KEY_ALLOW.contains(k)) {
+                set.add(k);
             }
         }
         return set.toArray(new String[0]);

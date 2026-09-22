@@ -276,7 +276,7 @@ public interface ISysUserService
     void updateUserMessageReminderKeysOnly(Long userId, String[] messageReminderKeys, String[] messageReminderPopupKeys);
 
     /**
-     * 仅更新用户首页设置权限（simple / full）
+     * 仅更新用户首页设置权限（simple / full / purchase / warehouse / department）
      */
     void updateUserHomePageKeysOnly(Long userId, String[] homePageKeys);
 

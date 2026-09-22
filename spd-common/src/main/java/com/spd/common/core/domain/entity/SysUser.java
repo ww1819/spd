@@ -123,7 +123,7 @@ public class SysUser extends BaseEntity
     private String messageReminderPopupKeys;
 
     /**
-     * 首页设置授权 keys（逗号分隔）：simple=简洁，full=完整；空/未配置时前端默认显示完整
+     * 首页设置授权 keys（逗号分隔）：simple=默认，full=完整，purchase=采购，warehouse=库房，department=科室；空/未配置时前端默认显示完整
      */
     private String homePageKeys;
 
