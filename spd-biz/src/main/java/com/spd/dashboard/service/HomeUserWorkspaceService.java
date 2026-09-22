@@ -19,12 +19,11 @@ import com.spd.common.utils.uuid.UUID7;
 import com.spd.dashboard.mapper.HomeUserWorkspaceMapper;
 
 /**
- * 首页默认视角、菜单点击统计
+ * 首页默认风格（简洁/完整）、菜单点击统计
  */
 @Service
 public class HomeUserWorkspaceService
 {
-    private static final Set<String> VIEWS = new HashSet<String>(Arrays.asList("dept", "warehouse", "global"));
     private static final Set<String> SKIP_PATHS = new HashSet<String>(Arrays.asList(
         "/", "/index", "/login", "/register", "/sso-callback", "/404", "/401", "/user/profile"));
 
@@ -36,7 +35,7 @@ public class HomeUserWorkspaceService
         Long userId = SecurityUtils.getUserId();
         if (userId == null)
         {
-            return "dept";
+            return "simple";
         }
         String view = homeUserWorkspaceMapper.selectHomeView(userId, tenantKey());
         return normalizeView(view);
@@ -224,10 +223,14 @@ public class HomeUserWorkspaceService
     {
         if (homeView == null)
         {
-            return "dept";
+            return "simple";
         }
         String v = homeView.trim().toLowerCase();
-        return VIEWS.contains(v) ? v : "dept";
+        if ("full".equals(v) || "complete".equals(v))
+        {
+            return "full";
+        }
+        return "simple";
     }
 
     private static String normalizePath(String rawPath)
