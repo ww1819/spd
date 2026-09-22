@@ -62,8 +62,22 @@ public class StkInventoryController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('warehouse:inventory:list')")
     @GetMapping("/list")
-    public TableDataInfo list(StkInventory stkInventory)
+    public TableDataInfo list(StkInventory stkInventory,
+        @RequestParam(value = "factoryKeyword", required = false) String factoryKeyword,
+        @RequestParam(value = "registerNo", required = false) String registerNo,
+        @RequestParam(value = "createrName", required = false) String createrName)
     {
+        if (stkInventory != null) {
+            if (StringUtils.isNotEmpty(factoryKeyword)) {
+                stkInventory.setFactoryKeyword(factoryKeyword.trim());
+            }
+            if (StringUtils.isNotEmpty(registerNo)) {
+                stkInventory.setRegisterNo(registerNo.trim());
+            }
+            if (StringUtils.isNotEmpty(createrName)) {
+                stkInventory.setCreaterName(createrName.trim());
+            }
+        }
         startPage();
         List<StkInventory> list = stkInventoryService.selectStkInventoryList(stkInventory);
         BigDecimal subTotalQty = BigDecimal.ZERO;
