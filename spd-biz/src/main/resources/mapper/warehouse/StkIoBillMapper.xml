@@ -1737,9 +1737,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type = 501 and stk.bill_no not like 'JS%' and stk.tenant_id = #{scopedTenantId}
             <if test="warehouseId != null "> and stk.department_id = #{warehouseId}</if>
             union
+            -- 盘点：直改库存时数量/金额取盈亏数（profit_*）；账面 qty 盘盈常为 0，不能当发生额
             select a.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, a.stock_no billNo, a.stock_date billDate,
-                    a.stock_type billType,b.qty materialQty, b.price price,
-                    b.amt materialAmt, b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
+                    a.stock_type billType,
+                    (case when IFNULL(a.audit_adjusts_inventory, 0) = 1 then IFNULL(b.profit_qty, 0) else IFNULL(b.qty, 0) end) materialQty,
+                    COALESCE(b.unit_price, b.price) price,
+                    (case when IFNULL(a.audit_adjusts_inventory, 0) = 1 then IFNULL(b.profit_amount, 0) else IFNULL(b.amt, 0) end) materialAmt,
+                    b.batch_no batchNo, b.batch_number batchNumber, b.begin_time beginTime,
                     b.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
                     f.factory_name factoryName,fc.finance_category_name financeCategoryName,
                     d.name departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
@@ -1748,11 +1752,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             left join fd_department d on a.department_id = d.id
             left join fd_warehouse w on a.warehouse_id = w.id
             left join fd_material m on b.material_id = m.id
-            left join fd_supplier s on s.id = m.supplier_id
+            left join fd_supplier s on s.id = COALESCE(b.supplier_id, m.supplier_id)
             left join fd_factory f on f.factory_id = m.factory_id
             left join fd_unit u on u.unit_id = m.unit_id
             left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
             where a.del_flag != 1 and a.stock_status = 2 and a.tenant_id = #{scopedTenantId}
+              and (IFNULL(a.audit_adjusts_inventory, 0) = 0 or IFNULL(b.profit_qty, 0) &lt;&gt; 0)
         ) t
         <where>
             <if test="billNo != null  and billNo != ''"> and billNo like concat('%', #{billNo}, '%')</if>
@@ -1839,14 +1844,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseId != null "> and stk.department_id = #{warehouseId}</if>
             union all
             select a.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, a.stock_no billNo, a.stock_date billDate,
-                    a.stock_type billType,IFNULL(b.qty, 0) materialQty,IFNULL(b.amt, 0) materialAmt,
+                    a.stock_type billType,
+                    (case when IFNULL(a.audit_adjusts_inventory, 0) = 1 then IFNULL(b.profit_qty, 0) else IFNULL(b.qty, 0) end) materialQty,
+                    (case when IFNULL(a.audit_adjusts_inventory, 0) = 1 then IFNULL(b.profit_amount, 0) else IFNULL(b.amt, 0) end) materialAmt,
                     m.speci materialSpeci,m.model materialModel,w.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
             from stk_io_stocktaking a
             left join stk_io_stocktaking_entry b on b.paren_id = a.id and (b.del_flag is null or b.del_flag != 1)
             left join fd_warehouse w on a.warehouse_id = w.id
             left join fd_material m on b.material_id = m.id
-            left join fd_supplier s on s.id = m.supplier_id
+            left join fd_supplier s on s.id = COALESCE(b.supplier_id, m.supplier_id)
             where a.del_flag != 1 and a.stock_status = 2 and a.tenant_id = #{scopedTenantId}
+              and (IFNULL(a.audit_adjusts_inventory, 0) = 0 or IFNULL(b.profit_qty, 0) &lt;&gt; 0)
         ) t
         <where>
             <if test="billNo != null  and billNo != ''"> and billNo like concat('%', #{billNo}, '%')</if>
