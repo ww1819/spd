@@ -5,6 +5,8 @@
 --   · STK_IO_PROFIT_LOSS：bill_id / bill_entry_id 对应盈亏主键与明细主键，对应流水同名字段。
 --   · STK_INITIAL_IMPORT：主单/明细为 UUID 字符串，用 ref_bill_id、ref_entry_id 对应 t_hc_ck_flow.ref_bill_id / ref_entry_id（lx=QC）。
 -- 1) 盈亏单 UNION 已补充：仅统计仓库盈亏（biz_scope 为空或 WH），排除科室盈亏（DEP），避免与仓库 stk_inventory 核对时混入科室数据。
+-- 1b) 仓库盘点（stk_io_stocktaking，audit_adjusts_inventory=1）审核后直接写 t_hc_ck_flow 的 PY/PK，不落 stk_io_profit_loss；
+--     故需单独 UNION，io_type=PD，io/jc 取明细 profit_qty / profit_amount（盘盈为正、盘亏为负），否则月结存「盘点数量」与结存漏计。
 -- 2) 本视图不按 fd_material.is_gz 过滤；低值仓库维度汇总请用 view_lv_wh_stock_detail_from_jxc 或流水视图 view_lv_wh_stock_flow_detail。
 -- 3) bill_type=501 且单号 DB 开头段落同时承载「仓库调拨」与部分结算/期初类业务，与首段 101/201/301/401 并存；若与实物账不符，请以 t_hc_ck_flow 为准交叉核对。
 -- 4) 科室批量消耗、科室申领出库、科室盈亏（低值科室）等更多影响科室库存的事件见 t_hc_ks_flow / view_lv_dep_stock_flow_detail。
@@ -255,6 +257,63 @@ FROM stk_io_profit_loss sipl
 WHERE IFNULL(sipl.del_flag, 0) = 0
   AND sipl.bill_status = 2
   AND (sipl.biz_scope IS NULL OR sipl.biz_scope = '' OR sipl.biz_scope = 'WH')
+UNION ALL
+SELECT CAST(sis.id AS CHAR CHARACTER SET utf8mb3) COLLATE utf8mb3_general_ci AS mid,
+       CAST(sise.id AS CHAR CHARACTER SET utf8mb3) COLLATE utf8mb3_general_ci AS mxId,
+       CONVERT(sis.stock_no USING utf8mb3) COLLATE utf8mb3_general_ci AS bill_no,
+       sis.warehouse_id AS warehouse_id,
+       CONVERT(fw.code USING utf8mb3) COLLATE utf8mb3_general_ci AS warehouse_code,
+       CONVERT(fw.name USING utf8mb3) COLLATE utf8mb3_general_ci AS warehouse_name,
+       COALESCE(sis.audit_date, sis.stock_date) AS audit_date,
+       601 AS bill_type,
+       COALESCE(sise.supplier_id, sis.suppler_id) AS suppler_id,
+       CONVERT(fs.name USING utf8mb3) COLLATE utf8mb3_general_ci AS suppler_name,
+       CONVERT('PD' USING utf8mb3) COLLATE utf8mb3_general_ci AS io_type,
+       COALESCE(sise.unit_price, sise.price) AS unit_price,
+       IFNULL(sise.profit_qty, 0) AS io_qty,
+       COALESCE(sise.profit_amount, IFNULL(sise.profit_qty, 0) * IFNULL(COALESCE(sise.unit_price, sise.price), 0)) AS io_amt,
+       IFNULL(sise.profit_qty, 0) AS jc_qty,
+       COALESCE(sise.profit_amount, IFNULL(sise.profit_qty, 0) * IFNULL(COALESCE(sise.unit_price, sise.price), 0)) AS jc_amt,
+       sise.material_id AS material_id,
+       CONVERT(fm.code USING utf8mb3) COLLATE utf8mb3_general_ci AS material_code,
+       CONVERT(fm.name USING utf8mb3) COLLATE utf8mb3_general_ci AS material_name,
+       CONVERT(fm.speci USING utf8mb3) COLLATE utf8mb3_general_ci AS speci,
+       CONVERT(fm.model USING utf8mb3) COLLATE utf8mb3_general_ci AS model,
+       fm.unit_id AS unit_id,
+       CONVERT(fu.unit_name USING utf8mb3) COLLATE utf8mb3_general_ci AS unit_name,
+       fm.factory_id AS factory_id,
+       CONVERT(ff.factory_code USING utf8mb3) COLLATE utf8mb3_general_ci AS factory_code,
+       CONVERT(ff.factory_name USING utf8mb3) COLLATE utf8mb3_general_ci AS factory_name,
+       CONVERT(sise.batch_number USING utf8mb3) COLLATE utf8mb3_general_ci AS batch_number,
+       CONVERT(sise.batch_no USING utf8mb3) COLLATE utf8mb3_general_ci AS batch_no,
+       sise.begin_time AS begin_time,
+       sise.end_time AS end_time,
+       fm.storeroom_id AS storeroom_id,
+       CONVERT(fwc.warehouse_category_code USING utf8mb3) COLLATE utf8mb3_general_ci AS warehouse_category_code,
+       CONVERT(fwc.warehouse_category_name USING utf8mb3) COLLATE utf8mb3_general_ci AS warehouse_category_name,
+       fm.finance_category_id AS finance_category_id,
+       CONVERT(ffc.finance_category_code USING utf8mb3) COLLATE utf8mb3_general_ci AS finance_category_code,
+       CONVERT(ffc.finance_category_name USING utf8mb3) COLLATE utf8mb3_general_ci AS finance_category_name,
+       CONVERT(sis.tenant_id USING utf8mb3) COLLATE utf8mb3_general_ci AS tenant_id,
+       CONVERT('STK_IO_STOCKTAKING' USING utf8mb3) COLLATE utf8mb3_general_ci AS bill_domain,
+       sis.id AS bill_id,
+       sise.id AS bill_entry_id,
+       CAST(NULL AS CHAR(64) CHARACTER SET utf8mb3) COLLATE utf8mb3_general_ci AS ref_bill_id,
+       CAST(NULL AS CHAR(64) CHARACTER SET utf8mb3) COLLATE utf8mb3_general_ci AS ref_entry_id
+FROM stk_io_stocktaking sis
+         INNER JOIN stk_io_stocktaking_entry sise ON sis.id = sise.paren_id AND IFNULL(sise.del_flag, 0) = 0
+         LEFT JOIN fd_warehouse fw ON sis.warehouse_id = fw.id
+         LEFT JOIN fd_material fm ON sise.material_id = fm.id
+         LEFT JOIN fd_warehouse_category fwc ON fm.storeroom_id = fwc.warehouse_category_id
+         LEFT JOIN fd_finance_category ffc ON fm.finance_category_id = ffc.finance_category_id
+         LEFT JOIN fd_supplier fs ON COALESCE(sise.supplier_id, sis.suppler_id) = fs.id
+         LEFT JOIN fd_unit fu ON fm.unit_id = fu.unit_id
+         LEFT JOIN fd_factory ff ON fm.factory_id = ff.factory_id
+WHERE IFNULL(sis.del_flag, 0) = 0
+  AND sis.stock_status = 2
+  AND IFNULL(sis.audit_adjusts_inventory, 0) = 1
+  AND sis.warehouse_id IS NOT NULL
+  AND IFNULL(sise.profit_qty, 0) <> 0
 UNION ALL
 SELECT sii.id AS mid,
        sie.id AS mxId,

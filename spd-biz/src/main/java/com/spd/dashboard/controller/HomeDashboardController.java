@@ -90,7 +90,7 @@ public class HomeDashboardController extends BaseController
     private HomeUserWorkspaceService homeUserWorkspaceService;
 
     /**
-     * 个人默认首页视角。
+     * 个人默认首页风格（简洁/完整）。
      */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/pref")
@@ -102,7 +102,7 @@ public class HomeDashboardController extends BaseController
     }
 
     /**
-     * 保存个人默认首页视角。
+     * 保存个人默认首页风格。
      */
     @PreAuthorize("isAuthenticated()")
     @PutMapping("/pref")
