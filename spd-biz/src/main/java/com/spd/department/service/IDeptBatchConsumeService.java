@@ -99,6 +99,11 @@ public interface IDeptBatchConsumeService
     List<Map<String, Object>> selectHomeDepartmentConsumeYearMonthAgg(Date beginDate, Date endDate);
 
     /**
+     * 科室首页：近 days 天已审消耗明细条数（含科室数据范围）。
+     */
+    long countRecentAuditedConsumeEntry(int days);
+
+    /**
      * 查询已审核的科室批量消耗汇总列表（按耗材汇总，用于消耗追溯报表）
      * 
      * @param deptBatchConsume 查询条件

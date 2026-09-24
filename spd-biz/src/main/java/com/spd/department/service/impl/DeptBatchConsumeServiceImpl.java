@@ -459,6 +459,26 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         return deptBatchConsumeMapper.selectHomeDepartmentConsumeYearMonthAgg(beginDate, endDate);
     }
 
+    @Override
+    public long countRecentAuditedConsumeEntry(int days)
+    {
+        int n = days < 1 ? 7 : days;
+        java.time.ZoneId zone = java.time.ZoneId.systemDefault();
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate start = today.minusDays(n - 1);
+        Date begin = Date.from(start.atStartOfDay(zone).toInstant());
+        Date end = Date.from(today.atTime(23, 59, 59).atZone(zone).toInstant());
+        DeptBatchConsume q = new DeptBatchConsume();
+        q.setBeginDate(begin);
+        q.setEndDate(end);
+        applyDepartmentScopeToQuery(q);
+        if (StringUtils.isEmpty(q.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        return deptBatchConsumeMapper.countRecentAuditedConsumeEntry(q);
+    }
+
     /**
      * 查询已审核的科室批量消耗汇总列表（按耗材汇总，用于消耗追溯报表）
      * 

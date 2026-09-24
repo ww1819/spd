@@ -82,4 +82,165 @@
           and dpa.purchase_bill_date &lt;= #{endDate}
         group by date_format(dpa.purchase_bill_date, '%Y-%m-%d')
     </select>
+
+    <!-- 已审申购、计划未全部引用（0未引用/1部分），排除计划驳回 -->
+    <select id="countPendingIssuePurchaseApply" resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1)
+        from dep_purchase_apply dpa
+        where dpa.tenant_id = #{scopedTenantId}
+          and (dpa.del_flag = 0 or dpa.del_flag is null)
+          and ifnull(dpa.void_whole_flag, 0) &lt;&gt; 1
+          and dpa.purchase_bill_status = 2
+          and ifnull(dpa.purchase_plan_ref_status, 0) in (0, 1)
+    </select>
+
+    <!-- 在途：已审未作废，且不存在按订单号引用的已审入库单 -->
+    <select id="countInTransitPurchaseOrder" resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1)
+        from purchase_order po
+        where po.tenant_id = #{scopedTenantId}
+          and ifnull(po.void_whole_flag, 0) &lt;&gt; 1
+          and po.order_status = '2'
+          and not exists (
+            select 1 from stk_io_bill io
+            where io.tenant_id = #{scopedTenantId}
+              and (io.del_flag = 0 or io.del_flag is null)
+              and io.bill_type = 101
+              and io.bill_status = 2
+              and io.ref_bill_no = po.order_no
+          )
+    </select>
+
+    <select id="countOverduePurchaseOrder" resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1)
+        from purchase_order po
+        where po.tenant_id = #{scopedTenantId}
+          and ifnull(po.void_whole_flag, 0) &lt;&gt; 1
+          and po.order_status = '2'
+          and po.expected_delivery_date is not null
+          and date(po.expected_delivery_date) &lt; curdate()
+          and not exists (
+            select 1 from stk_io_bill io
+            where io.tenant_id = #{scopedTenantId}
+              and (io.del_flag = 0 or io.del_flag is null)
+              and io.bill_type = 101
+              and io.bill_status = 2
+              and io.ref_bill_no = po.order_no
+          )
+    </select>
+
+    <!-- 近 N 天约定到货且已到期的订单：首笔按订单号入库日 &lt;= 约定日视为及时 -->
+    <select id="selectPurchaseArrivalOnTimeSample" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+          coalesce(sum(case
+            when io.min_audit is not null
+             and date(io.min_audit) &lt;= date(po.expected_delivery_date)
+            then 1 else 0 end), 0) as onTimeCount,
+          count(1) as dueCount
+        from purchase_order po
+        left join (
+          select ref_bill_no, min(audit_date) as min_audit
+          from stk_io_bill
+          where tenant_id = #{scopedTenantId}
+            and (del_flag = 0 or del_flag is null)
+            and bill_type = 101
+            and bill_status = 2
+            and ref_bill_no is not null and ref_bill_no &lt;&gt; ''
+          group by ref_bill_no
+        ) io on io.ref_bill_no = po.order_no
+        where po.tenant_id = #{scopedTenantId}
+          and ifnull(po.void_whole_flag, 0) &lt;&gt; 1
+          and po.order_status = '2'
+          and po.expected_delivery_date is not null
+          and date(po.expected_delivery_date) &gt;= date_sub(curdate(), interval #{days} day)
+          and date(po.expected_delivery_date) &lt; curdate()
+    </select>
+
+    <!-- 库房首页：待盘点任务（仓库盘点未审主单） -->
+    <select id="countPendingStocktakingTask" resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1)
+        from stk_io_stocktaking stk
+        where stk.tenant_id = #{scopedTenantId}
+          and (stk.del_flag is null or stk.del_flag != 1)
+          and stk.stock_type = 501
+          and ifnull(stk.stock_status, 1) != 2
+    </select>
+
+    <!-- 库房首页：已审盘点有差异、尚未生成盈亏单的明细行 -->
+    <select id="countStocktakingDiffLine" resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1)
+        from stk_io_stocktaking_entry e
+        inner join stk_io_stocktaking s on e.paren_id = s.id
+        where e.tenant_id = #{scopedTenantId}
+          and s.tenant_id = #{scopedTenantId}
+          and (e.del_flag is null or e.del_flag != 1)
+          and (s.del_flag is null or s.del_flag != 1)
+          and s.stock_type = 501
+          and s.stock_status = 2
+          and (s.audit_adjusts_inventory is null or s.audit_adjusts_inventory != 1)
+          and (
+            (e.profit_qty is not null and e.profit_qty != 0)
+            or (e.profit_amount is not null and e.profit_amount != 0)
+          )
+          and not exists (
+            select 1 from stk_io_profit_loss pl
+            where pl.stocktaking_id = s.id
+              and pl.tenant_id = #{scopedTenantId}
+              and (pl.del_flag is null or pl.del_flag != 1)
+          )
+    </select>
+
+    <!-- 库房首页：调拨（移库）待处理单据 -->
+    <select id="countPendingTransferBill" resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1)
+        from stk_io_bill stk
+        where stk.tenant_id = #{scopedTenantId}
+          and (stk.del_flag is null or stk.del_flag != 1)
+          and stk.bill_type = 501
+          and ifnull(stk.bill_status, 1) != 2
+          and stk.bill_no not like 'JS%'
+    </select>
+
+    <!-- 库房首页：退货待验收数量（未审 301 明细 qty 合计） -->
+    <select id="sumPendingReturnAcceptQty" resultType="java.math.BigDecimal">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select coalesce(sum(abs(ifnull(e.qty, 0))), 0)
+        from stk_io_bill stk
+        inner join stk_io_bill_entry e
+          on e.paren_id = stk.id and (e.del_flag is null or e.del_flag != 1)
+        where stk.tenant_id = #{scopedTenantId}
+          and (stk.del_flag is null or stk.del_flag != 1)
+          and stk.bill_type = 301
+          and ifnull(stk.bill_status, 1) != 2
+    </select>
+
+    <!-- 库房首页：库区超储物资（定数监控且库存 &gt; 上限） -->
+    <select id="countOverstockMaterial" resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1)
+        from wh_fixed_number fn
+        inner join fd_material m on m.id = fn.material_id
+        left join (
+            select material_id, warehouse_id, sum(ifnull(qty, 0)) as qty_sum
+            from stk_inventory
+            where (del_flag = 0 or del_flag is null)
+              and tenant_id = #{scopedTenantId}
+            group by material_id, warehouse_id
+        ) inv on inv.material_id = fn.material_id and inv.warehouse_id = fn.warehouse_id
+        where (fn.del_flag = 0 or fn.del_flag is null)
+          and (fn.enable_status = '0' or fn.enable_status is null)
+          and fn.tenant_id = #{scopedTenantId}
+          and fn.monitoring = '1'
+          and fn.upper_limit &gt; 0
+          and coalesce(inv.qty_sum, 0) &gt; fn.upper_limit
+          and (m.del_flag is null or m.del_flag != 1)
+          and (m.is_use is null or m.is_use = '' or m.is_use != '2')
+    </select>
 </mapper>

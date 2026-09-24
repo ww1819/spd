@@ -1,0 +1,9 @@
+-- 手工补跑入口（与启动自动脚本内容相同）
+-- 正式路径（SqlInitRunner 自动执行）：
+--   classpath:sql/mysql/material/menu_dir_restructure.sql
+--
+-- 更新系统重启后，在 spd.sql.init.enabled=true 时会自动按「/」分段执行，
+-- 补齐采购/科室/库房/基础资料/系统 二级目录及授权回填。
+--
+-- 若需立即手工执行，请直接执行：
+--   spd-admin/src/main/resources/sql/mysql/material/menu_dir_restructure.sql

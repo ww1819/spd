@@ -135,7 +135,92 @@ public class HomeDashboardController extends BaseController
     @GetMapping("/frequentMenus")
     public AjaxResult frequentMenus(@RequestParam(value = "limit", required = false) Integer limit)
     {
-        return success(homeUserWorkspaceService.topMenus(limit == null ? 8 : limit.intValue()));
+        return success(homeUserWorkspaceService.topMenus(limit == null ? 16 : limit.intValue()));
+    }
+
+    /**
+     * 采购首页顶部指标（待下达/在途/逾期/及时率/待比价）。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/purchaseHomeStats")
+    public AjaxResult purchaseHomeStats()
+    {
+        return success(homeUserWorkspaceService.purchaseHomeStats());
+    }
+
+    /**
+     * 库房首页顶部指标（待盘点/差异/移库/退货/超储）。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/warehouseHomeStats")
+    public AjaxResult warehouseHomeStats()
+    {
+        return success(homeUserWorkspaceService.warehouseHomeStats());
+    }
+
+    /**
+     * 科室首页顶部指标（待审申领/在途收货/近效期/库存余量/近期消耗）。
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/departmentHomeStats")
+    public AjaxResult departmentHomeStats()
+    {
+        Map<String, Object> body = new HashMap<String, Object>(10);
+        long pendingApply = 0L;
+        long unreceived = 0L;
+        long nearExpiry = 0L;
+        BigDecimal inventoryQty = BigDecimal.ZERO;
+        long recentConsume = 0L;
+        try
+        {
+            pendingApply = basApplyService.countPendingAuditApplyRequisition();
+        }
+        catch (Exception ignored)
+        {
+            pendingApply = 0L;
+        }
+        try
+        {
+            unreceived = stkIoBillService.countDepartmentUnreceivedReceiptReminder();
+        }
+        catch (Exception ignored)
+        {
+            unreceived = 0L;
+        }
+        try
+        {
+            nearExpiry = stkDepInventoryService.countDepartmentNearExpiryReminderMonitor();
+        }
+        catch (Exception ignored)
+        {
+            nearExpiry = 0L;
+        }
+        try
+        {
+            BigDecimal qty = stkDepInventoryService.sumDepartmentInventoryQtyMonitor();
+            if (qty != null)
+            {
+                inventoryQty = qty;
+            }
+        }
+        catch (Exception ignored)
+        {
+            inventoryQty = BigDecimal.ZERO;
+        }
+        try
+        {
+            recentConsume = deptBatchConsumeService.countRecentAuditedConsumeEntry(7);
+        }
+        catch (Exception ignored)
+        {
+            recentConsume = 0L;
+        }
+        body.put("pendingApplyAuditBillCount", Long.valueOf(pendingApply));
+        body.put("unreceivedOutboundBillCount", Long.valueOf(unreceived));
+        body.put("nearExpiryLineCount", Long.valueOf(nearExpiry));
+        body.put("departmentInventoryQty", inventoryQty);
+        body.put("recentConsumeEntryCount", Long.valueOf(recentConsume));
+        return success(body);
     }
 
     /**

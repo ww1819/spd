@@ -1,6 +1,7 @@
 package com.spd.dashboard.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -75,9 +76,165 @@ public class HomeUserWorkspaceService
         {
             return new ArrayList<Map<String, Object>>();
         }
-        int n = limit < 1 ? 8 : Math.min(limit, 20);
+        int n = limit < 1 ? 16 : Math.min(limit, 48);
         List<Map<String, Object>> list = homeUserWorkspaceMapper.selectTopMenus(userId, tenantKey(), n);
         return list != null ? list : new ArrayList<Map<String, Object>>();
+    }
+
+    /**
+     * 采购首页顶部指标（租户范围）。
+     * pendingPriceCompareCount 暂无业务单据，固定 0。
+     */
+    public Map<String, Object> purchaseHomeStats()
+    {
+        Map<String, Object> body = new HashMap<String, Object>(12);
+        long pendingIssue = 0L;
+        long inTransit = 0L;
+        long overdue = 0L;
+        try
+        {
+            pendingIssue = homeUserWorkspaceMapper.countPendingIssuePurchaseApply();
+        }
+        catch (Exception ignored)
+        {
+            pendingIssue = 0L;
+        }
+        try
+        {
+            inTransit = homeUserWorkspaceMapper.countInTransitPurchaseOrder();
+        }
+        catch (Exception ignored)
+        {
+            inTransit = 0L;
+        }
+        try
+        {
+            overdue = homeUserWorkspaceMapper.countOverduePurchaseOrder();
+        }
+        catch (Exception ignored)
+        {
+            overdue = 0L;
+        }
+        body.put("pendingIssuePurchaseApplyCount", Long.valueOf(pendingIssue));
+        body.put("inTransitPurchaseOrderCount", Long.valueOf(inTransit));
+        body.put("overdueSupplierDeliveryCount", Long.valueOf(overdue));
+        body.put("pendingPriceCompareCount", Long.valueOf(0L));
+
+        long onTime = 0L;
+        long due = 0L;
+        try
+        {
+            Map<String, Object> sample = homeUserWorkspaceMapper.selectPurchaseArrivalOnTimeSample(90);
+            if (sample != null)
+            {
+                onTime = toLong(sample.get("onTimeCount"));
+                due = toLong(sample.get("dueCount"));
+            }
+        }
+        catch (Exception ignored)
+        {
+            onTime = 0L;
+            due = 0L;
+        }
+        body.put("arrivalOnTimeCount", Long.valueOf(onTime));
+        body.put("arrivalDueCount", Long.valueOf(due));
+        if (due <= 0L)
+        {
+            body.put("arrivalOnTimeRate", null);
+            body.put("arrivalOnTimeRateText", "--");
+        }
+        else
+        {
+            BigDecimal rate = BigDecimal.valueOf(onTime)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(due), 1, RoundingMode.HALF_UP);
+            body.put("arrivalOnTimeRate", rate);
+            body.put("arrivalOnTimeRateText", rate.toPlainString() + "%");
+        }
+        return body;
+    }
+
+    /**
+     * 库房首页顶部指标（租户范围）：待盘点/差异/移库/退货/超储。
+     */
+    public Map<String, Object> warehouseHomeStats()
+    {
+        Map<String, Object> body = new HashMap<String, Object>(10);
+        long pendingStocktaking = 0L;
+        long diffLine = 0L;
+        long pendingTransfer = 0L;
+        BigDecimal pendingReturnQty = BigDecimal.ZERO;
+        long overstock = 0L;
+        try
+        {
+            pendingStocktaking = homeUserWorkspaceMapper.countPendingStocktakingTask();
+        }
+        catch (Exception ignored)
+        {
+            pendingStocktaking = 0L;
+        }
+        try
+        {
+            diffLine = homeUserWorkspaceMapper.countStocktakingDiffLine();
+        }
+        catch (Exception ignored)
+        {
+            diffLine = 0L;
+        }
+        try
+        {
+            pendingTransfer = homeUserWorkspaceMapper.countPendingTransferBill();
+        }
+        catch (Exception ignored)
+        {
+            pendingTransfer = 0L;
+        }
+        try
+        {
+            BigDecimal qty = homeUserWorkspaceMapper.sumPendingReturnAcceptQty();
+            if (qty != null)
+            {
+                pendingReturnQty = qty;
+            }
+        }
+        catch (Exception ignored)
+        {
+            pendingReturnQty = BigDecimal.ZERO;
+        }
+        try
+        {
+            overstock = homeUserWorkspaceMapper.countOverstockMaterial();
+        }
+        catch (Exception ignored)
+        {
+            overstock = 0L;
+        }
+        body.put("pendingStocktakingTaskCount", Long.valueOf(pendingStocktaking));
+        body.put("stocktakingDiffLineCount", Long.valueOf(diffLine));
+        body.put("pendingTransferBillCount", Long.valueOf(pendingTransfer));
+        body.put("pendingReturnAcceptQty", pendingReturnQty);
+        body.put("overstockMaterialCount", Long.valueOf(overstock));
+        return body;
+    }
+
+    private static long toLong(Object v)
+    {
+        if (v == null)
+        {
+            return 0L;
+        }
+        if (v instanceof Number)
+        {
+            return ((Number) v).longValue();
+        }
+        try
+        {
+            return Long.parseLong(String.valueOf(v));
+        }
+        catch (Exception e)
+        {
+            return 0L;
+        }
     }
 
     /**

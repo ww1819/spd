@@ -1,5 +1,6 @@
 package com.spd.department.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import com.spd.common.core.page.TotalInfo;
 import com.spd.department.domain.StkDepInventory;
@@ -102,4 +103,9 @@ public interface IStkDepInventoryService
     List<DepartmentInventoryAlertReminderRowVo> selectDepartmentInventoryAlertReminderMonitorList();
 
     long countDepartmentInventoryAlertReminderMonitor();
+
+    /**
+     * 科室首页：数据范围内科室库存余量合计（qty&gt;0）。
+     */
+    BigDecimal sumDepartmentInventoryQtyMonitor();
 }

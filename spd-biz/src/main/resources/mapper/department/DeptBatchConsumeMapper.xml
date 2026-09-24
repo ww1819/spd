@@ -692,4 +692,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and a.consume_bill_date &lt;= #{endDate}
         group by MONTH(a.consume_bill_date)
     </select>
+
+    <!-- 科室首页：近 N 天已审消耗明细条数 -->
+    <select id="countRecentAuditedConsumeEntry" parameterType="DeptBatchConsume" resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(1)
+        from t_hc_ks_xh a
+        inner join t_hc_ks_xh_entry e on e.paren_id = a.id and e.tenant_id = #{scopedTenantId} and e.del_flag != 1
+        where a.del_flag != 1
+          and a.tenant_id = #{scopedTenantId}
+          and a.consume_bill_status = 2
+          and a.consume_bill_date &gt;= #{beginDate}
+          and a.consume_bill_date &lt;= #{endDate}
+          <include refid="deptBatchConsumeDepartmentScopeFilter"/>
+    </select>
 </mapper>

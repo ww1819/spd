@@ -156,4 +156,9 @@ public interface DeptBatchConsumeMapper
      */
     List<Map<String, Object>> selectHomeDepartmentConsumeYearMonthAgg(@Param("beginDate") Date beginDate,
         @Param("endDate") Date endDate);
+
+    /**
+     * 科室首页：近 N 天已审消耗明细条数（params.scopeDeptUserId 生效时按科室范围过滤）
+     */
+    long countRecentAuditedConsumeEntry(DeptBatchConsume deptBatchConsume);
 }

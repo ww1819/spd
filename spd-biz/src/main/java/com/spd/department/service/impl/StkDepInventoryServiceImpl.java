@@ -265,4 +265,21 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
         Long c = stkDepInventoryMapper.countDepartmentInventoryAlertReminder(q);
         return c != null ? c.longValue() : 0L;
     }
+
+    @Override
+    public BigDecimal sumDepartmentInventoryQtyMonitor()
+    {
+        StkDepInventory q = new StkDepInventory();
+        applyDepInvListWarehouseDepartmentScope(q);
+        if (StringUtils.isEmpty(q.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId()))
+        {
+            q.setTenantId(SecurityUtils.getCustomerId());
+        }
+        TotalInfo total = stkDepInventoryMapper.selectStkDepInventoryListTotal(q);
+        if (total == null || total.getTotalQty() == null)
+        {
+            return BigDecimal.ZERO;
+        }
+        return total.getTotalQty();
+    }
 }
