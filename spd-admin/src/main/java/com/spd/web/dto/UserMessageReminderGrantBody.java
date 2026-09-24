@@ -15,7 +15,7 @@ public class UserMessageReminderGrantBody implements Serializable {
     /** warehouse / department / data：登录后自动弹窗（须为 keys 子集） */
     private String[] messageReminderPopupKeys;
 
-    /** simple/full/purchase/warehouse/department：首页设置；空表示未单独授权（前端默认完整） */
+    /** simple/full/purchase/warehouse/department：首页设置；空表示未单独授权（前端默认「默认」首页） */
     private String[] homePageKeys;
 
     public String[] getMessageReminderKeys() {

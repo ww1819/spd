@@ -76,9 +76,9 @@ public class StkDepInventory extends BaseEntity
     @Excel(name = "耗材批次号")
     private String materialNo;
 
-    /** 耗材日期 */
+    /** 耗材日期（列表「出库日期」优先关联出库单 audit_date；新写出库审核写入审核日） */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "耗材日期", width = 30, dateFormat = "yyyy-MM-dd")
+    @Excel(name = "出库日期", width = 30, dateFormat = "yyyy-MM-dd")
     private Date materialDate;
 
     /** 入库日期 */

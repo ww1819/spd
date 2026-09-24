@@ -1,7 +1,13 @@
 package com.spd.department.service.impl;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.spd.common.core.page.TotalInfo;
 import com.spd.common.utils.SecurityUtils;
@@ -84,11 +90,161 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
             stkDepInventory.setTenantId(SecurityUtils.getCustomerId());
         }
         List<StkDepInventory> list = stkDepInventoryMapper.selectStkDepInventoryList(stkDepInventory);
+        fillOutboundAuditDates(list);
         for (StkDepInventory depInventory : list) {
             FdMaterial fdMaterial = this.fdMaterialMapper.selectFdMaterialById(depInventory.getMaterialId());
             depInventory.setMaterial(fdMaterial);
         }
         return list;
+    }
+
+    /**
+     * 列表「出库日期」强制回填为出库单审核日（空则制单日），避免仍显示入库 material_date。
+     */
+    private void fillOutboundAuditDates(List<StkDepInventory> list)
+    {
+        if (list == null || list.isEmpty())
+        {
+            return;
+        }
+        Set<Long> billIds = new HashSet<Long>();
+        Set<String> billNos = new HashSet<String>();
+        for (StkDepInventory row : list)
+        {
+            if (row == null)
+            {
+                continue;
+            }
+            if (row.getBillId() != null)
+            {
+                billIds.add(row.getBillId());
+            }
+            if (StringUtils.isNotEmpty(row.getOutOrderNo()))
+            {
+                billNos.add(row.getOutOrderNo().trim());
+            }
+            if (StringUtils.isNotEmpty(row.getBillNo()))
+            {
+                billNos.add(row.getBillNo().trim());
+            }
+        }
+        if (billIds.isEmpty() && billNos.isEmpty())
+        {
+            return;
+        }
+        List<Map<String, Object>> rows = stkDepInventoryMapper.selectOutboundAuditDateRows(
+            billIds.isEmpty() ? null : new ArrayList<Long>(billIds),
+            billNos.isEmpty() ? null : new ArrayList<String>(billNos));
+        if (rows == null || rows.isEmpty())
+        {
+            return;
+        }
+        Map<Long, Date> byId = new HashMap<Long, Date>();
+        Map<String, Date> byNo = new HashMap<String, Date>();
+        for (Map<String, Object> m : rows)
+        {
+            if (m == null)
+            {
+                continue;
+            }
+            Date outDate = toDate(mapGetIgnoreCase(m, "outDate"));
+            if (outDate == null)
+            {
+                continue;
+            }
+            Object idObj = mapGetIgnoreCase(m, "billId");
+            if (idObj instanceof Number)
+            {
+                byId.put(((Number) idObj).longValue(), outDate);
+            }
+            else if (idObj != null && StringUtils.isNotEmpty(String.valueOf(idObj)))
+            {
+                try
+                {
+                    byId.put(Long.parseLong(String.valueOf(idObj)), outDate);
+                }
+                catch (NumberFormatException ignored)
+                {
+                    // ignore
+                }
+            }
+            Object noObj = mapGetIgnoreCase(m, "billNo");
+            if (noObj != null && StringUtils.isNotEmpty(String.valueOf(noObj)))
+            {
+                byNo.put(String.valueOf(noObj).trim(), outDate);
+            }
+        }
+        for (StkDepInventory row : list)
+        {
+            if (row == null)
+            {
+                continue;
+            }
+            Date outDate = null;
+            if (row.getBillId() != null)
+            {
+                outDate = byId.get(row.getBillId());
+            }
+            if (outDate == null && StringUtils.isNotEmpty(row.getOutOrderNo()))
+            {
+                outDate = byNo.get(row.getOutOrderNo().trim());
+            }
+            if (outDate == null && StringUtils.isNotEmpty(row.getBillNo()))
+            {
+                outDate = byNo.get(row.getBillNo().trim());
+            }
+            if (outDate != null)
+            {
+                row.setMaterialDate(outDate);
+            }
+        }
+    }
+
+    private static Object mapGetIgnoreCase(Map<String, Object> m, String key)
+    {
+        if (m == null || key == null)
+        {
+            return null;
+        }
+        if (m.containsKey(key))
+        {
+            return m.get(key);
+        }
+        for (Map.Entry<String, Object> e : m.entrySet())
+        {
+            if (e.getKey() != null && e.getKey().equalsIgnoreCase(key))
+            {
+                return e.getValue();
+            }
+        }
+        return null;
+    }
+
+    private static Date toDate(Object raw)
+    {
+        if (raw == null)
+        {
+            return null;
+        }
+        if (raw instanceof Date)
+        {
+            return (Date) raw;
+        }
+        if (raw instanceof java.sql.Timestamp)
+        {
+            return new Date(((java.sql.Timestamp) raw).getTime());
+        }
+        if (raw instanceof java.time.LocalDateTime)
+        {
+            java.time.LocalDateTime ldt = (java.time.LocalDateTime) raw;
+            return Date.from(ldt.atZone(java.time.ZoneId.systemDefault()).toInstant());
+        }
+        if (raw instanceof java.time.LocalDate)
+        {
+            java.time.LocalDate ld = (java.time.LocalDate) raw;
+            return Date.from(ld.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+        }
+        return null;
     }
 
     @Override

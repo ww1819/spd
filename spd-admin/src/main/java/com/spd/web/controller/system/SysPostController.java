@@ -46,6 +46,7 @@ public class SysPostController extends BaseController
     private static final Map<Long, ISysPostService.SyncStatus> DEPARTMENT_SYNC_STATUS_MAP = new ConcurrentHashMap<>();
     private static final Map<Long, ISysPostService.SyncStatus> WAREHOUSE_SYNC_STATUS_MAP = new ConcurrentHashMap<>();
     private static final Map<Long, ISysPostService.SyncStatus> MESSAGE_REMINDER_SYNC_STATUS_MAP = new ConcurrentHashMap<>();
+    private static final Map<Long, ISysPostService.SyncStatus> HOME_PAGE_SYNC_STATUS_MAP = new ConcurrentHashMap<>();
 
     @Autowired
     private ISysPostService postService;
@@ -335,6 +336,63 @@ public class SysPostController extends BaseController
     public AjaxResult getMessageReminderSyncStatus(@PathVariable Long postId)
     {
         ISysPostService.SyncStatus status = MESSAGE_REMINDER_SYNC_STATUS_MAP.get(postId);
+        if (status == null)
+        {
+            status = new ISysPostService.SyncStatus();
+            status.setPostId(postId);
+            status.setStatus("IDLE");
+            status.setMessage("未查询到同步任务");
+            status.setAffected(0);
+            status.setUpdateTime(System.currentTimeMillis());
+        }
+        return AjaxResult.success(status);
+    }
+
+    @PreAuthorize("@ss.hasPermi('system:post:sync') or @ss.hasPermi('system:post:edit')")
+    @PostMapping("/sync/homePage/{postId}")
+    public AjaxResult syncHomePageToUsers(@PathVariable Long postId,
+        @RequestParam(value = "syncMode", required = false, defaultValue = "supplement") String syncMode)
+    {
+        ISysPostService.SyncStatus running = new ISysPostService.SyncStatus();
+        running.setPostId(postId);
+        running.setStatus("RUNNING");
+        running.setMessage("正在后台同步首页设置...");
+        running.setAffected(0);
+        running.setUpdateTime(System.currentTimeMillis());
+        HOME_PAGE_SYNC_STATUS_MAP.put(postId, running);
+
+        CompletableFuture.runAsync(() -> {
+            try
+            {
+                int affected = postService.syncHomePageToPostUsers(postId, syncMode);
+                ISysPostService.SyncStatus success = new ISysPostService.SyncStatus();
+                success.setPostId(postId);
+                success.setStatus("SUCCESS");
+                success.setAffected(affected);
+                success.setMessage("copy".equalsIgnoreCase(syncMode) ? "首页设置复制完成" : "首页设置补全完成");
+                success.setUpdateTime(System.currentTimeMillis());
+                HOME_PAGE_SYNC_STATUS_MAP.put(postId, success);
+            }
+            catch (Exception e)
+            {
+                log.error("工作组首页设置同步失败，postId={}", postId, e);
+                ISysPostService.SyncStatus failed = new ISysPostService.SyncStatus();
+                failed.setPostId(postId);
+                failed.setStatus("FAILED");
+                failed.setAffected(0);
+                failed.setMessage(e.getMessage() != null ? e.getMessage() : "首页设置同步失败");
+                failed.setUpdateTime(System.currentTimeMillis());
+                HOME_PAGE_SYNC_STATUS_MAP.put(postId, failed);
+            }
+        });
+        return AjaxResult.success("已提交后台同步任务，请稍后查看结果");
+    }
+
+    @PreAuthorize("@ss.hasPermi('system:post:sync') or @ss.hasPermi('system:post:query')")
+    @GetMapping("/sync/homePage/status/{postId}")
+    public AjaxResult getHomePageSyncStatus(@PathVariable Long postId)
+    {
+        ISysPostService.SyncStatus status = HOME_PAGE_SYNC_STATUS_MAP.get(postId);
         if (status == null)
         {
             status = new ISysPostService.SyncStatus();

@@ -728,6 +728,76 @@ public class SysPostServiceImpl implements ISysPostService
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int syncHomePageToPostUsers(Long postId, String syncMode)
+    {
+        if (postId == null)
+        {
+            return 0;
+        }
+        SysPost post = postMapper.selectPostById(postId);
+        if (post == null)
+        {
+            return 0;
+        }
+        // null=从未配置，不执行同步；空串=已明确配置为未单独授权（前端回落默认首页）
+        if (post.getHomePageKeys() == null)
+        {
+            return 0;
+        }
+        String[] postKeys = SysUserServiceImpl.splitHomePageKeys(post.getHomePageKeys());
+        if (postKeys == null)
+        {
+            postKeys = new String[0];
+        }
+        List<Long> userIds = selectUserIdsByPostId(postId);
+        if (userIds == null || userIds.isEmpty())
+        {
+            return 0;
+        }
+        boolean copyMode = "copy".equalsIgnoreCase(syncMode);
+        int affected = 0;
+        for (Long userId : userIds)
+        {
+            String[] nextKeys;
+            if (copyMode)
+            {
+                nextKeys = postKeys;
+            }
+            else
+            {
+                SysUser user = userMapper.selectUserById(userId);
+                String[] existingKeys = user != null
+                    ? SysUserServiceImpl.splitHomePageKeys(user.getHomePageKeys())
+                    : new String[0];
+                if (existingKeys == null)
+                {
+                    existingKeys = new String[0];
+                }
+                nextKeys = mergeHomePageKeys(existingKeys, postKeys);
+            }
+            String keysCsv = SysUserServiceImpl.joinHomePageKeys(nextKeys);
+            userMapper.updateUserHomePageKeys(userId, keysCsv);
+            affected++;
+        }
+        return affected;
+    }
+
+    private static String[] mergeHomePageKeys(String[] existing, String[] post)
+    {
+        LinkedHashSet<String> set = new LinkedHashSet<>();
+        if (existing != null)
+        {
+            set.addAll(Arrays.asList(existing));
+        }
+        if (post != null)
+        {
+            set.addAll(Arrays.asList(post));
+        }
+        return set.toArray(new String[0]);
+    }
+
+    @Override
     public ISysPostService.SyncStatus getMenuSyncStatus(Long postId)
     {
         ISysPostService.SyncStatus status = SYNC_STATUS_MAP.get(postId);

@@ -37,19 +37,22 @@
 
     <select id="selectHomeIoQtyTrendByDay" resultType="java.util.HashMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select date_format(stk.audit_date, '%Y-%m-%d') as dayStr,
+        select date_format(coalesce(stk.audit_date, stk.bill_date), '%Y-%m-%d') as dayStr,
                coalesce(sum(case when stk.bill_type = 101 then ifnull(b.qty, 0) else 0 end), 0) as inCount,
                coalesce(sum(case when stk.bill_type = 201 then ifnull(b.qty, 0) else 0 end), 0) as outCount,
-               coalesce(sum(case when stk.bill_type = 401 then abs(ifnull(b.qty, 0)) else 0 end), 0) as returnCount
+               coalesce(sum(case when stk.bill_type = 401 then abs(ifnull(b.qty, 0)) else 0 end), 0) as returnCount,
+               coalesce(sum(case when stk.bill_type = 101 then ifnull(b.amt, ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) else 0 end), 0) as inAmt,
+               coalesce(sum(case when stk.bill_type = 201 then ifnull(b.amt, ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0)) else 0 end), 0) as outAmt,
+               coalesce(sum(case when stk.bill_type = 401 then abs(ifnull(b.amt, ifnull(b.qty, 0) * ifnull(ifnull(b.unit_price, b.price), 0))) else 0 end), 0) as returnAmt
         from stk_io_bill stk
         left join stk_io_bill_entry b on b.paren_id = stk.id and (b.del_flag is null or b.del_flag != 1)
         where (stk.del_flag = 0 or stk.del_flag is null)
           and stk.tenant_id = #{scopedTenantId}
           and stk.bill_status = 2
           and stk.bill_type in (101, 201, 401)
-          and stk.audit_date &gt;= #{beginDate}
-          and stk.audit_date &lt;= #{endDate}
-        group by date_format(stk.audit_date, '%Y-%m-%d')
+          and coalesce(stk.audit_date, stk.bill_date) &gt;= #{beginDate}
+          and coalesce(stk.audit_date, stk.bill_date) &lt;= #{endDate}
+        group by date_format(coalesce(stk.audit_date, stk.bill_date), '%Y-%m-%d')
     </select>
 
     <select id="selectHomeApplyQtyTrendByDay" resultType="java.util.HashMap">

@@ -931,7 +931,7 @@ public class SysUserServiceImpl implements ISysUserService
     private static final java.util.Set<String> HOME_PAGE_KEY_ALLOW = new java.util.HashSet<>(
         java.util.Arrays.asList("simple", "full", "purchase", "warehouse", "department"));
 
-    /** 规范化并拼接首页 keys；空数组存空串表示未单独授权（前端默认完整） */
+    /** 规范化并拼接首页 keys；空数组存空串表示未单独授权（前端默认「默认」首页） */
     public static String joinHomePageKeys(String[] keys) {
         if (keys == null || keys.length == 0) {
             return "";

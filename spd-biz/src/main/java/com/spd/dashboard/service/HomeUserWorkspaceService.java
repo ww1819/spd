@@ -261,20 +261,26 @@ public class HomeUserWorkspaceService
         BigDecimal[] retArr = zeros(n);
         BigDecimal[] applyArr = zeros(n);
         BigDecimal[] purchaseArr = zeros(n);
+        BigDecimal[] outAmtArr = zeros(n);
+        BigDecimal[] inAmtArr = zeros(n);
         List<Map<String, Object>> ioRows = homeUserWorkspaceMapper.selectHomeIoQtyTrendByDay(begin, end);
         fillTrend(ioRows, index, "inCount", inArr);
         fillTrend(ioRows, index, "outCount", outArr);
         fillTrend(ioRows, index, "returnCount", retArr);
+        fillTrend(ioRows, index, "outAmt", outAmtArr);
+        fillTrend(ioRows, index, "inAmt", inAmtArr);
         fillTrend(homeUserWorkspaceMapper.selectHomeApplyQtyTrendByDay(begin, end), index, "applyCount", applyArr);
         fillTrend(homeUserWorkspaceMapper.selectHomePurchaseQtyTrendByDay(begin, end), index, "purchaseCount", purchaseArr);
 
-        Map<String, Object> body = new HashMap<String, Object>(12);
+        Map<String, Object> body = new HashMap<String, Object>(16);
         body.put("days", dayList);
         body.put("inCount", asList(inArr));
         body.put("outCount", asList(outArr));
         body.put("returnCount", asList(retArr));
         body.put("applyCount", asList(applyArr));
         body.put("purchaseCount", asList(purchaseArr));
+        body.put("outAmt", asList(outAmtArr));
+        body.put("inAmt", asList(inAmtArr));
         int todayIdx = n - 1;
         int yIdx = n >= 2 ? n - 2 : 0;
         body.put("today", snapshot(inArr, outArr, retArr, applyArr, purchaseArr, todayIdx));
@@ -295,13 +301,45 @@ public class HomeUserWorkspaceService
             {
                 continue;
             }
-            Integer i = index.get(dayKey(row.get("dayStr")));
+            Integer i = index.get(dayKey(mapGetIgnoreCase(row, "dayStr")));
+            if (i == null)
+            {
+                // 兼容 MySQL 别名折叠为 day_str / daystr
+                i = index.get(dayKey(mapGetIgnoreCase(row, "day_str")));
+            }
             if (i == null)
             {
                 continue;
             }
-            target[i.intValue()] = nz(row.get(field));
+            Object val = mapGetIgnoreCase(row, field);
+            if (val == null && field != null)
+            {
+                // outCount → out_count
+                String snake = field.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
+                val = mapGetIgnoreCase(row, snake);
+            }
+            target[i.intValue()] = nz(val);
         }
+    }
+
+    private static Object mapGetIgnoreCase(Map<String, Object> row, String key)
+    {
+        if (row == null || key == null)
+        {
+            return null;
+        }
+        if (row.containsKey(key))
+        {
+            return row.get(key);
+        }
+        for (Map.Entry<String, Object> e : row.entrySet())
+        {
+            if (e.getKey() != null && e.getKey().equalsIgnoreCase(key))
+            {
+                return e.getValue();
+            }
+        }
+        return null;
     }
 
     private static Map<String, Object> snapshot(BigDecimal[] inArr, BigDecimal[] outArr, BigDecimal[] retArr,

@@ -1412,7 +1412,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     stkDepInventory.setAmt(depUnitPrice != null ? entry.getQty().multiply(depUnitPrice) : BigDecimal.ZERO);
                     stkDepInventory.setBatchNo(entry.getBatchNo());
                     stkDepInventory.setBatchId(inventory.getBatchId());
-                    stkDepInventory.setMaterialDate(inventory.getMaterialDate());
+                    // 科室库存「出库日期」存出库单审核日（非仓库入库时的 material_date）
+                    Date outAuditDate = stkIoBill.getAuditDate() != null ? stkIoBill.getAuditDate() : new Date();
+                    stkDepInventory.setMaterialDate(outAuditDate);
                     stkDepInventory.setWarehouseDate(inventory.getWarehouseDate());
                     stkDepInventory.setWarehouseId(stkIoBill.getWarehouseId());
                     stkDepInventory.setBeginDate(entry.getBeginTime() != null ? entry.getBeginTime() : inventory.getBeginTime());
@@ -2040,7 +2042,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkDepInventory.setAmt(depUnitPrice != null ? entry.getQty().multiply(depUnitPrice) : BigDecimal.ZERO);
             stkDepInventory.setBatchNo(entry.getBatchNo());
             stkDepInventory.setMaterialNo(inventory.getMaterialNo());
-            stkDepInventory.setMaterialDate(inventory.getMaterialDate());
+            Date outAuditDate = stkIoBill != null && stkIoBill.getAuditDate() != null
+                ? stkIoBill.getAuditDate() : new Date();
+            stkDepInventory.setMaterialDate(outAuditDate);
             stkDepInventory.setWarehouseDate(inventory.getWarehouseDate());
             stkDepInventory.setBeginDate(inventory.getBeginTime());
             stkDepInventory.setEndDate(inventory.getEndTime());

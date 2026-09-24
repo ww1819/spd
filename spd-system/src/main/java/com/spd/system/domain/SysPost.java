@@ -58,6 +58,11 @@ public class SysPost extends BaseEntity
     /** 登录后自动弹窗的消息提醒 keys */
     private String messageReminderPopupKeys;
 
+    /**
+     * 首页设置授权 keys（逗号分隔）：simple=默认，full=完整，purchase/warehouse/department=角色首页
+     */
+    private String homePageKeys;
+
     /** 租户ID(同sb_customer.customer_id)，耗材工作组按租户隔离 */
     private String tenantId;
 
@@ -174,6 +179,16 @@ public class SysPost extends BaseEntity
     public void setMessageReminderPopupKeys(String messageReminderPopupKeys)
     {
         this.messageReminderPopupKeys = messageReminderPopupKeys;
+    }
+
+    public String getHomePageKeys()
+    {
+        return homePageKeys;
+    }
+
+    public void setHomePageKeys(String homePageKeys)
+    {
+        this.homePageKeys = homePageKeys;
     }
 
     public String getTenantId() {

@@ -96,11 +96,45 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="name"  column="supplierName"   />
     </resultMap>
 
+    <!-- 列表「出库日期」：优先按页面展示的出库单号取审核日；审核日空则用制单日；绝不回退入库 material_date -->
+    <sql id="depInvOutboundAuditDateExpr">
+        COALESCE(
+            (select COALESCE(bill.audit_date, bill.bill_date) from stk_io_bill bill
+                where stk.out_order_no is not null and trim(stk.out_order_no) != ''
+                  and bill.bill_no = stk.out_order_no
+                  and bill.bill_type = 201
+                  and (bill.del_flag = 0 or bill.del_flag is null)
+                order by bill.id desc limit 1),
+            (select COALESCE(bill.audit_date, bill.bill_date) from stk_io_bill bill
+                where stk.bill_no is not null and trim(stk.bill_no) != ''
+                  and bill.bill_no = stk.bill_no
+                  and bill.bill_type = 201
+                  and (bill.del_flag = 0 or bill.del_flag is null)
+                order by bill.id desc limit 1),
+            (select COALESCE(bill.audit_date, bill.bill_date) from stk_io_bill bill
+                where stk.bill_id is not null
+                  and bill.id = stk.bill_id
+                  and bill.bill_type = 201
+                  and (bill.del_flag = 0 or bill.del_flag is null)
+                limit 1),
+            (select COALESCE(bill.audit_date, bill.bill_date) from stk_io_bill_entry entry
+                inner join stk_io_bill bill on bill.id = entry.paren_id
+                where entry.batch_no = stk.batch_no and entry.material_id = stk.material_id
+                  and entry.del_flag = 0
+                  and bill.bill_type = 201
+                  and (bill.del_flag = 0 or bill.del_flag is null)
+                order by bill.id desc limit 1),
+            stk.create_time
+        )
+    </sql>
+
     <sql id="selectStkDepInventoryVo">
         select stk.id, stk.material_id, stk.supplier_id,
 			stk.material_name as snap_material_name, stk.material_speci as snap_material_speci, stk.material_model as snap_material_model, stk.material_factory_id as snap_material_factory_id,
 			stk.department_id, stk.qty, stk.unit_price, stk.amt,
-			stk.warehouse_id, stk.batch_no, stk.batch_id, stk.batch_number, stk.material_no, stk.material_date, stk.warehouse_date, stk.kc_no, stk.receipt_confirm_status,
+			stk.warehouse_id, stk.batch_no, stk.batch_id, stk.batch_number, stk.material_no,
+			<include refid="depInvOutboundAuditDateExpr"/> as material_date,
+			stk.warehouse_date, stk.kc_no, stk.receipt_confirm_status,
 			stk.his_pharmacy_stock_id, stk.his_stock_query_id, stk.his_storage_stock_id,
 			stk.bill_id, stk.bill_entry_id, stk.bill_no, stk.bill_type, stk.remark, stk.tenant_id, stk.settlement_type,
 			stk.del_flag, stk.delete_by, stk.delete_time,
@@ -845,6 +879,37 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from (
             <include refid="departmentInOutDetailUnion"/>
         ) t
+    </select>
+
+    <!-- 列表出库日期回填：出库单审核日（空则制单日） -->
+    <select id="selectOutboundAuditDateRows" resultType="java.util.HashMap">
+        select bill.id as billId,
+               bill.bill_no as billNo,
+               COALESCE(bill.audit_date, bill.bill_date) as outDate
+        from stk_io_bill bill
+        where bill.bill_type = 201
+          and (bill.del_flag = 0 or bill.del_flag is null)
+          and (
+            <choose>
+              <when test="billIds != null and billIds.size() &gt; 0 and billNos != null and billNos.size() &gt; 0">
+                bill.id in
+                <foreach collection="billIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+                or bill.bill_no in
+                <foreach collection="billNos" item="no" open="(" separator="," close=")">#{no}</foreach>
+              </when>
+              <when test="billIds != null and billIds.size() &gt; 0">
+                bill.id in
+                <foreach collection="billIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+              </when>
+              <when test="billNos != null and billNos.size() &gt; 0">
+                bill.bill_no in
+                <foreach collection="billNos" item="no" open="(" separator="," close=")">#{no}</foreach>
+              </when>
+              <otherwise>
+                1 = 0
+              </otherwise>
+            </choose>
+          )
     </select>
 
 </mapper>

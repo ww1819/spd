@@ -140,4 +140,11 @@ public interface StkDepInventoryMapper
     List<DepartmentInventoryAlertReminderRowVo> selectDepartmentInventoryAlertReminderList(StkDepInventory stkDepInventory);
 
     Long countDepartmentInventoryAlertReminder(StkDepInventory stkDepInventory);
+
+    /**
+     * 按出库单 id / 单号批量取审核日（空则制单日），供列表「出库日期」回填
+     */
+    List<java.util.Map<String, Object>> selectOutboundAuditDateRows(
+        @Param("billIds") List<Long> billIds,
+        @Param("billNos") List<String> billNos);
 }
