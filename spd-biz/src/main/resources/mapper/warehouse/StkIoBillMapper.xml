@@ -2302,7 +2302,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 <if test="endDate != null"> AND bill.bill_date &lt;= #{endDate}</if>
             )) * 100, 2) as percentage,
             f.factory_name factoryName, s.name supplierName,
-            fc.finance_category_name financeCategoryName
+            fc.finance_category_name financeCategoryName,
+            wc.warehouse_category_name warehouseCategoryName
         FROM stk_io_bill stk
         LEFT JOIN stk_io_bill_entry b ON b.paren_id = stk.id AND b.del_flag != 1
         LEFT JOIN fd_material m ON b.material_id = m.id
@@ -2310,8 +2311,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         LEFT JOIN fd_factory f ON m.factory_id = f.factory_id
         LEFT JOIN fd_supplier s ON m.supplier_id = s.id
         LEFT JOIN fd_finance_category fc ON m.finance_category_id = fc.finance_category_id
+        LEFT JOIN fd_warehouse_category wc ON m.storeroom_id = wc.warehouse_category_id
         WHERE <include refid="consumeRankingReportWhere"/>
-        GROUP BY m.id, m.code, m.name, m.speci, m.model, u.unit_name, f.factory_name, s.name, fc.finance_category_name
+        GROUP BY m.id, m.code, m.name, m.speci, m.model, u.unit_name, f.factory_name, s.name, fc.finance_category_name, wc.warehouse_category_name
         ORDER BY totalAmt DESC
     </select>
 
