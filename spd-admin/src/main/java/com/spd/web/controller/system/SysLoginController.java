@@ -90,6 +90,21 @@ public class SysLoginController
     }
 
     /**
+     * 平台管理员切换为指定租户的机构管理员（super_01）并重签 token。
+     */
+    @PostMapping("/switchTenant")
+    public AjaxResult switchTenant(@RequestBody LoginBody loginBody)
+    {
+        String customerId = loginBody != null ? loginBody.getCustomerId() : null;
+        String systemType = loginBody != null ? loginBody.getSystemType() : null;
+        String token = loginService.switchTenantAsSuper(customerId, systemType);
+        AjaxResult ajax = AjaxResult.success();
+        ajax.put(Constants.TOKEN, token);
+        putTenantIfPresent(ajax, customerId);
+        return ajax;
+    }
+
+    /**
      * 登录页租户下拉选项（未登录可访问，需在安全配置中放行）
      * 仿照设备系统：耗材登录传 systemType=hc 仅返回耗材启用租户（hc_status=0），设备登录不传或传其他仅返回设备启用租户（status=0）
      *
@@ -159,7 +174,8 @@ public class SysLoginController
         ajax.put("messageReminderPopupKeys", popupKeys);
         ajax.put("homePageKeys", com.spd.system.service.impl.SysUserServiceImpl.splitHomePageKeys(
             user != null ? user.getHomePageKeys() : null));
-        putTenantIfPresent(ajax, user.getCustomerId());
+        // 平台管理员 user.customerId 为空，须回落请求头 X-Tenant-Id / TenantContext（登录页所选机构）
+        putTenantIfPresent(ajax, SecurityUtils.resolveEffectiveTenantId(user != null ? user.getCustomerId() : null));
         putTenantSuperFlag(ajax, user);
         return ajax;
     }
@@ -229,7 +245,8 @@ public class SysLoginController
         if (loginUser == null || loginUser.getUser() == null) {
             return ajax;
         }
-        putTenantIfPresent(ajax, loginUser.getUser().getCustomerId());
+        // 与 getInfo 一致：平台管理员无绑定 customerId 时，用工作台所选租户（请求头）
+        putTenantIfPresent(ajax, SecurityUtils.resolveEffectiveTenantId(loginUser.getUser().getCustomerId()));
         return ajax;
     }
 
