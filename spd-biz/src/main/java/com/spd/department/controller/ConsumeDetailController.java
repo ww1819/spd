@@ -46,8 +46,9 @@ public class ConsumeDetailController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(StkIoBill stkIoBill)
     {
-        startPage();
+        // 科室权限判断会查库，须在 startPage 之前完成，否则分页被提前消费导致一次查出全部
         applyDepartmentScopeOrDeny(stkIoBill);
+        startPage();
         List<Map<String, Object>> list = consumeDetailService.selectConsumeDetailList(stkIoBill);
         Long total = new PageInfo<>(list).getTotal();
         clearPage();
@@ -66,8 +67,8 @@ public class ConsumeDetailController extends BaseController
     @GetMapping("/summary")
     public TableDataInfo summary(StkIoBill stkIoBill)
     {
-        startPage();
         applyDepartmentScopeOrDeny(stkIoBill);
+        startPage();
         List<Map<String, Object>> list = consumeDetailService.selectConsumeSummaryList(stkIoBill);
         Long total = new PageInfo<>(list).getTotal();
         clearPage();
@@ -86,8 +87,8 @@ public class ConsumeDetailController extends BaseController
     @GetMapping("/ranking")
     public TableDataInfo ranking(StkIoBill stkIoBill)
     {
-        startPage();
         applyDepartmentScopeOrDeny(stkIoBill);
+        startPage();
         List<Map<String, Object>> list = consumeDetailService.selectConsumeRankingList(stkIoBill);
         Long total = new PageInfo<>(list).getTotal();
         clearPage();
@@ -106,8 +107,8 @@ public class ConsumeDetailController extends BaseController
     @GetMapping("/outReturnSummary")
     public TableDataInfo outReturnSummary(StkIoBill stkIoBill)
     {
-        startPage();
         applyDepartmentScopeOrDeny(stkIoBill);
+        startPage();
         List<Map<String, Object>> list = consumeDetailService.selectConsumeOutReturnSummaryList(stkIoBill);
         Long total = new PageInfo<>(list).getTotal();
         clearPage();
@@ -126,8 +127,8 @@ public class ConsumeDetailController extends BaseController
     @GetMapping("/selectWarehousePsiReport")
         public TableDataInfo selectWarehousePsiReport(StkIoBill stkIoBill)
     {
-        startPage();
         applyDepartmentScopeOrDeny(stkIoBill);
+        startPage();
         List<Map<String, Object>> list = consumeDetailService.selectWarehousePsiReport(stkIoBill);
         return getDataTable(list);
     }
@@ -145,8 +146,8 @@ public class ConsumeDetailController extends BaseController
             @RequestParam(value = "showBatchNo", required = false) String showBatchNo)
     {
         applyPsiShowColumnFlags(stkIoBill, showUnitPrice, showBatchNumber, showExpiry, showBatchNo);
-        startPage();
         applyDepartmentScopeOrDeny(stkIoBill);
+        startPage();
         List<Map<String, Object>> list = consumeDetailService.selectWarehousePsiReportByMaterial(stkIoBill);
         Long total = new PageInfo<>(list).getTotal();
         clearPage();
