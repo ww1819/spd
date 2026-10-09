@@ -1,33 +1,36 @@
 package com.spd.department.controller;
 
+import java.math.BigDecimal;
+import java.util.List;
 import javax.servlet.http.HttpServletResponse;
-import org.springframework.security.access.prepost.PreAuthorize;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.alibaba.fastjson2.JSONObject;
+import com.github.pagehelper.PageInfo;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
-import com.spd.common.enums.BusinessType;
-import com.spd.warehouse.domain.StkIoBill;
-import com.spd.warehouse.service.IStkIoBillService;
-import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.common.core.page.TableDataInfo;
-import com.alibaba.fastjson2.JSONObject;
+import com.spd.common.core.page.TotalInfo;
+import com.spd.common.enums.BusinessType;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.system.service.ITenantScopeService;
-
-import java.util.List;
+import com.spd.warehouse.domain.StkIoBill;
+import com.spd.warehouse.service.IStkIoBillService;
 
 /**
  * 收货确认Controller
- * 
+ *
  * @author spd
  * @date 2025-01-27
  */
@@ -53,13 +56,24 @@ public class ReceiptConfirmController extends BaseController
     @GetMapping("/list")
     public TableDataInfo list(StkIoBill stkIoBill)
     {
-        startPage();
         // 只查询出库单（billType=201）且已审核（billStatus=2）
         stkIoBill.setBillType(201);
         stkIoBill.setBillStatus(2);
+        // 权限判定可能查库，必须在 startPage 之前，否则 PageHelper 被提前消耗导致列表不分页
         applyDepartmentScopeOrDeny(stkIoBill);
+        // 合计必须在 startPage 之前查，避免聚合被分页干扰
+        clearPage();
+        TotalInfo totalInfo = stkIoBillService.selectStkIoBillTotal(stkIoBill);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        if (totalInfo.getTotalAmt() == null) {
+            totalInfo.setTotalAmt(BigDecimal.ZERO);
+        }
+        startPage();
         List<StkIoBill> list = stkIoBillService.selectStkIoBillList(stkIoBill);
-        return getDataTable(list);
+        Long total = new PageInfo<StkIoBill>(list).getTotal();
+        return getDataTable(list, totalInfo, total);
     }
 
     /**
