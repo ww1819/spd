@@ -52,6 +52,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="hisChargeItemUnit" column="his_charge_item_unit" />
         <result property="hisChargeItemPrice" column="his_charge_item_price" />
         <result property="unitId"  column="materialUnitId"   />
+        <result property="unitName"  column="unitName"   />
+        <result property="registerNo"  column="materialRegisterNo"   />
+        <result property="periodDate"  column="materialPeriodDate"   />
+        <result property="packageSpeci"  column="materialPackageSpeci"   />
         <result property="storeroomId"  column="materialWarehouseCategoryId"   />
         <result property="financeCategoryId"  column="materialFinanceCategoryId"   />
         <association property="fdFactory"    column="factoryId" javaType="FdFactory" resultMap="fdFactoryResult" />
@@ -107,6 +111,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				m.speci as materialSpeci,
 				m.model as materialModel,
 				m.udi_no as materialUdiNo,
+				m.register_no as materialRegisterNo,
+				m.period_date as materialPeriodDate,
+				m.package_speci as materialPackageSpeci,
 				m.supplier_id as materialSupplierId,
 				m.unit_id as materialUnitId,
 				m.finance_category_id as materialFinanceCategoryId,

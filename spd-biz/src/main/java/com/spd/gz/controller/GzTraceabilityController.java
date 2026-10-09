@@ -45,6 +45,8 @@ import com.spd.gz.service.IGzTraceabilityService;
 import com.spd.common.utils.poi.ExcelUtil;
 
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.common.core.page.TotalInfo;
+import com.github.pagehelper.PageInfo;
 
 
 
@@ -142,7 +144,21 @@ public class GzTraceabilityController extends BaseController
 
         List<com.spd.gz.domain.GzTraceabilityEntry> list = gzTraceabilityService.selectTraceabilityEntryList(gzTraceability);
 
-        return getDataTable(list);
+        Long total = new PageInfo<>(list).getTotal();
+
+        clearPage();
+
+        TotalInfo totalInfo = gzTraceabilityService.selectTraceabilityEntryListTotal(gzTraceability);
+
+        if (totalInfo == null)
+
+        {
+
+            totalInfo = new TotalInfo();
+
+        }
+
+        return getDataTable(list, totalInfo, total);
 
     }
 
@@ -168,7 +184,21 @@ public class GzTraceabilityController extends BaseController
 
             gzTraceabilityService.selectTraceabilitySummaryByExecDept(gzTraceability);
 
-        return getDataTable(list);
+        Long total = new PageInfo<>(list).getTotal();
+
+        clearPage();
+
+        TotalInfo totalInfo = gzTraceabilityService.selectTraceabilitySummaryByExecDeptTotal(gzTraceability);
+
+        if (totalInfo == null)
+
+        {
+
+            totalInfo = new TotalInfo();
+
+        }
+
+        return getDataTable(list, totalInfo, total);
 
     }
 
@@ -194,7 +224,21 @@ public class GzTraceabilityController extends BaseController
 
             gzTraceabilityService.selectTraceabilitySummaryByApplyDept(gzTraceability);
 
-        return getDataTable(list);
+        Long total = new PageInfo<>(list).getTotal();
+
+        clearPage();
+
+        TotalInfo totalInfo = gzTraceabilityService.selectTraceabilitySummaryByApplyDeptTotal(gzTraceability);
+
+        if (totalInfo == null)
+
+        {
+
+            totalInfo = new TotalInfo();
+
+        }
+
+        return getDataTable(list, totalInfo, total);
 
     }
 
@@ -220,7 +264,21 @@ public class GzTraceabilityController extends BaseController
 
             gzTraceabilityService.selectTraceabilitySummaryBySupplier(gzTraceability);
 
-        return getDataTable(list);
+        Long total = new PageInfo<>(list).getTotal();
+
+        clearPage();
+
+        TotalInfo totalInfo = gzTraceabilityService.selectTraceabilitySummaryBySupplierTotal(gzTraceability);
+
+        if (totalInfo == null)
+
+        {
+
+            totalInfo = new TotalInfo();
+
+        }
+
+        return getDataTable(list, totalInfo, total);
 
     }
 

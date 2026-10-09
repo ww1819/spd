@@ -965,4 +965,129 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by supplierName, materialCode
     </select>
 
+    <sql id="traceabilityEntryQtyAmtFromWhere">
+        from gz_traceability_entry te
+        left join gz_traceability t on te.parent_id = t.id
+        left join fd_material m on te.material_id = m.id
+        left join gz_dep_inventory gdi on te.inventory_id = gdi.id and gdi.del_flag != 1
+        left join fd_supplier fs on fs.id = coalesce(te.supplier_id, gdi.supplier_id)
+        left join fd_supplier mfs on mfs.id = m.supplier_id
+        left join his_charge_item_mirror hci on hci.tenant_id = t.tenant_id
+            and hci.charge_item_id = m.his_charge_item_id
+            and (hci.deleted_flag is null or hci.deleted_flag != 1)
+        left join gz_depot_inventory gdep on gdep.in_hospital_code = te.in_hospital_code
+            and gdep.batch_no = te.batch_no
+            and IFNULL(gdep.del_flag, 0) != 1
+            and gdep.tenant_id = t.tenant_id
+        left join fd_warehouse wh_src on wh_src.id = gdep.warehouse_id
+        where te.del_flag = '0' and t.del_flag = '0' and t.tenant_id = #{scopedTenantId}
+        <if test="orderStatus != null">
+            and t.order_status = #{orderStatus}
+        </if>
+        <if test="traceNo != null and traceNo != ''"> and t.trace_no = #{traceNo}</if>
+        <if test="inHospitalCode != null and inHospitalCode != ''">
+            and te.in_hospital_code like concat('%', #{inHospitalCode}, '%')
+        </if>
+        <if test="materialKeyword != null and materialKeyword != ''">
+            and (
+                m.code like concat('%', #{materialKeyword}, '%')
+                or m.name like concat('%', #{materialKeyword}, '%')
+                or m.referred_name like concat('%', #{materialKeyword}, '%')
+                or te.material_name like concat('%', #{materialKeyword}, '%')
+            )
+        </if>
+        <if test="materialSpeci != null and materialSpeci != ''">
+            and (
+                m.speci like concat('%', #{materialSpeci}, '%')
+                or te.specification like concat('%', #{materialSpeci}, '%')
+            )
+        </if>
+        <if test="factoryId != null"> and m.factory_id = #{factoryId}</if>
+        <if test="supplierId != null">
+            and coalesce(te.supplier_id, gdi.supplier_id, m.supplier_id) = #{supplierId}
+        </if>
+        <if test="supplierKeyword != null and supplierKeyword != ''">
+            and (
+                fs.code like concat('%', #{supplierKeyword}, '%')
+                or fs.name like concat('%', #{supplierKeyword}, '%')
+                or fs.referred_code like concat('%', #{supplierKeyword}, '%')
+                or mfs.code like concat('%', #{supplierKeyword}, '%')
+                or mfs.name like concat('%', #{supplierKeyword}, '%')
+                or mfs.referred_code like concat('%', #{supplierKeyword}, '%')
+                or te.supplier like concat('%', #{supplierKeyword}, '%')
+            )
+        </if>
+        <if test="warehouseId != null">
+            and (gdep.warehouse_id = #{warehouseId} or wh_src.id = #{warehouseId})
+        </if>
+        <if test="batchNo != null and batchNo != ''"> and te.batch_no = #{batchNo}</if>
+        <if test="materialNo != null and materialNo != ''"> and gdi.material_no like concat('%', #{materialNo}, '%')</if>
+        <if test="chargeCodeKeyword != null and chargeCodeKeyword != ''">
+            and (
+                coalesce(hci.item_code, m.his_charge_item_id) like concat('%', #{chargeCodeKeyword}, '%')
+                or m.his_charge_item_id like concat('%', #{chargeCodeKeyword}, '%')
+            )
+        </if>
+        <if test="patientName != null and patientName != ''"> and t.patient_name like concat('%', #{patientName}, '%')</if>
+        <if test="hospitalNumber != null and hospitalNumber != ''"> and t.hospital_number like concat('%', #{hospitalNumber}, '%')</if>
+        <if test="udiKeyword != null and udiKeyword != ''">
+            and m.udi_no like concat('%', #{udiKeyword}, '%')
+        </if>
+        <if test="masterBarcode != null and masterBarcode != ''">
+            and te.master_barcode like concat('%', #{masterBarcode}, '%')
+        </if>
+        <if test="secondaryBarcode != null and secondaryBarcode != ''">
+            and te.secondary_barcode like concat('%', #{secondaryBarcode}, '%')
+        </if>
+        <if test="sunshineCodeKeyword != null and sunshineCodeKeyword != ''">
+            and m.sunshine_code like concat('%', #{sunshineCodeKeyword}, '%')
+        </if>
+        <if test="medicalNoKeyword != null and medicalNoKeyword != ''">
+            and m.medical_no like concat('%', #{medicalNoKeyword}, '%')
+        </if>
+        <if test="isBilling != null and isBilling != ''"> and m.is_billing = #{isBilling}</if>
+        <if test="isProcure != null and isProcure != ''"> and m.is_procure = #{isProcure}</if>
+        <if test="isMonitor != null and isMonitor != ''"> and m.is_monitor = #{isMonitor}</if>
+        <if test="applyDeptId != null"> and t.apply_dept_id = #{applyDeptId}</if>
+        <if test="execDeptId != null"> and t.exec_dept_id = #{execDeptId}</if>
+        <if test="startDate != null and startDate != ''"><![CDATA[ and date(t.create_time) >= #{startDate} ]]></if>
+        <if test="endDate != null and endDate != ''"><![CDATA[ and date(t.create_time) <= #{endDate} ]]></if>
+    </sql>
+
+    <select id="selectTraceabilityEntryListTotal" parameterType="GzTraceability" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select ifnull(sum(ifnull(te.quantity, 0)), 0) as totalQty,
+               ifnull(sum(ifnull(te.quantity, 0) * ifnull(te.charge_price, 0)), 0) as totalAmt
+        <include refid="traceabilityEntryQtyAmtFromWhere"/>
+    </select>
+
+    <select id="selectTraceabilitySummaryByExecDeptTotal" parameterType="GzTraceability" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select ifnull(sum(ifnull(te.quantity, 0)), 0) as totalQty,
+               ifnull(sum(ifnull(te.quantity, 0) * ifnull(te.charge_price, 0)), 0) as totalAmt
+        <include refid="traceabilityEntryQtyAmtFromWhere"/>
+          and t.exec_dept_id is not null
+    </select>
+
+    <select id="selectTraceabilitySummaryByApplyDeptTotal" parameterType="GzTraceability" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select ifnull(sum(ifnull(te.quantity, 0)), 0) as totalQty,
+               ifnull(sum(ifnull(te.quantity, 0) * ifnull(te.charge_price, 0)), 0) as totalAmt
+        <include refid="traceabilityEntryQtyAmtFromWhere"/>
+          and t.apply_dept_id is not null
+    </select>
+
+    <select id="selectTraceabilitySummaryBySupplierTotal" parameterType="GzTraceability" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select ifnull(sum(ifnull(te.quantity, 0)), 0) as totalQty,
+               ifnull(sum(ifnull(te.quantity, 0) * ifnull(te.charge_price, 0)), 0) as totalAmt
+        <include refid="traceabilityEntryQtyAmtFromWhere"/>
+          and (
+              coalesce(te.supplier_id, gdi.supplier_id, m.supplier_id) is not null
+              or (te.supplier is not null and trim(te.supplier) != '')
+              or fs.name is not null
+              or mfs.name is not null
+          )
+    </select>
+
 </mapper>

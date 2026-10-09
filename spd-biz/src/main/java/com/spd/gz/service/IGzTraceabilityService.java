@@ -122,4 +122,12 @@ public interface IGzTraceabilityService
      */
     public List<com.spd.gz.domain.GzTraceabilitySummaryVo> selectTraceabilitySummaryBySupplier(
         GzTraceability gzTraceability);
+
+    com.spd.common.core.page.TotalInfo selectTraceabilityEntryListTotal(GzTraceability gzTraceability);
+
+    com.spd.common.core.page.TotalInfo selectTraceabilitySummaryByExecDeptTotal(GzTraceability gzTraceability);
+
+    com.spd.common.core.page.TotalInfo selectTraceabilitySummaryByApplyDeptTotal(GzTraceability gzTraceability);
+
+    com.spd.common.core.page.TotalInfo selectTraceabilitySummaryBySupplierTotal(GzTraceability gzTraceability);
 }

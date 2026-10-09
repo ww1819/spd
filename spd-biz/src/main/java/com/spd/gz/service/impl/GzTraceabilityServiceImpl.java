@@ -470,6 +470,30 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         return gzTraceabilityMapper.selectTraceabilitySummaryBySupplier(gzTraceability);
     }
 
+    @Override
+    public com.spd.common.core.page.TotalInfo selectTraceabilityEntryListTotal(GzTraceability gzTraceability)
+    {
+        return gzTraceabilityMapper.selectTraceabilityEntryListTotal(gzTraceability);
+    }
+
+    @Override
+    public com.spd.common.core.page.TotalInfo selectTraceabilitySummaryByExecDeptTotal(GzTraceability gzTraceability)
+    {
+        return gzTraceabilityMapper.selectTraceabilitySummaryByExecDeptTotal(gzTraceability);
+    }
+
+    @Override
+    public com.spd.common.core.page.TotalInfo selectTraceabilitySummaryByApplyDeptTotal(GzTraceability gzTraceability)
+    {
+        return gzTraceabilityMapper.selectTraceabilitySummaryByApplyDeptTotal(gzTraceability);
+    }
+
+    @Override
+    public com.spd.common.core.page.TotalInfo selectTraceabilitySummaryBySupplierTotal(GzTraceability gzTraceability)
+    {
+        return gzTraceabilityMapper.selectTraceabilitySummaryBySupplierTotal(gzTraceability);
+    }
+
     /**
      * 恢复科室库存（修改追溯单时，先恢复旧的明细占用的库存）
      *
