@@ -1,6 +1,7 @@
 package com.spd.caigou.service;
 
 import com.spd.caigou.domain.PurchasePriceAdjust;
+import com.spd.caigou.domain.PurchasePriceAdjustEntry;
 
 import java.util.List;
 
@@ -12,6 +13,12 @@ public interface IPurchasePriceAdjustService {
     PurchasePriceAdjust selectPurchasePriceAdjustById(Long id);
 
     List<PurchasePriceAdjust> selectPurchasePriceAdjustList(PurchasePriceAdjust query);
+
+    /** 调价报表明细（默认仅已审核） */
+    List<PurchasePriceAdjustEntry> selectReportEntryList(PurchasePriceAdjust query);
+
+    /** 调价报表汇总（按产品，默认仅已审核） */
+    List<PurchasePriceAdjustEntry> selectReportSummaryList(PurchasePriceAdjust query);
 
     /**
      * 新增调价单；保存时生成 TJ- 前缀唯一单号

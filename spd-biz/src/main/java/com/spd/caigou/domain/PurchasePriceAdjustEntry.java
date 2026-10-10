@@ -23,7 +23,11 @@ public class PurchasePriceAdjustEntry extends BaseEntity {
     private BigDecimal oldPrice;
     private BigDecimal newPrice;
     private String financeClass;
+    /** 库房分类（报表联查，非表字段） */
+    private String warehouseClass;
     private String manufacturer;
+    /** 供应商名称（报表联查主表，非表字段） */
+    private String supplierName;
     private String regNo;
     private String regValidDate;
     private String packSpeci;
@@ -134,12 +138,28 @@ public class PurchasePriceAdjustEntry extends BaseEntity {
         this.financeClass = financeClass;
     }
 
+    public String getWarehouseClass() {
+        return warehouseClass;
+    }
+
+    public void setWarehouseClass(String warehouseClass) {
+        this.warehouseClass = warehouseClass;
+    }
+
     public String getManufacturer() {
         return manufacturer;
     }
 
     public void setManufacturer(String manufacturer) {
         this.manufacturer = manufacturer;
+    }
+
+    public String getSupplierName() {
+        return supplierName;
+    }
+
+    public void setSupplierName(String supplierName) {
+        this.supplierName = supplierName;
     }
 
     public String getRegNo() {

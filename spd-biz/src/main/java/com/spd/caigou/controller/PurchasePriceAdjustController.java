@@ -1,6 +1,7 @@
 package com.spd.caigou.controller;
 
 import com.spd.caigou.domain.PurchasePriceAdjust;
+import com.spd.caigou.domain.PurchasePriceAdjustEntry;
 import com.spd.caigou.service.IPurchasePriceAdjustService;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
@@ -31,11 +32,35 @@ public class PurchasePriceAdjustController extends BaseController {
     @Autowired
     private IPurchasePriceAdjustService purchasePriceAdjustService;
 
-    @PreAuthorize("@ss.hasPermi('caigou:priceAdjust:list')")
+    @PreAuthorize("@ss.hasPermi('caigou:priceAdjust:list') or @ss.hasPermi('caigou:priceAdjust:audit') or @ss.hasPermi('caigou:priceAdjust:report')")
     @GetMapping("/list")
     public TableDataInfo list(PurchasePriceAdjust query) {
         startPage();
         List<PurchasePriceAdjust> list = purchasePriceAdjustService.selectPurchasePriceAdjustList(query);
+        return getDataTable(list);
+    }
+
+    /** 调价报表明细表 */
+    @PreAuthorize("@ss.hasPermi('caigou:priceAdjust:list') or @ss.hasPermi('caigou:priceAdjust:report')")
+    @GetMapping("/report/detail")
+    public TableDataInfo reportDetail(PurchasePriceAdjust query) {
+        if (query.getBillStatus() == null || "".equals(query.getBillStatus())) {
+            query.setBillStatus("2");
+        }
+        startPage();
+        List<PurchasePriceAdjustEntry> list = purchasePriceAdjustService.selectReportEntryList(query);
+        return getDataTable(list);
+    }
+
+    /** 调价报表汇总表（按产品） */
+    @PreAuthorize("@ss.hasPermi('caigou:priceAdjust:list') or @ss.hasPermi('caigou:priceAdjust:report')")
+    @GetMapping("/report/summary")
+    public TableDataInfo reportSummary(PurchasePriceAdjust query) {
+        if (query.getBillStatus() == null || "".equals(query.getBillStatus())) {
+            query.setBillStatus("2");
+        }
+        startPage();
+        List<PurchasePriceAdjustEntry> list = purchasePriceAdjustService.selectReportSummaryList(query);
         return getDataTable(list);
     }
 
@@ -62,7 +87,7 @@ public class PurchasePriceAdjustController extends BaseController {
         return toAjax(purchasePriceAdjustService.submitPurchasePriceAdjustByIds(ids));
     }
 
-    @PreAuthorize("@ss.hasPermi('caigou:priceAdjust:list')")
+    @PreAuthorize("@ss.hasPermi('caigou:priceAdjust:list') or @ss.hasPermi('caigou:priceAdjust:audit')")
     @Log(title = "采购调价单审核", businessType = BusinessType.UPDATE)
     @PutMapping("/audit")
     public AjaxResult audit(@RequestBody Map<String, Object> params) {
@@ -70,7 +95,7 @@ public class PurchasePriceAdjustController extends BaseController {
         return toAjax(purchasePriceAdjustService.auditPurchasePriceAdjustByIds(ids));
     }
 
-    @PreAuthorize("@ss.hasPermi('caigou:priceAdjust:list')")
+    @PreAuthorize("@ss.hasPermi('caigou:priceAdjust:list') or @ss.hasPermi('caigou:priceAdjust:audit') or @ss.hasPermi('caigou:priceAdjust:report')")
     @GetMapping("/{id}")
     public AjaxResult getInfo(@PathVariable("id") Long id) {
         return success(purchasePriceAdjustService.selectPurchasePriceAdjustById(id));

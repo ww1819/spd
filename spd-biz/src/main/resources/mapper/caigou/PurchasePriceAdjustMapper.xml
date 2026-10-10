@@ -44,7 +44,9 @@
         <result property="oldPrice" column="old_price"/>
         <result property="newPrice" column="new_price"/>
         <result property="financeClass" column="finance_class"/>
+        <result property="warehouseClass" column="warehouse_class"/>
         <result property="manufacturer" column="manufacturer"/>
+        <result property="supplierName" column="supplier_name"/>
         <result property="regNo" column="reg_no"/>
         <result property="regValidDate" column="reg_valid_date"/>
         <result property="packSpeci" column="pack_speci"/>
@@ -56,6 +58,92 @@
         <result property="updateBy" column="update_by"/>
         <result property="updateTime" column="update_time"/>
     </resultMap>
+
+    <sql id="reportBillWhere">
+        (a.del_flag = '0' or a.del_flag is null)
+        and (e.del_flag = '0' or e.del_flag is null)
+        and a.tenant_id = #{scopedTenantId}
+        and e.tenant_id = #{scopedTenantId}
+        <if test="billStatus != null and billStatus != ''">
+            and a.bill_status = #{billStatus}
+        </if>
+        <if test="billNo != null and billNo != ''">
+            and a.bill_no like concat('%', #{billNo}, '%')
+        </if>
+        <if test="adjustType != null and adjustType != ''">
+            and a.adjust_type = #{adjustType}
+        </if>
+        <if test="createByName != null and createByName != ''">
+            and (
+                coalesce(nullif(trim(cu.nick_name), ''), cu.user_name) like concat('%', #{createByName}, '%')
+            )
+        </if>
+        <if test="beginDate != null and beginDate != ''">
+            <choose>
+                <when test="dateQueryType != null and dateQueryType == 'audit'">
+                    and a.audit_date is not null
+                    and date_format(a.audit_date, '%Y%m%d') &gt;= date_format(#{beginDate}, '%Y%m%d')
+                </when>
+                <otherwise>
+                    and a.bill_date is not null
+                    and date_format(a.bill_date, '%Y%m%d') &gt;= date_format(#{beginDate}, '%Y%m%d')
+                </otherwise>
+            </choose>
+        </if>
+        <if test="endDate != null and endDate != ''">
+            <choose>
+                <when test="dateQueryType != null and dateQueryType == 'audit'">
+                    and a.audit_date is not null
+                    and date_format(a.audit_date, '%Y%m%d') &lt;= date_format(#{endDate}, '%Y%m%d')
+                </when>
+                <otherwise>
+                    and a.bill_date is not null
+                    and date_format(a.bill_date, '%Y%m%d') &lt;= date_format(#{endDate}, '%Y%m%d')
+                </otherwise>
+            </choose>
+        </if>
+    </sql>
+
+    <select id="selectReportEntryList" parameterType="com.spd.caigou.domain.PurchasePriceAdjust"
+            resultMap="PurchasePriceAdjustEntryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select e.id, e.parent_id, e.bill_no, e.line_no, e.material_id, e.material_code, e.material_name,
+               e.speci, e.model, e.unit_name, e.old_price, e.new_price, e.finance_class,
+               w.warehouse_category_name as warehouse_class,
+               e.manufacturer, s.name as supplier_name,
+               e.reg_no, e.reg_valid_date, e.pack_speci, e.remark, e.del_flag, e.tenant_id,
+               e.create_by, e.create_time, e.update_by, e.update_time
+        from purchase_price_adjust_entry e
+        inner join purchase_price_adjust a on a.id = e.parent_id
+        left join fd_supplier s on a.supplier_id = s.id
+        left join sys_user cu on cu.user_id = (
+            case when a.create_by regexp '^[0-9]+$' then cast(a.create_by as unsigned) else null end
+        )
+        left join fd_material m on m.id = e.material_id
+        left join fd_warehouse_category w on m.storeroom_id = w.warehouse_category_id
+        <where>
+            <include refid="reportBillWhere"/>
+        </where>
+        order by a.bill_date desc, a.id desc, e.line_no asc, e.id asc
+    </select>
+
+    <select id="selectReportSummaryList" parameterType="com.spd.caigou.domain.PurchasePriceAdjust"
+            resultMap="PurchasePriceAdjustEntryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select e.material_id,
+               max(e.material_code) as material_code,
+               max(e.material_name) as material_name
+        from purchase_price_adjust_entry e
+        inner join purchase_price_adjust a on a.id = e.parent_id
+        left join sys_user cu on cu.user_id = (
+            case when a.create_by regexp '^[0-9]+$' then cast(a.create_by as unsigned) else null end
+        )
+        <where>
+            <include refid="reportBillWhere"/>
+        </where>
+        group by e.material_id
+        order by max(e.material_code) asc, e.material_id asc
+    </select>
 
     <sql id="selectVo">
         select a.id, a.bill_no, a.adjust_type,

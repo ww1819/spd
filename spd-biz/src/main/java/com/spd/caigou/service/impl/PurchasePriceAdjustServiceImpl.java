@@ -60,6 +60,16 @@ public class PurchasePriceAdjustServiceImpl implements IPurchasePriceAdjustServi
         return purchasePriceAdjustMapper.selectPurchasePriceAdjustList(query);
     }
 
+    @Override
+    public List<PurchasePriceAdjustEntry> selectReportEntryList(PurchasePriceAdjust query) {
+        return purchasePriceAdjustMapper.selectReportEntryList(query);
+    }
+
+    @Override
+    public List<PurchasePriceAdjustEntry> selectReportSummaryList(PurchasePriceAdjust query) {
+        return purchasePriceAdjustMapper.selectReportSummaryList(query);
+    }
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public PurchasePriceAdjust insertPurchasePriceAdjust(PurchasePriceAdjust bill) {

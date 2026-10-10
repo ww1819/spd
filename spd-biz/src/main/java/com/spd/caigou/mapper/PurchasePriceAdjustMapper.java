@@ -17,6 +17,12 @@ public interface PurchasePriceAdjustMapper {
 
     List<PurchasePriceAdjustEntry> selectEntryListByParentId(Long parentId);
 
+    /** 调价报表：明细行（已审核） */
+    List<PurchasePriceAdjustEntry> selectReportEntryList(PurchasePriceAdjust query);
+
+    /** 调价报表：按耗材汇总（已审核） */
+    List<PurchasePriceAdjustEntry> selectReportSummaryList(PurchasePriceAdjust query);
+
     String selectMaxBillNo(@Param("date") String date);
 
     int insertPurchasePriceAdjust(PurchasePriceAdjust bill);
