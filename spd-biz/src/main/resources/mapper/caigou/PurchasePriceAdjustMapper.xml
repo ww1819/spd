@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.caigou.mapper.PurchasePriceAdjustMapper">
+
+    <resultMap type="com.spd.caigou.domain.PurchasePriceAdjust" id="PurchasePriceAdjustResult">
+        <result property="id" column="id"/>
+        <result property="billNo" column="bill_no"/>
+        <result property="adjustType" column="adjust_type"/>
+        <result property="adjustTypeName" column="adjust_type_name"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="billDate" column="bill_date"/>
+        <result property="contactName" column="contact_name"/>
+        <result property="contactPhone" column="contact_phone"/>
+        <result property="billStatus" column="bill_status"/>
+        <result property="auditBy" column="audit_by"/>
+        <result property="auditByName" column="audit_by_name"/>
+        <result property="auditDate" column="audit_date"/>
+        <result property="printBy" column="print_by"/>
+        <result property="printByName" column="print_by_name"/>
+        <result property="printDate" column="print_date"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createByName" column="create_by_name"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <resultMap type="com.spd.caigou.domain.PurchasePriceAdjustEntry" id="PurchasePriceAdjustEntryResult">
+        <result property="id" column="id"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="billNo" column="bill_no"/>
+        <result property="lineNo" column="line_no"/>
+        <result property="materialId" column="material_id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="speci" column="speci"/>
+        <result property="model" column="model"/>
+        <result property="unitName" column="unit_name"/>
+        <result property="oldPrice" column="old_price"/>
+        <result property="newPrice" column="new_price"/>
+        <result property="financeClass" column="finance_class"/>
+        <result property="manufacturer" column="manufacturer"/>
+        <result property="regNo" column="reg_no"/>
+        <result property="regValidDate" column="reg_valid_date"/>
+        <result property="packSpeci" column="pack_speci"/>
+        <result property="remark" column="remark"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="selectVo">
+        select a.id, a.bill_no, a.adjust_type,
+               case a.adjust_type
+                   when 'archive' then '档案调价'
+                   when 'warehouse' then '仓库调价'
+                   when 'department' then '科室调价'
+                   else a.adjust_type
+               end as adjust_type_name,
+               a.supplier_id, s.name as supplier_name,
+               a.bill_date, a.contact_name, a.contact_phone, a.bill_status,
+               a.audit_by, a.audit_date, a.print_by, a.print_date,
+               a.remark, a.del_flag, a.tenant_id,
+               a.create_by, a.create_time, a.update_by, a.update_time,
+               coalesce(nullif(trim(cu.nick_name), ''), cu.user_name) as create_by_name,
+               coalesce(nullif(trim(au.nick_name), ''), au.user_name) as audit_by_name,
+               coalesce(nullif(trim(pu.nick_name), ''), pu.user_name) as print_by_name
+        from purchase_price_adjust a
+        left join fd_supplier s on a.supplier_id = s.id
+        left join sys_user cu on cu.user_id = (
+            case when a.create_by regexp '^[0-9]+$' then cast(a.create_by as unsigned) else null end
+        )
+        left join sys_user au on au.user_id = (
+            case when a.audit_by regexp '^[0-9]+$' then cast(a.audit_by as unsigned) else null end
+        )
+        left join sys_user pu on pu.user_id = (
+            case when a.print_by regexp '^[0-9]+$' then cast(a.print_by as unsigned) else null end
+        )
+    </sql>
+
+    <select id="selectPurchasePriceAdjustList" parameterType="com.spd.caigou.domain.PurchasePriceAdjust"
+            resultMap="PurchasePriceAdjustResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        <include refid="selectVo"/>
+        <where>
+            (a.del_flag = '0' or a.del_flag is null)
+            and a.tenant_id = #{scopedTenantId}
+            <if test="billNo != null and billNo != ''">
+                and a.bill_no like concat('%', #{billNo}, '%')
+            </if>
+            <if test="adjustType != null and adjustType != ''">
+                and a.adjust_type = #{adjustType}
+            </if>
+            <if test="billStatus != null and billStatus != ''">
+                and a.bill_status = #{billStatus}
+            </if>
+            <if test="createByName != null and createByName != ''">
+                and (
+                    coalesce(nullif(trim(cu.nick_name), ''), cu.user_name) like concat('%', #{createByName}, '%')
+                )
+            </if>
+            <if test="beginDate != null and beginDate != ''">
+                <choose>
+                    <when test="dateQueryType != null and dateQueryType == 'audit'">
+                        and a.audit_date is not null
+                        and date_format(a.audit_date, '%Y%m%d') &gt;= date_format(#{beginDate}, '%Y%m%d')
+                    </when>
+                    <otherwise>
+                        and a.bill_date is not null
+                        and date_format(a.bill_date, '%Y%m%d') &gt;= date_format(#{beginDate}, '%Y%m%d')
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="endDate != null and endDate != ''">
+                <choose>
+                    <when test="dateQueryType != null and dateQueryType == 'audit'">
+                        and a.audit_date is not null
+                        and date_format(a.audit_date, '%Y%m%d') &lt;= date_format(#{endDate}, '%Y%m%d')
+                    </when>
+                    <otherwise>
+                        and a.bill_date is not null
+                        and date_format(a.bill_date, '%Y%m%d') &lt;= date_format(#{endDate}, '%Y%m%d')
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+        order by a.create_time desc, a.id desc
+    </select>
+
+    <select id="selectPurchasePriceAdjustById" parameterType="Long" resultMap="PurchasePriceAdjustResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        <include refid="selectVo"/>
+        where a.id = #{id}
+          and a.tenant_id = #{scopedTenantId}
+          and (a.del_flag = '0' or a.del_flag is null)
+    </select>
+
+    <select id="selectEntryListByParentId" parameterType="Long" resultMap="PurchasePriceAdjustEntryResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select id, parent_id, bill_no, line_no, material_id, material_code, material_name,
+               speci, model, unit_name, old_price, new_price, finance_class, manufacturer,
+               reg_no, reg_valid_date, pack_speci, remark, del_flag, tenant_id,
+               create_by, create_time, update_by, update_time
+        from purchase_price_adjust_entry
+        where parent_id = #{parentId}
+          and tenant_id = #{scopedTenantId}
+          and (del_flag = '0' or del_flag is null)
+        order by line_no asc, id asc
+    </select>
+
+    <select id="selectMaxBillNo" parameterType="String" resultType="String">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select max(bill_no) from purchase_price_adjust
+        where bill_no like concat('TJ-', #{date}, '%')
+          and tenant_id = #{scopedTenantId}
+    </select>
+
+    <insert id="insertPurchasePriceAdjust" parameterType="com.spd.caigou.domain.PurchasePriceAdjust"
+            useGeneratedKeys="true" keyProperty="id">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        insert into purchase_price_adjust (
+            bill_no, adjust_type, supplier_id, bill_date, contact_name, contact_phone,
+            bill_status, audit_by, audit_date, print_by, print_date, remark, del_flag,
+            tenant_id, create_by, create_time, update_by, update_time
+        ) values (
+            #{billNo}, #{adjustType}, #{supplierId}, #{billDate}, #{contactName}, #{contactPhone},
+            #{billStatus}, #{auditBy}, #{auditDate}, #{printBy}, #{printDate}, #{remark}, #{delFlag},
+            #{scopedTenantId}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}
+        )
+    </insert>
+
+    <update id="updatePurchasePriceAdjust" parameterType="com.spd.caigou.domain.PurchasePriceAdjust">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update purchase_price_adjust
+        <set>
+            <if test="adjustType != null">adjust_type = #{adjustType},</if>
+            <if test="supplierId != null">supplier_id = #{supplierId},</if>
+            <if test="billDate != null">bill_date = #{billDate},</if>
+            <if test="contactName != null">contact_name = #{contactName},</if>
+            <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
+            <if test="billStatus != null">bill_status = #{billStatus},</if>
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            update_time = now()
+        </set>
+        where id = #{id} and tenant_id = #{scopedTenantId}
+          and (del_flag = '0' or del_flag is null)
+    </update>
+
+    <update id="updateBillStatus" parameterType="com.spd.caigou.domain.PurchasePriceAdjust">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update purchase_price_adjust
+        set bill_status = #{billStatus},
+            <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditDate != null">audit_date = #{auditDate},</if>
+            update_by = #{updateBy},
+            update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+          and (del_flag = '0' or del_flag is null)
+    </update>
+
+    <insert id="insertPurchasePriceAdjustEntry" parameterType="com.spd.caigou.domain.PurchasePriceAdjustEntry">
+        insert into purchase_price_adjust_entry (
+            parent_id, bill_no, line_no, material_id, material_code, material_name,
+            speci, model, unit_name, old_price, new_price, finance_class, manufacturer,
+            reg_no, reg_valid_date, pack_speci, remark, del_flag, tenant_id,
+            create_by, create_time
+        ) values (
+            #{parentId}, #{billNo}, #{lineNo}, #{materialId}, #{materialCode}, #{materialName},
+            #{speci}, #{model}, #{unitName}, #{oldPrice}, #{newPrice}, #{financeClass}, #{manufacturer},
+            #{regNo}, #{regValidDate}, #{packSpeci}, #{remark}, #{delFlag}, #{tenantId},
+            #{createBy}, #{createTime}
+        )
+    </insert>
+
+    <insert id="batchInsertEntry">
+        insert into purchase_price_adjust_entry (
+            parent_id, bill_no, line_no, material_id, material_code, material_name,
+            speci, model, unit_name, old_price, new_price, finance_class, manufacturer,
+            reg_no, reg_valid_date, pack_speci, remark, del_flag, tenant_id,
+            create_by, create_time
+        ) values
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.parentId}, #{item.billNo}, #{item.lineNo}, #{item.materialId},
+                #{item.materialCode}, #{item.materialName}, #{item.speci}, #{item.model},
+                #{item.unitName}, #{item.oldPrice}, #{item.newPrice}, #{item.financeClass},
+                #{item.manufacturer}, #{item.regNo}, #{item.regValidDate}, #{item.packSpeci},
+                #{item.remark}, #{item.delFlag}, #{item.tenantId}, #{item.createBy}, #{item.createTime}
+            )
+        </foreach>
+    </insert>
+
+    <update id="deleteEntryByParentId">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update purchase_price_adjust_entry
+        set del_flag = '1', update_by = #{updateBy}, update_time = now()
+        where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
+          and (del_flag = '0' or del_flag is null)
+    </update>
+
+    <update id="deletePurchasePriceAdjustById">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update purchase_price_adjust
+        set del_flag = '1', update_by = #{updateBy}, update_time = now()
+        where id = #{id} and tenant_id = #{scopedTenantId}
+          and (del_flag = '0' or del_flag is null)
+    </update>
+</mapper>
