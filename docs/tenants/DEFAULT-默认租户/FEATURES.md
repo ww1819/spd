@@ -22,6 +22,6 @@
 | 仓储 | 出库后不自动收货（除非后续单独配置进租户集合）；出/退库汇总表「储存方式」后展示「计费」（取耗材档案 `is_billing`，是/否） |
 | 打印 | 非 `*PrintZq` |
 | 首页 | 授权可勾选默认/完整/采购/库房/科室；未授权默认「默认」首页；工作组授权含首页设置并可同步到组内用户；采购首页：五指标 + 近7日到货趋势 + 当月采购分类金额占比 + 常用菜单；库房首页：五指标（待盘点/差异/移库/退货/超储）+ 近七日领用趋势 + 库存结构占比 + 常用菜单；科室首页：五指标（待申领审批/在途物资/近效期/库存余量/近期消耗）+ 近七日领用趋势 + 库存结构占比 + 常用菜单；常用菜单可编辑（两行×8列，超出轮播） |
-| 菜单结构 | 京东分栏二级目录由 `menu_dir_restructure.sql` 幂等补齐；`SqlInitRunner` 更新重启自动执行；库房「盘点管理」后有「报损管理」分栏（报损申请/审批/查询，`add_scrap_mgmt_menu_public.sql`）；报损申请列表与新增弹窗布局对齐到货验收；报损单表 `add_stk_scrap_bill_table_public.sql`，单号 `BS-yyyyMMdd#####`（对齐入库 RK / 调价 TJ-），接口 `/warehouse/scrap` |
+| 菜单结构 | 京东分栏二级目录由 `menu_dir_restructure.sql` 幂等补齐；`SqlInitRunner` 更新重启自动执行；库房「盘点管理」后有「报损管理」分栏（报损申请/审批/查询，`add_scrap_mgmt_menu_public.sql`）；报损申请/审批列表与弹窗布局对齐到货验收（`scrap-apply-page` / `scrap-audit-page`）；报损查询对齐库存查询（`out-warehouse-query-page` + 明细表/汇总表 Tab）；报损单表 `add_stk_scrap_bill_table_public.sql`，单号 `BS-yyyyMMdd#####`（对齐入库 RK / 调价 TJ-），接口 `/warehouse/scrap`（含 submit / audit / query/detail / query/summary） |
 
 后续若某医院按「默认」部署，差异需求应**新建正式 TenantEnum**，不要直接在 DEFAULT 上堆生产特例。

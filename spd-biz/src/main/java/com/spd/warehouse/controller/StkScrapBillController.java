@@ -4,9 +4,14 @@ import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.common.core.page.TotalInfo;
 import com.spd.common.enums.BusinessType;
+import com.github.pagehelper.PageInfo;
 import com.spd.warehouse.domain.StkScrapBill;
+import com.spd.warehouse.domain.StkScrapQueryVo;
 import com.spd.warehouse.service.IStkScrapBillService;
+
+import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -39,6 +44,44 @@ public class StkScrapBillController extends BaseController {
         return getDataTable(list);
     }
 
+    @PreAuthorize("@ss.hasPermi('warehouse:scrap:query') or @ss.hasPermi('warehouse:scrap:apply') or @ss.hasPermi('warehouse:scrap:audit')")
+    @GetMapping("/query/detail")
+    public TableDataInfo queryDetail(StkScrapQueryVo query) {
+        startPage();
+        List<StkScrapQueryVo> list = stkScrapBillService.selectScrapDetailList(query);
+        TotalInfo totalInfo = stkScrapBillService.selectScrapDetailTotal(query);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        if (totalInfo.getTotalAmt() == null) {
+            totalInfo.setTotalAmt(BigDecimal.ZERO);
+        }
+        if (totalInfo.getTotalQty() == null) {
+            totalInfo.setTotalQty(BigDecimal.ZERO);
+        }
+        Long total = new PageInfo<>(list).getTotal();
+        return getDataTable(list, totalInfo, total);
+    }
+
+    @PreAuthorize("@ss.hasPermi('warehouse:scrap:query') or @ss.hasPermi('warehouse:scrap:apply') or @ss.hasPermi('warehouse:scrap:audit')")
+    @GetMapping("/query/summary")
+    public TableDataInfo querySummary(StkScrapQueryVo query) {
+        startPage();
+        List<StkScrapQueryVo> list = stkScrapBillService.selectScrapSummaryList(query);
+        TotalInfo totalInfo = stkScrapBillService.selectScrapSummaryTotal(query);
+        if (totalInfo == null) {
+            totalInfo = new TotalInfo();
+        }
+        if (totalInfo.getTotalAmt() == null) {
+            totalInfo.setTotalAmt(BigDecimal.ZERO);
+        }
+        if (totalInfo.getTotalQty() == null) {
+            totalInfo.setTotalQty(BigDecimal.ZERO);
+        }
+        Long total = new PageInfo<>(list).getTotal();
+        return getDataTable(list, totalInfo, total);
+    }
+
     @PreAuthorize("@ss.hasPermi('warehouse:scrap:apply')")
     @Log(title = "库房报废单", businessType = BusinessType.INSERT)
     @PostMapping
@@ -60,6 +103,14 @@ public class StkScrapBillController extends BaseController {
     public AjaxResult submit(@RequestBody Map<String, Object> params) {
         Long[] ids = parseIds(params);
         return toAjax(stkScrapBillService.submitStkScrapBillByIds(ids));
+    }
+
+    @PreAuthorize("@ss.hasPermi('warehouse:scrap:audit')")
+    @Log(title = "库房报损单审核", businessType = BusinessType.UPDATE)
+    @PostMapping("/audit")
+    public AjaxResult audit(@RequestBody Map<String, Object> params) {
+        Long[] ids = parseIds(params);
+        return toAjax(stkScrapBillService.auditStkScrapBillByIds(ids));
     }
 
     @PreAuthorize("@ss.hasPermi('warehouse:scrap:apply') or @ss.hasPermi('warehouse:scrap:audit') or @ss.hasPermi('warehouse:scrap:query')")

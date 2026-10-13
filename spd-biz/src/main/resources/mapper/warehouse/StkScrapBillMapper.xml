@@ -224,4 +224,158 @@
           and tenant_id = #{scopedTenantId}
           and (del_flag = '0' or del_flag is null)
     </update>
+
+    <sql id="scrapQueryWhere">
+        (a.del_flag = '0' or a.del_flag is null)
+        and (e.del_flag = '0' or e.del_flag is null)
+        and a.tenant_id = #{scopedTenantId}
+        <if test="billNo != null and billNo != ''">
+            and a.bill_no like concat('%', #{billNo}, '%')
+        </if>
+        <if test="warehouseId != null">
+            and a.warehouse_id = #{warehouseId}
+        </if>
+        <if test="billStatus != null and billStatus != ''">
+            and a.bill_status = #{billStatus}
+        </if>
+        <if test="scrapReason != null and scrapReason != ''">
+            and a.scrap_reason like concat('%', #{scrapReason}, '%')
+        </if>
+        <if test="createByName != null and createByName != ''">
+            and coalesce(nullif(trim(cu.nick_name), ''), cu.user_name) like concat('%', #{createByName}, '%')
+        </if>
+        <if test="materialCode != null and materialCode != ''">
+            and e.material_code like concat('%', #{materialCode}, '%')
+        </if>
+        <if test="materialName != null and materialName != ''">
+            and e.material_name like concat('%', #{materialName}, '%')
+        </if>
+        <if test="speci != null and speci != ''">
+            and e.speci like concat('%', #{speci}, '%')
+        </if>
+        <if test="batchNo != null and batchNo != ''">
+            and e.batch_no like concat('%', #{batchNo}, '%')
+        </if>
+        <if test="manufacturer != null and manufacturer != ''">
+            and e.manufacturer like concat('%', #{manufacturer}, '%')
+        </if>
+        <if test="beginDate != null and beginDate != ''">
+            <choose>
+                <when test="dateQueryType != null and dateQueryType == 'audit'">
+                    and a.audit_date is not null
+                    and date_format(a.audit_date, '%Y%m%d') &gt;= date_format(#{beginDate}, '%Y%m%d')
+                </when>
+                <otherwise>
+                    and a.bill_date is not null
+                    and date_format(a.bill_date, '%Y%m%d') &gt;= date_format(#{beginDate}, '%Y%m%d')
+                </otherwise>
+            </choose>
+        </if>
+        <if test="endDate != null and endDate != ''">
+            <choose>
+                <when test="dateQueryType != null and dateQueryType == 'audit'">
+                    and a.audit_date is not null
+                    and date_format(a.audit_date, '%Y%m%d') &lt;= date_format(#{endDate}, '%Y%m%d')
+                </when>
+                <otherwise>
+                    and a.bill_date is not null
+                    and date_format(a.bill_date, '%Y%m%d') &lt;= date_format(#{endDate}, '%Y%m%d')
+                </otherwise>
+            </choose>
+        </if>
+    </sql>
+
+    <select id="selectScrapDetailList" parameterType="com.spd.warehouse.domain.StkScrapQueryVo"
+            resultType="com.spd.warehouse.domain.StkScrapQueryVo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select e.id as entryId, e.parent_id as parentId, a.bill_no as billNo,
+               a.warehouse_id as warehouseId, w.name as warehouseName,
+               a.scrap_reason as scrapReason, a.bill_status as billStatus, a.bill_date as billDate,
+               coalesce(nullif(trim(cu.nick_name), ''), cu.user_name) as createByName,
+               coalesce(nullif(trim(au.nick_name), ''), au.user_name) as auditByName,
+               a.audit_date as auditDate,
+               e.material_id as materialId, e.material_code as materialCode, e.material_name as materialName,
+               e.speci, e.model, e.unit_name as unitName, e.qty, e.price, e.amount,
+               e.batch_no as batchNo, e.produce_date as produceDate, e.expiry_date as expiryDate,
+               e.manufacturer
+        from stk_scrap_bill_entry e
+        inner join stk_scrap_bill a on a.id = e.parent_id
+        left join fd_warehouse w on a.warehouse_id = w.id
+        left join sys_user cu on cu.user_id = (
+            case when a.create_by regexp '^[0-9]+$' then cast(a.create_by as unsigned) else null end
+        )
+        left join sys_user au on au.user_id = (
+            case when a.audit_by regexp '^[0-9]+$' then cast(a.audit_by as unsigned) else null end
+        )
+        <where>
+            <include refid="scrapQueryWhere"/>
+        </where>
+        order by a.bill_date desc, a.id desc, e.line_no asc, e.id asc
+    </select>
+
+    <select id="selectScrapDetailTotal" parameterType="com.spd.warehouse.domain.StkScrapQueryVo"
+            resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select coalesce(sum(e.qty), 0) as totalQty, coalesce(sum(e.amount), 0) as totalAmt
+        from stk_scrap_bill_entry e
+        inner join stk_scrap_bill a on a.id = e.parent_id
+        left join fd_warehouse w on a.warehouse_id = w.id
+        left join sys_user cu on cu.user_id = (
+            case when a.create_by regexp '^[0-9]+$' then cast(a.create_by as unsigned) else null end
+        )
+        left join sys_user au on au.user_id = (
+            case when a.audit_by regexp '^[0-9]+$' then cast(a.audit_by as unsigned) else null end
+        )
+        <where>
+            <include refid="scrapQueryWhere"/>
+        </where>
+    </select>
+
+    <select id="selectScrapSummaryList" parameterType="com.spd.warehouse.domain.StkScrapQueryVo"
+            resultType="com.spd.warehouse.domain.StkScrapQueryVo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select a.warehouse_id as warehouseId, w.name as warehouseName,
+               e.material_id as materialId, e.material_code as materialCode, e.material_name as materialName,
+               e.speci, e.model, e.unit_name as unitName, e.manufacturer,
+               sum(e.qty) as qty, sum(e.amount) as amount,
+               count(distinct a.id) as billCount
+        from stk_scrap_bill_entry e
+        inner join stk_scrap_bill a on a.id = e.parent_id
+        left join fd_warehouse w on a.warehouse_id = w.id
+        left join sys_user cu on cu.user_id = (
+            case when a.create_by regexp '^[0-9]+$' then cast(a.create_by as unsigned) else null end
+        )
+        left join sys_user au on au.user_id = (
+            case when a.audit_by regexp '^[0-9]+$' then cast(a.audit_by as unsigned) else null end
+        )
+        <where>
+            <include refid="scrapQueryWhere"/>
+        </where>
+        group by a.warehouse_id, w.name, e.material_id, e.material_code, e.material_name,
+                 e.speci, e.model, e.unit_name, e.manufacturer
+        order by e.material_code asc, w.name asc
+    </select>
+
+    <select id="selectScrapSummaryTotal" parameterType="com.spd.warehouse.domain.StkScrapQueryVo"
+            resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        select coalesce(sum(t.qty), 0) as totalQty, coalesce(sum(t.amount), 0) as totalAmt
+        from (
+            select sum(e.qty) as qty, sum(e.amount) as amount
+            from stk_scrap_bill_entry e
+            inner join stk_scrap_bill a on a.id = e.parent_id
+            left join fd_warehouse w on a.warehouse_id = w.id
+            left join sys_user cu on cu.user_id = (
+                case when a.create_by regexp '^[0-9]+$' then cast(a.create_by as unsigned) else null end
+            )
+            left join sys_user au on au.user_id = (
+                case when a.audit_by regexp '^[0-9]+$' then cast(a.audit_by as unsigned) else null end
+            )
+            <where>
+                <include refid="scrapQueryWhere"/>
+            </where>
+            group by a.warehouse_id, e.material_id, e.material_code, e.material_name,
+                     e.speci, e.model, e.unit_name, e.manufacturer
+        ) t
+    </select>
 </mapper>

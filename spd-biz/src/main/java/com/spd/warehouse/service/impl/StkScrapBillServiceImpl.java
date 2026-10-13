@@ -1,5 +1,6 @@
 package com.spd.warehouse.service.impl;
 
+import com.spd.common.core.page.TotalInfo;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
@@ -7,6 +8,7 @@ import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.rule.FillRuleUtil;
 import com.spd.warehouse.domain.StkScrapBill;
 import com.spd.warehouse.domain.StkScrapBillEntry;
+import com.spd.warehouse.domain.StkScrapQueryVo;
 import com.spd.warehouse.mapper.StkScrapBillMapper;
 import com.spd.warehouse.service.IStkScrapBillService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +44,26 @@ public class StkScrapBillServiceImpl implements IStkScrapBillService {
         SecurityUtils.ensureTenantAccess(bill.getTenantId());
         bill.setEntryList(stkScrapBillMapper.selectEntryListByParentId(id));
         return bill;
+    }
+
+    @Override
+    public List<StkScrapQueryVo> selectScrapDetailList(StkScrapQueryVo query) {
+        return stkScrapBillMapper.selectScrapDetailList(query);
+    }
+
+    @Override
+    public TotalInfo selectScrapDetailTotal(StkScrapQueryVo query) {
+        return stkScrapBillMapper.selectScrapDetailTotal(query);
+    }
+
+    @Override
+    public List<StkScrapQueryVo> selectScrapSummaryList(StkScrapQueryVo query) {
+        return stkScrapBillMapper.selectScrapSummaryList(query);
+    }
+
+    @Override
+    public TotalInfo selectScrapSummaryTotal(StkScrapQueryVo query) {
+        return stkScrapBillMapper.selectScrapSummaryTotal(query);
     }
 
     @Override
@@ -143,6 +165,36 @@ public class StkScrapBillServiceImpl implements IStkScrapBillService {
             StkScrapBill upd = new StkScrapBill();
             upd.setId(id);
             upd.setBillStatus("1");
+            upd.setUpdateBy(uid);
+            upd.setUpdateTime(now);
+            count += stkScrapBillMapper.updateBillStatus(upd);
+        }
+        return count;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public int auditStkScrapBillByIds(Long[] ids) {
+        if (ids == null || ids.length == 0) {
+            throw new ServiceException("请选择要审核的报损单");
+        }
+        String uid = SecurityUtils.getUserIdStr();
+        Date now = DateUtils.getNowDate();
+        int count = 0;
+        for (Long id : ids) {
+            StkScrapBill existing = stkScrapBillMapper.selectStkScrapBillById(id);
+            if (existing == null) {
+                throw new ServiceException("报损单不存在");
+            }
+            SecurityUtils.ensureTenantAccess(existing.getTenantId());
+            if (!"1".equals(String.valueOf(existing.getBillStatus()))) {
+                throw new ServiceException("只能审核未审核状态的单据：" + existing.getBillNo());
+            }
+            StkScrapBill upd = new StkScrapBill();
+            upd.setId(id);
+            upd.setBillStatus("2");
+            upd.setAuditBy(uid);
+            upd.setAuditDate(now);
             upd.setUpdateBy(uid);
             upd.setUpdateTime(now);
             count += stkScrapBillMapper.updateBillStatus(upd);
