@@ -144,7 +144,7 @@
     <select id="selectMaxBillNo" parameterType="String" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         select max(bill_no) from stk_scrap_bill
-        where bill_no like concat('BF-', #{date}, '%')
+        where bill_no like concat('BS-', #{date}, '%')
           and tenant_id = #{scopedTenantId}
     </select>
 

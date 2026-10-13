@@ -22,12 +22,12 @@ import java.util.List;
 
 /**
  * 库房报废单 Service
- * 单号：BF- + yyyyMMdd + 5位流水（对齐入库 RK / 调价 TJ- 规则）
+ * 单号：BS- + yyyyMMdd + 5位流水（对齐入库 RK / 调价 TJ- 规则）
  */
 @Service
 public class StkScrapBillServiceImpl implements IStkScrapBillService {
 
-    private static final String BILL_PREFIX = "BF-";
+    private static final String BILL_PREFIX = "BS-";
     private static final int BILL_NO_RETRY = 5;
 
     @Autowired

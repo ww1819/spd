@@ -1,13 +1,13 @@
 -- 库房报废单主表 / 明细表（公共）
--- 单号规则：BF- + yyyyMMdd + 5位流水（对齐入库 RK / 调价 TJ-），租户内唯一
+-- 单号规则：BS- + yyyyMMdd + 5位流水（对齐入库 RK / 调价 TJ-），租户内唯一
 
 CREATE TABLE IF NOT EXISTS `stk_scrap_bill` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `bill_no` varchar(64) NOT NULL COMMENT '单据号 BF-yyyyMMdd#####',
+  `bill_no` varchar(64) NOT NULL COMMENT '单据号 BS-yyyyMMdd#####',
   `warehouse_id` bigint(20) NOT NULL COMMENT '仓库ID',
   `bill_date` date DEFAULT NULL COMMENT '制单日期',
   `total_amount` decimal(18,2) DEFAULT NULL COMMENT '总金额',
-  `scrap_reason` varchar(500) DEFAULT NULL COMMENT '报废原因',
+  `scrap_reason` varchar(500) DEFAULT NULL COMMENT '报损原因',
   `bill_status` char(1) DEFAULT '0' COMMENT '单据状态 0未提交 1未审核 2已审核',
   `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
   `audit_date` datetime DEFAULT NULL COMMENT '审核日期',

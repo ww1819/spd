@@ -1,6 +1,6 @@
--- 库房管理：盘点管理后增加「报废管理」分栏（申请 / 审批 / 查询）
+-- 库房管理：盘点管理后增加「报损管理」分栏（申请 / 审批 / 查询）
 -- 目录 3983；申请 3984；审批 3985；查询 3986
--- 顺序：… → 调拨(6) → 盘点(7) → 报废(8)
+-- 顺序：… → 调拨(6) → 盘点(7) → 报损(8)
 
 SET @wh_root := (
   SELECT m.menu_id FROM sys_menu m
@@ -16,7 +16,7 @@ SET @scrap_apply := 3984;
 SET @scrap_audit := 3985;
 SET @scrap_query := 3986;
 
--- 0) 报废管理目录（挂在库房管理下，排在盘点管理后）
+-- 0) 报损管理目录（挂在库房管理下，排在盘点管理后）
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, query,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
@@ -24,9 +24,9 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  @scrap_dir, '报废管理', @wh_root, 8, 'scrapMgmt', NULL, NULL,
+  @scrap_dir, '报损管理', @wh_root, 8, 'scrapMgmt', NULL, NULL,
   1, 0, 'M', '0', '0', '', 'delete',
-  'admin', NOW(), '1', NOW(), '库房管理分栏：报废管理',
+  'admin', NOW(), '1', NOW(), '库房管理分栏：报损管理',
   '0', '1'
 FROM DUAL
 WHERE @wh_root IS NOT NULL
@@ -35,7 +35,7 @@ WHERE @wh_root IS NOT NULL
 UPDATE sys_menu
 SET parent_id = @wh_root,
     order_num = 8,
-    menu_name = '报废管理',
+    menu_name = '报损管理',
     path = 'scrapMgmt',
     component = NULL,
     menu_type = 'M',
@@ -45,7 +45,7 @@ SET parent_id = @wh_root,
     is_platform = '0',
     default_open_to_customer = '1',
     icon = IFNULL(NULLIF(icon, ''), 'delete'),
-    remark = '库房管理分栏：报废管理',
+    remark = '库房管理分栏：报损管理',
     update_by = '1',
     update_time = NOW()
 WHERE menu_id = @scrap_dir
@@ -59,7 +59,7 @@ SET order_num = 7,
 WHERE menu_id = @stocktaking_dir
   AND parent_id = @wh_root;
 
--- 1) 报废申请
+-- 1) 报损申请
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, query,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
@@ -67,9 +67,9 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  @scrap_apply, '报废申请', @scrap_dir, 1, 'scrapApply', 'warehouse/scrap/apply/index', NULL,
+  @scrap_apply, '报损申请', @scrap_dir, 1, 'scrapApply', 'warehouse/scrap/apply/index', NULL,
   1, 0, 'C', '0', '0', 'warehouse:scrap:apply', 'form',
-  'admin', NOW(), '1', NOW(), '库房报废申请',
+  'admin', NOW(), '1', NOW(), '库房报损申请',
   '0', '1'
 FROM DUAL
 WHERE @wh_root IS NOT NULL
@@ -78,7 +78,7 @@ WHERE @wh_root IS NOT NULL
 UPDATE sys_menu
 SET parent_id = @scrap_dir,
     order_num = 1,
-    menu_name = '报废申请',
+    menu_name = '报损申请',
     path = 'scrapApply',
     component = 'warehouse/scrap/apply/index',
     menu_type = 'C',
@@ -88,12 +88,12 @@ SET parent_id = @scrap_dir,
     is_platform = '0',
     default_open_to_customer = '1',
     icon = IFNULL(NULLIF(icon, ''), 'form'),
-    remark = '库房报废申请',
+    remark = '库房报损申请',
     update_by = '1',
     update_time = NOW()
 WHERE menu_id = @scrap_apply;
 
--- 2) 报废审批
+-- 2) 报损审批
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, query,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
@@ -101,9 +101,9 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  @scrap_audit, '报废审批', @scrap_dir, 2, 'scrapAudit', 'warehouse/scrap/audit/index', NULL,
+  @scrap_audit, '报损审批', @scrap_dir, 2, 'scrapAudit', 'warehouse/scrap/audit/index', NULL,
   1, 0, 'C', '0', '0', 'warehouse:scrap:audit', 'edit',
-  'admin', NOW(), '1', NOW(), '库房报废审批',
+  'admin', NOW(), '1', NOW(), '库房报损审批',
   '0', '1'
 FROM DUAL
 WHERE @wh_root IS NOT NULL
@@ -112,7 +112,7 @@ WHERE @wh_root IS NOT NULL
 UPDATE sys_menu
 SET parent_id = @scrap_dir,
     order_num = 2,
-    menu_name = '报废审批',
+    menu_name = '报损审批',
     path = 'scrapAudit',
     component = 'warehouse/scrap/audit/index',
     menu_type = 'C',
@@ -122,12 +122,12 @@ SET parent_id = @scrap_dir,
     is_platform = '0',
     default_open_to_customer = '1',
     icon = IFNULL(NULLIF(icon, ''), 'edit'),
-    remark = '库房报废审批',
+    remark = '库房报损审批',
     update_by = '1',
     update_time = NOW()
 WHERE menu_id = @scrap_audit;
 
--- 3) 报废查询
+-- 3) 报损查询
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, query,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
@@ -135,9 +135,9 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  @scrap_query, '报废查询', @scrap_dir, 3, 'scrapQuery', 'warehouse/scrap/query/index', NULL,
+  @scrap_query, '报损查询', @scrap_dir, 3, 'scrapQuery', 'warehouse/scrap/query/index', NULL,
   1, 0, 'C', '0', '0', 'warehouse:scrap:query', 'search',
-  'admin', NOW(), '1', NOW(), '库房报废查询',
+  'admin', NOW(), '1', NOW(), '库房报损查询',
   '0', '1'
 FROM DUAL
 WHERE @wh_root IS NOT NULL
@@ -146,7 +146,7 @@ WHERE @wh_root IS NOT NULL
 UPDATE sys_menu
 SET parent_id = @scrap_dir,
     order_num = 3,
-    menu_name = '报废查询',
+    menu_name = '报损查询',
     path = 'scrapQuery',
     component = 'warehouse/scrap/query/index',
     menu_type = 'C',
@@ -156,7 +156,7 @@ SET parent_id = @scrap_dir,
     is_platform = '0',
     default_open_to_customer = '1',
     icon = IFNULL(NULLIF(icon, ''), 'search'),
-    remark = '库房报废查询',
+    remark = '库房报损查询',
     update_by = '1',
     update_time = NOW()
 WHERE menu_id = @scrap_query;
@@ -230,17 +230,17 @@ WHERE (
       AND IFNULL(x.tenant_id, '') = IFNULL(pm.tenant_id, '')
   );
 
--- 8) 清理库房根下重复的空「报废管理」占位（如 3992 path=1），避免分栏底部再出现「库房管理/报废管理」
+-- 8) 清理库房根下重复的空「报损管理」占位（如 3992 path=1），避免分栏底部再出现「库房管理/报损管理」
 UPDATE sys_menu
 SET visible = '1',
     status = '1',
-    menu_name = '报废管理(废弃占位)',
+    menu_name = '报损管理(废弃占位)',
     remark = '重复占位已停用；正式分栏为 3983 scrapMgmt',
     update_by = '1',
     update_time = NOW()
 WHERE parent_id = @wh_root
   AND menu_id <> @scrap_dir
-  AND menu_name IN ('报废管理', '报废管理(废弃占位)')
+  AND menu_name IN ('报损管理', '报损管理(废弃占位)', '报废管理', '报废管理(废弃占位)')
   AND (path IS NULL OR path IN ('', '1') OR component IS NULL OR component = '')
   AND menu_type = 'M'
   AND NOT EXISTS (SELECT 1 FROM sys_menu c WHERE c.parent_id = sys_menu.menu_id);
@@ -251,7 +251,7 @@ WHERE menu_id IN (
     SELECT m.menu_id FROM sys_menu m
     WHERE m.parent_id = @wh_root
       AND m.menu_id <> @scrap_dir
-      AND m.menu_name LIKE '报废管理%'
+      AND (m.menu_name LIKE '报损管理%' OR m.menu_name LIKE '报废管理%')
       AND m.status = '1'
       AND m.visible = '1'
   ) t
@@ -263,7 +263,7 @@ WHERE menu_id IN (
     SELECT m.menu_id FROM sys_menu m
     WHERE m.parent_id = @wh_root
       AND m.menu_id <> @scrap_dir
-      AND m.menu_name LIKE '报废管理%'
+      AND (m.menu_name LIKE '报损管理%' OR m.menu_name LIKE '报废管理%')
       AND m.status = '1'
       AND m.visible = '1'
   ) t
@@ -275,7 +275,7 @@ WHERE menu_id IN (
     SELECT m.menu_id FROM sys_menu m
     WHERE m.parent_id = @wh_root
       AND m.menu_id <> @scrap_dir
-      AND m.menu_name LIKE '报废管理%'
+      AND (m.menu_name LIKE '报损管理%' OR m.menu_name LIKE '报废管理%')
       AND m.status = '1'
       AND m.visible = '1'
   ) t
