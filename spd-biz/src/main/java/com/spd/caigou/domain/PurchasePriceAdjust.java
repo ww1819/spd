@@ -55,11 +55,32 @@ public class PurchasePriceAdjust extends BaseEntity {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date printDate;
 
+    /** 调价原因 */
+    private String adjustReason;
+
     private String delFlag;
 
     private String tenantId;
 
     private String createByName;
+
+    /** 报表查询：产品名称/编码/首字母 */
+    private String materialName;
+
+    /** 报表查询：规格（模糊） */
+    private String materialSpeci;
+
+    /** 报表查询：生产厂家（名称/编码/首字母） */
+    private String factoryKeyword;
+
+    /** 报表查询：供应商关键字 */
+    private String supplierKeyword;
+
+    /** 报表查询：库房分类 */
+    private Long warehouseCategoryId;
+
+    /** 报表查询：财务分类（多选） */
+    private Long[] financeCategoryIds;
 
     /** 查询：bill / audit */
     private String dateQueryType;
@@ -198,6 +219,14 @@ public class PurchasePriceAdjust extends BaseEntity {
         this.printDate = printDate;
     }
 
+    public String getAdjustReason() {
+        return adjustReason;
+    }
+
+    public void setAdjustReason(String adjustReason) {
+        this.adjustReason = adjustReason;
+    }
+
     public String getDelFlag() {
         return delFlag;
     }
@@ -220,6 +249,54 @@ public class PurchasePriceAdjust extends BaseEntity {
 
     public void setCreateByName(String createByName) {
         this.createByName = createByName;
+    }
+
+    public String getMaterialName() {
+        return materialName;
+    }
+
+    public void setMaterialName(String materialName) {
+        this.materialName = materialName;
+    }
+
+    public String getMaterialSpeci() {
+        return materialSpeci;
+    }
+
+    public void setMaterialSpeci(String materialSpeci) {
+        this.materialSpeci = materialSpeci;
+    }
+
+    public String getFactoryKeyword() {
+        return factoryKeyword;
+    }
+
+    public void setFactoryKeyword(String factoryKeyword) {
+        this.factoryKeyword = factoryKeyword;
+    }
+
+    public String getSupplierKeyword() {
+        return supplierKeyword;
+    }
+
+    public void setSupplierKeyword(String supplierKeyword) {
+        this.supplierKeyword = supplierKeyword;
+    }
+
+    public Long getWarehouseCategoryId() {
+        return warehouseCategoryId;
+    }
+
+    public void setWarehouseCategoryId(Long warehouseCategoryId) {
+        this.warehouseCategoryId = warehouseCategoryId;
+    }
+
+    public Long[] getFinanceCategoryIds() {
+        return financeCategoryIds;
+    }
+
+    public void setFinanceCategoryIds(Long[] financeCategoryIds) {
+        this.financeCategoryIds = financeCategoryIds;
     }
 
     public String getDateQueryType() {

@@ -1,0 +1,58 @@
+-- 库房报废单主表 / 明细表（公共）
+-- 单号规则：BF- + yyyyMMdd + 5位流水（对齐入库 RK / 调价 TJ-），租户内唯一
+
+CREATE TABLE IF NOT EXISTS `stk_scrap_bill` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `bill_no` varchar(64) NOT NULL COMMENT '单据号 BF-yyyyMMdd#####',
+  `warehouse_id` bigint(20) NOT NULL COMMENT '仓库ID',
+  `bill_date` date DEFAULT NULL COMMENT '制单日期',
+  `total_amount` decimal(18,2) DEFAULT NULL COMMENT '总金额',
+  `scrap_reason` varchar(500) DEFAULT NULL COMMENT '报废原因',
+  `bill_status` char(1) DEFAULT '0' COMMENT '单据状态 0未提交 1未审核 2已审核',
+  `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
+  `audit_date` datetime DEFAULT NULL COMMENT '审核日期',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` char(1) DEFAULT '0' COMMENT '删除标志 0正常 1删除',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_scrap_bill_tenant_bill_no` (`tenant_id`, `bill_no`),
+  KEY `idx_scrap_bill_warehouse` (`warehouse_id`),
+  KEY `idx_scrap_bill_bill_date` (`bill_date`),
+  KEY `idx_scrap_bill_status` (`bill_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='库房报废单主表';
+
+CREATE TABLE IF NOT EXISTS `stk_scrap_bill_entry` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `parent_id` bigint(20) NOT NULL COMMENT '主表ID',
+  `bill_no` varchar(64) DEFAULT NULL COMMENT '单据号冗余',
+  `line_no` int DEFAULT NULL COMMENT '行号',
+  `inventory_id` bigint(20) DEFAULT NULL COMMENT '库存ID',
+  `material_id` bigint(20) NOT NULL COMMENT '耗材ID',
+  `material_code` varchar(64) DEFAULT NULL COMMENT '产品编码',
+  `material_name` varchar(200) DEFAULT NULL COMMENT '产品名称',
+  `speci` varchar(200) DEFAULT NULL COMMENT '规格',
+  `model` varchar(200) DEFAULT NULL COMMENT '型号',
+  `unit_name` varchar(64) DEFAULT NULL COMMENT '单位',
+  `qty` decimal(18,4) DEFAULT NULL COMMENT '数量',
+  `price` decimal(18,6) DEFAULT NULL COMMENT '单价',
+  `amount` decimal(18,2) DEFAULT NULL COMMENT '金额',
+  `batch_no` varchar(64) DEFAULT NULL COMMENT '批号',
+  `produce_date` date DEFAULT NULL COMMENT '生产日期',
+  `expiry_date` date DEFAULT NULL COMMENT '有效期',
+  `manufacturer` varchar(200) DEFAULT NULL COMMENT '生产厂家',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` char(1) DEFAULT '0' COMMENT '删除标志',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_scrap_entry_parent` (`parent_id`),
+  KEY `idx_scrap_entry_material` (`material_id`),
+  KEY `idx_scrap_entry_inventory` (`inventory_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='库房报废单明细';

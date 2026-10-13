@@ -1,8 +1,10 @@
 package com.spd.caigou.domain;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.spd.common.core.domain.BaseEntity;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 /**
  * 采购调价单明细 purchase_price_adjust_entry
@@ -13,6 +15,9 @@ public class PurchasePriceAdjustEntry extends BaseEntity {
     private Long id;
     private Long parentId;
     private String billNo;
+    /** 调价类型（报表联查主表） */
+    private String adjustType;
+    private String adjustTypeName;
     private Integer lineNo;
     private Long materialId;
     private String materialCode;
@@ -28,9 +33,21 @@ public class PurchasePriceAdjustEntry extends BaseEntity {
     private String manufacturer;
     /** 供应商名称（报表联查主表，非表字段） */
     private String supplierName;
+    /** 调价原因（报表联查主表，非表字段） */
+    private String adjustReason;
     private String regNo;
     private String regValidDate;
     private String packSpeci;
+    /** 制单人（报表联查主表） */
+    private String createByName;
+    /** 制单日期（报表联查主表） */
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
+    private Date billDate;
+    /** 审核人（报表联查主表） */
+    private String auditByName;
+    /** 审核日期（报表联查主表） */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date auditDate;
     private String delFlag;
     private String tenantId;
 
@@ -56,6 +73,22 @@ public class PurchasePriceAdjustEntry extends BaseEntity {
 
     public void setBillNo(String billNo) {
         this.billNo = billNo;
+    }
+
+    public String getAdjustType() {
+        return adjustType;
+    }
+
+    public void setAdjustType(String adjustType) {
+        this.adjustType = adjustType;
+    }
+
+    public String getAdjustTypeName() {
+        return adjustTypeName;
+    }
+
+    public void setAdjustTypeName(String adjustTypeName) {
+        this.adjustTypeName = adjustTypeName;
     }
 
     public Integer getLineNo() {
@@ -162,6 +195,14 @@ public class PurchasePriceAdjustEntry extends BaseEntity {
         this.supplierName = supplierName;
     }
 
+    public String getAdjustReason() {
+        return adjustReason;
+    }
+
+    public void setAdjustReason(String adjustReason) {
+        this.adjustReason = adjustReason;
+    }
+
     public String getRegNo() {
         return regNo;
     }
@@ -186,10 +227,41 @@ public class PurchasePriceAdjustEntry extends BaseEntity {
         this.packSpeci = packSpeci;
     }
 
+    public String getCreateByName() {
+        return createByName;
+    }
+
+    public void setCreateByName(String createByName) {
+        this.createByName = createByName;
+    }
+
+    public Date getBillDate() {
+        return billDate;
+    }
+
+    public void setBillDate(Date billDate) {
+        this.billDate = billDate;
+    }
+
+    public String getAuditByName() {
+        return auditByName;
+    }
+
+    public void setAuditByName(String auditByName) {
+        this.auditByName = auditByName;
+    }
+
+    public Date getAuditDate() {
+        return auditDate;
+    }
+
+    public void setAuditDate(Date auditDate) {
+        this.auditDate = auditDate;
+    }
+
     public String getDelFlag() {
         return delFlag;
     }
-
     public void setDelFlag(String delFlag) {
         this.delFlag = delFlag;
     }

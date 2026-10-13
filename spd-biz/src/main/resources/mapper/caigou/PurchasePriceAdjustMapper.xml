@@ -20,6 +20,7 @@
         <result property="printBy" column="print_by"/>
         <result property="printByName" column="print_by_name"/>
         <result property="printDate" column="print_date"/>
+        <result property="adjustReason" column="adjust_reason"/>
         <result property="remark" column="remark"/>
         <result property="delFlag" column="del_flag"/>
         <result property="tenantId" column="tenant_id"/>
@@ -34,6 +35,8 @@
         <result property="id" column="id"/>
         <result property="parentId" column="parent_id"/>
         <result property="billNo" column="bill_no"/>
+        <result property="adjustType" column="adjust_type"/>
+        <result property="adjustTypeName" column="adjust_type_name"/>
         <result property="lineNo" column="line_no"/>
         <result property="materialId" column="material_id"/>
         <result property="materialCode" column="material_code"/>
@@ -47,9 +50,14 @@
         <result property="warehouseClass" column="warehouse_class"/>
         <result property="manufacturer" column="manufacturer"/>
         <result property="supplierName" column="supplier_name"/>
+        <result property="adjustReason" column="adjust_reason"/>
         <result property="regNo" column="reg_no"/>
         <result property="regValidDate" column="reg_valid_date"/>
         <result property="packSpeci" column="pack_speci"/>
+        <result property="createByName" column="create_by_name"/>
+        <result property="billDate" column="bill_date"/>
+        <result property="auditByName" column="audit_by_name"/>
+        <result property="auditDate" column="audit_date"/>
         <result property="remark" column="remark"/>
         <result property="delFlag" column="del_flag"/>
         <result property="tenantId" column="tenant_id"/>
@@ -73,10 +81,50 @@
         <if test="adjustType != null and adjustType != ''">
             and a.adjust_type = #{adjustType}
         </if>
-        <if test="createByName != null and createByName != ''">
+        <if test="materialName != null and materialName != ''">
             and (
-                coalesce(nullif(trim(cu.nick_name), ''), cu.user_name) like concat('%', #{createByName}, '%')
+                e.material_name like concat('%', #{materialName}, '%')
+                or e.material_code like concat('%', #{materialName}, '%')
+                or ifnull(m.name, '') like concat('%', #{materialName}, '%')
+                or ifnull(m.code, '') like concat('%', #{materialName}, '%')
+                or ifnull(m.referred_name, '') like concat('%', #{materialName}, '%')
             )
+        </if>
+        <if test="materialSpeci != null and materialSpeci != ''">
+            and (
+                ifnull(e.speci, '') like concat('%', #{materialSpeci}, '%')
+                or ifnull(m.speci, '') like concat('%', #{materialSpeci}, '%')
+            )
+        </if>
+        <if test="factoryKeyword != null and factoryKeyword != ''">
+            and (
+                ifnull(e.manufacturer, '') like concat('%', #{factoryKeyword}, '%')
+                or exists (
+                    select 1 from fd_factory fx
+                    where fx.factory_id = m.factory_id
+                      and (
+                          ifnull(fx.factory_name, '') like concat('%', #{factoryKeyword}, '%')
+                          or ifnull(fx.factory_code, '') like concat('%', #{factoryKeyword}, '%')
+                          or ifnull(fx.factory_referred_code, '') like concat('%', #{factoryKeyword}, '%')
+                      )
+                )
+            )
+        </if>
+        <if test="supplierKeyword != null and supplierKeyword != ''">
+            and (
+                ifnull(s.name, '') like concat('%', #{supplierKeyword}, '%')
+                or ifnull(s.code, '') like concat('%', #{supplierKeyword}, '%')
+                or ifnull(s.referred_code, '') like concat('%', #{supplierKeyword}, '%')
+            )
+        </if>
+        <if test="warehouseCategoryId != null">
+            and m.storeroom_id = #{warehouseCategoryId}
+        </if>
+        <if test="financeCategoryIds != null and financeCategoryIds.length &gt; 0">
+            and m.finance_category_id in
+            <foreach collection="financeCategoryIds" item="fcId" open="(" separator="," close=")">
+                #{fcId}
+            </foreach>
         </if>
         <if test="beginDate != null and beginDate != ''">
             <choose>
@@ -108,16 +156,32 @@
             resultMap="PurchasePriceAdjustEntryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         select e.id, e.parent_id, e.bill_no, e.line_no, e.material_id, e.material_code, e.material_name,
+               a.adjust_type,
+               case a.adjust_type
+                   when 'archive' then '档案调价'
+                   when 'warehouse' then '仓库调价'
+                   when 'department' then '科室调价'
+                   else a.adjust_type
+               end as adjust_type_name,
                e.speci, e.model, e.unit_name, e.old_price, e.new_price, e.finance_class,
                w.warehouse_category_name as warehouse_class,
                e.manufacturer, s.name as supplier_name,
-               e.reg_no, e.reg_valid_date, e.pack_speci, e.remark, e.del_flag, e.tenant_id,
+               a.adjust_reason,
+               e.reg_no, e.reg_valid_date, e.pack_speci,
+               coalesce(nullif(trim(cu.nick_name), ''), cu.user_name) as create_by_name,
+               a.bill_date,
+               coalesce(nullif(trim(au.nick_name), ''), au.user_name) as audit_by_name,
+               a.audit_date,
+               e.remark, e.del_flag, e.tenant_id,
                e.create_by, e.create_time, e.update_by, e.update_time
         from purchase_price_adjust_entry e
         inner join purchase_price_adjust a on a.id = e.parent_id
         left join fd_supplier s on a.supplier_id = s.id
         left join sys_user cu on cu.user_id = (
             case when a.create_by regexp '^[0-9]+$' then cast(a.create_by as unsigned) else null end
+        )
+        left join sys_user au on au.user_id = (
+            case when a.audit_by regexp '^[0-9]+$' then cast(a.audit_by as unsigned) else null end
         )
         left join fd_material m on m.id = e.material_id
         left join fd_warehouse_category w on m.storeroom_id = w.warehouse_category_id
@@ -135,9 +199,8 @@
                max(e.material_name) as material_name
         from purchase_price_adjust_entry e
         inner join purchase_price_adjust a on a.id = e.parent_id
-        left join sys_user cu on cu.user_id = (
-            case when a.create_by regexp '^[0-9]+$' then cast(a.create_by as unsigned) else null end
-        )
+        left join fd_supplier s on a.supplier_id = s.id
+        left join fd_material m on m.id = e.material_id
         <where>
             <include refid="reportBillWhere"/>
         </where>
@@ -156,7 +219,7 @@
                a.supplier_id, s.name as supplier_name,
                a.bill_date, a.contact_name, a.contact_phone, a.bill_status,
                a.audit_by, a.audit_date, a.print_by, a.print_date,
-               a.remark, a.del_flag, a.tenant_id,
+               a.adjust_reason, a.remark, a.del_flag, a.tenant_id,
                a.create_by, a.create_time, a.update_by, a.update_time,
                coalesce(nullif(trim(cu.nick_name), ''), cu.user_name) as create_by_name,
                coalesce(nullif(trim(au.nick_name), ''), au.user_name) as audit_by_name,
@@ -256,11 +319,11 @@
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         insert into purchase_price_adjust (
             bill_no, adjust_type, supplier_id, bill_date, contact_name, contact_phone,
-            bill_status, audit_by, audit_date, print_by, print_date, remark, del_flag,
+            bill_status, audit_by, audit_date, print_by, print_date, adjust_reason, remark, del_flag,
             tenant_id, create_by, create_time, update_by, update_time
         ) values (
             #{billNo}, #{adjustType}, #{supplierId}, #{billDate}, #{contactName}, #{contactPhone},
-            #{billStatus}, #{auditBy}, #{auditDate}, #{printBy}, #{printDate}, #{remark}, #{delFlag},
+            #{billStatus}, #{auditBy}, #{auditDate}, #{printBy}, #{printDate}, #{adjustReason}, #{remark}, #{delFlag},
             #{scopedTenantId}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}
         )
     </insert>
@@ -277,6 +340,7 @@
             <if test="billStatus != null">bill_status = #{billStatus},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
+            <if test="adjustReason != null">adjust_reason = #{adjustReason},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             update_time = now()

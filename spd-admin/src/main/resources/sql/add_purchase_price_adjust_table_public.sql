@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS `purchase_price_adjust` (
   `audit_date` datetime DEFAULT NULL COMMENT '审核日期',
   `print_by` varchar(64) DEFAULT NULL COMMENT '打印人',
   `print_date` datetime DEFAULT NULL COMMENT '打印日期',
+  `adjust_reason` varchar(500) DEFAULT NULL COMMENT '调价原因',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `del_flag` char(1) DEFAULT '0' COMMENT '删除标志 0正常 1删除',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
