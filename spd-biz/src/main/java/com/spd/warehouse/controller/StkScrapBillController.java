@@ -56,14 +56,14 @@ public class StkScrapBillController extends BaseController {
 
     @PreAuthorize("@ss.hasPermi('warehouse:scrap:apply')")
     @Log(title = "库房报废单提交", businessType = BusinessType.UPDATE)
-    @PutMapping("/submit")
+    @PostMapping("/submit")
     public AjaxResult submit(@RequestBody Map<String, Object> params) {
         Long[] ids = parseIds(params);
         return toAjax(stkScrapBillService.submitStkScrapBillByIds(ids));
     }
 
     @PreAuthorize("@ss.hasPermi('warehouse:scrap:apply') or @ss.hasPermi('warehouse:scrap:audit') or @ss.hasPermi('warehouse:scrap:query')")
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public AjaxResult getInfo(@PathVariable("id") Long id) {
         return success(stkScrapBillService.selectStkScrapBillById(id));
     }
