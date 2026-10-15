@@ -180,9 +180,10 @@ WHERE menu_id=1407 AND @department_root IS NOT NULL;
 UPDATE sys_menu SET parent_id=1559, order_num=4, update_by='1', update_time=NOW()
 WHERE menu_id=3601;
 /
--- 科室盈亏进盘点管理
+-- 科室盈亏进盘点管理（EXISTS 子查询须包一层派生表，否则 MySQL 报 can't specify target table for update in FROM clause）
 UPDATE sys_menu SET parent_id=1560, order_num=3, update_by='1', update_time=NOW()
-WHERE menu_id=3714 AND EXISTS (SELECT 1 FROM sys_menu x WHERE x.menu_id=1560);
+WHERE menu_id=3714
+  AND EXISTS (SELECT 1 FROM (SELECT menu_id FROM sys_menu WHERE menu_id=1560) x);
 /
 
 -- ---------- 3) 库房：库存管理 ----------
