@@ -3542,3 +3542,26 @@ CALL add_table_column('sys_user', 'message_reminder_keys', 'varchar(128)', '????
 /
 CALL add_table_column('sys_post', 'message_reminder_keys', 'varchar(128)', '??????????keys(warehouse,department,data)', NULL);
 /
+
+-- ========== SCHEMA-DIFF 2026-10-15 vs aspt：table.sql 有、存量库缺列 ==========
+-- 比对脚本：docs/sql/SCHEMA-DIFF-aspt-2026-10-15.md
+CALL add_table_column('bas_apply', 'delete_by', 'varchar(64)', 'delete by', NULL);
+/
+CALL add_table_column('bas_apply', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('fin_invoice', 'delete_by', 'varchar(64)', 'delete by', NULL);
+/
+CALL add_table_column('fin_invoice', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('new_product_apply', 'user_id', 'bigint(20)', 'applicant user id', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'entry_id', 'bigint(20)', 'entry id', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'field_name', 'varchar(64)', 'field name', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'field_value', 'varchar(500)', 'field value', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'del_flag', 'int', 'delete flag', '0');
+/
+CALL add_table_column('new_product_apply_entry', 'del_flag', 'int', 'delete flag', '0');
+/
