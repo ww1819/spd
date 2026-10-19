@@ -52,7 +52,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="hisChargeItemUnit" column="his_charge_item_unit" />
         <result property="hisChargeItemPrice" column="his_charge_item_price" />
         <result property="unitId"  column="materialUnitId"   />
-        <result property="unitName"  column="unitName"   />
         <result property="registerNo"  column="materialRegisterNo"   />
         <result property="periodDate"  column="materialPeriodDate"   />
         <result property="packageSpeci"  column="materialPackageSpeci"   />
