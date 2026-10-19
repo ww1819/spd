@@ -7,4 +7,9 @@ SET path = 'jihuaAudit',
     update_by = '1',
     update_time = NOW()
 WHERE menu_id = 1264
-  AND (path = '/caigou/jihuaAudit' OR path LIKE '/%');
+  AND (
+    path = '/caigou/jihuaAudit'
+    OR path LIKE '/%'
+    OR IFNULL(path, '') <> 'jihuaAudit'
+    OR IFNULL(component, '') <> 'caigou/jihua/audit/index'
+  );
