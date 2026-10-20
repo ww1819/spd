@@ -162,12 +162,17 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     //str：单号前缀
     //date：日期
     //result：最终结果，需要的流水号
+    private static final Object CG_RK_BILL_NO_LOCK = new Object();
+    private static final Object CG_TK_BILL_NO_LOCK = new Object();
+    private static final Object CG_TH_BILL_NO_LOCK = new Object();
+
     public String getNumber() {
-        String str = "RK";
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = stkIoBillMapper.selectMaxBillNo(date);
-        String result = FillRuleUtil.getNumber(str,maxNum,date);
-        return result;
+        synchronized (CG_RK_BILL_NO_LOCK) {
+            String str = "RK";
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = stkIoBillMapper.selectMaxBillNo(date);
+            return FillRuleUtil.getNumber(str, maxNum, date);
+        }
     }
 
 
@@ -821,17 +826,19 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
     }
 
     public String getTKNumber(String str) {
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = stkIoBillMapper.selectTKMaxBillNo(date);
-        String result = FillRuleUtil.getNumber(str,maxNum,date);
-        return result;
+        synchronized (CG_TK_BILL_NO_LOCK) {
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = stkIoBillMapper.selectTKMaxBillNo(date);
+            return FillRuleUtil.getNumber(str, maxNum, date);
+        }
     }
 
     public String getTHNumber(String str) {
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = stkIoBillMapper.selectTHMaxBillNo(date);
-        String result = FillRuleUtil.getNumber(str,maxNum,date);
-        return result;
+        synchronized (CG_TH_BILL_NO_LOCK) {
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = stkIoBillMapper.selectTHMaxBillNo(date);
+            return FillRuleUtil.getNumber(str, maxNum, date);
+        }
     }
 
     @Transactional

@@ -550,11 +550,14 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
      * 
      * @return 订单单号
      */
+    private static final Object PO_ORDER_NO_LOCK = new Object();
+
     private String generateOrderNo() {
-        String str = "PO";
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = purchaseOrderMapper.selectMaxOrderNo(date);
-        String result = FillRuleUtil.getNumber(str, maxNum, date);
-        return result;
+        synchronized (PO_ORDER_NO_LOCK) {
+            String str = "PO";
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = purchaseOrderMapper.selectMaxOrderNo(date);
+            return FillRuleUtil.getNumber(str, maxNum, date);
+        }
     }
 }

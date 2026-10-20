@@ -143,12 +143,15 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
     }
 
     //流水号
+    private static final Object KSPD_BILL_NO_LOCK = new Object();
+
     public String getNumber() {
-        String str = "KSPD"; // 科室盘点前缀
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = deptStocktakingMapper.selectMaxBillNo(date);
-        String result = FillRuleUtil.getNumber(str,maxNum,date);
-        return result;
+        synchronized (KSPD_BILL_NO_LOCK) {
+            String str = "KSPD"; // 科室盘点前缀
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = deptStocktakingMapper.selectMaxBillNo(date);
+            return FillRuleUtil.getNumber(str, maxNum, date);
+        }
     }
 
     /**

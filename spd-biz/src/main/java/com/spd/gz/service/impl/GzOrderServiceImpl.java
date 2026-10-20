@@ -256,26 +256,30 @@ public class GzOrderServiceImpl implements IGzOrderService
         return rows;
     }
 
+    /** 高值备货/出库/退库/跟台同表取号，加锁避免并发读到同一 max 写出重复 order_no */
+    private static final Object GZ_ORDER_NO_LOCK = new Object();
+
     //str：单号前缀
     //date：日期
     //result：最终结果，需要的流水号
     //orderType: 101=入库(GZRK), 102=出库(GZCK), 301=退库(GZTK), 401=跟台(GT)
     public String getOrderNo(Integer orderType) {
-        // 根据orderType决定单号前缀：101=入库(GZRK), 102=出库(GZCK), 301=退库(GZTK), 401=跟台(GT)
-        String str;
-        if (orderType != null && orderType == 102) {
-            str = "GZCK";  // 出库
-        } else if (orderType != null && orderType == 301) {
-            str = "GZTK";  // 退库
-        } else if (orderType != null && orderType == 401) {
-            str = "GT";    // 跟台
-        } else {
-            str = "GZRK";  // 入库（默认）
+        synchronized (GZ_ORDER_NO_LOCK) {
+            // 根据orderType决定单号前缀：101=入库(GZRK), 102=出库(GZCK), 301=退库(GZTK), 401=跟台(GT)
+            String str;
+            if (orderType != null && orderType == 102) {
+                str = "GZCK";  // 出库
+            } else if (orderType != null && orderType == 301) {
+                str = "GZTK";  // 退库
+            } else if (orderType != null && orderType == 401) {
+                str = "GT";    // 跟台
+            } else {
+                str = "GZRK";  // 入库（默认）
+            }
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = gzOrderMapper.selectMaxBillNo(str, date);
+            return FillRuleUtil.getNumber(str, maxNum, date);
         }
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = gzOrderMapper.selectMaxBillNo(str, date);
-        String result = FillRuleUtil.getNumber(str,maxNum,date);
-        return result;
     }
 
     /**

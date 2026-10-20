@@ -193,10 +193,14 @@ public class WhWarehouseApplyServiceImpl implements IWhWarehouseApplyService {
         }
     }
 
+    private static final Object CKSQ_BILL_NO_LOCK = new Object();
+
     private String nextBillNo() {
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = whWarehouseApplyMapper.selectMaxBillNo(date);
-        return FillRuleUtil.getNumber("CKSQ", maxNum, date);
+        synchronized (CKSQ_BILL_NO_LOCK) {
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = whWarehouseApplyMapper.selectMaxBillNo(date);
+            return FillRuleUtil.getNumber("CKSQ", maxNum, date);
+        }
     }
 
     @Override

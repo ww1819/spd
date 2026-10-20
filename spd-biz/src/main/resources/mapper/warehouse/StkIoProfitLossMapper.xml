@@ -296,7 +296,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectMaxBillNo" resultType="java.lang.String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(bill_no) from stk_io_profit_loss
-        where bill_no like concat(#{datePrefix}, '%') and tenant_id = #{scopedTenantId}
+        where bill_no like concat(#{datePrefix}, '%')
+          and (del_flag is null or del_flag != 1)
+          and tenant_id = #{scopedTenantId}
     </select>
 
     <select id="countByStocktakingId" resultType="java.lang.Integer">

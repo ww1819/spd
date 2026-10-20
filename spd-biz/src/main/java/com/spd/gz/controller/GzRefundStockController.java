@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.annotation.Log;
+import com.spd.common.annotation.RepeatSubmit;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
@@ -76,6 +77,7 @@ public class GzRefundStockController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:add')")
     @Log(title = "高值备货退库", businessType = BusinessType.INSERT)
+    @RepeatSubmit(interval = 3000, message = "高值退库单正在保存，请勿重复提交")
     @PostMapping
     public AjaxResult add(@RequestBody GzRefundGoods gzRefundGoods)
     {

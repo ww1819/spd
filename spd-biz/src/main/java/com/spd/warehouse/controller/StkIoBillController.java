@@ -18,6 +18,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.spd.common.annotation.Log;
+import com.spd.common.annotation.RepeatSubmit;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TotalInfo;
@@ -114,6 +115,7 @@ public class StkIoBillController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('inWarehouse:apply:add')")
     @Log(title = "入库", businessType = BusinessType.INSERT)
+    @RepeatSubmit(interval = 3000, message = "入库单正在保存，请勿重复提交")
     @PostMapping
     public AjaxResult add(@RequestBody StkIoBill stkIoBill)
     {

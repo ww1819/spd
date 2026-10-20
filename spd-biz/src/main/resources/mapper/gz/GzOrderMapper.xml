@@ -5,7 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.spd.gz.mapper.GzOrderMapper">
 
     <resultMap type="GzOrder" id="GzOrderResult">
-        <result property="id"    column="id"    />
+        <id     property="id"    column="id"    />
         <result property="orderNo"    column="order_no"    />
         <result property="supplerId"    column="suppler_id"    />
         <result property="orderDate"    column="order_date"    />
@@ -62,7 +62,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <resultMap type="GzOrderEntry" id="GzOrderEntryResult">
-        <result property="id"    column="sub_id"    />
+        <id     property="id"    column="sub_id"    />
         <result property="parenId"    column="sub_paren_id"    />
         <result property="materialId"    column="sub_material_id"    />
         <result property="qty"    column="sub_qty"    />
@@ -309,8 +309,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(order_no) from gz_order
-        where order_no like concat(#{prefix},'%')
-        and order_no like concat('%',#{date},'%')
+        where order_no like concat(#{prefix}, #{date}, '%')
         and del_flag != 1
         and tenant_id = #{scopedTenantId}
     </select>

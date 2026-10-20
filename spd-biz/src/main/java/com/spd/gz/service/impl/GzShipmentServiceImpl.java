@@ -324,12 +324,15 @@ public class GzShipmentServiceImpl implements IGzShipmentService
     //str：单号前缀
     //date：日期
     //result：最终结果，需要的流水号
+    private static final Object GZ_SHIPMENT_NO_LOCK = new Object();
+
     public String getShipmentNo() {
-        String str = "GZCK";
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = gzShipmentMapper.selectMaxBillNo(str, date);
-        String result = FillRuleUtil.getNumber(str,maxNum,date);
-        return result;
+        synchronized (GZ_SHIPMENT_NO_LOCK) {
+            String str = "GZCK";
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = gzShipmentMapper.selectMaxBillNo(str, date);
+            return FillRuleUtil.getNumber(str, maxNum, date);
+        }
     }
 
     /**

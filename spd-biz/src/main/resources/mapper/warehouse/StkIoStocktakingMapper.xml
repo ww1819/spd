@@ -5,7 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.spd.warehouse.mapper.StkIoStocktakingMapper">
 
     <resultMap type="StkIoStocktaking" id="StkIoStocktakingResult">
-        <result property="id"    column="id"    />
+        <id     property="id"    column="id"    />
         <result property="stockNo"    column="stock_no"    />
         <result property="supplerId"    column="suppler_id"    />
         <result property="stockDate"    column="stock_date"    />
@@ -58,7 +58,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <resultMap type="StkIoStocktakingEntry" id="StkIoStocktakingEntryResult">
-        <result property="id"    column="sub_id"    />
+        <id     property="id"    column="sub_id"    />
         <result property="parenId"    column="sub_paren_id"    />
         <result property="stockNo"    column="sub_stock_no"    />
         <result property="commodityId"    column="sub_commodity_id"    />
@@ -132,7 +132,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <resultMap type="StkIoStocktakingEntry" id="StkIoStocktakingEntryLightResult">
-        <result property="id"    column="sub_id"    />
+        <id     property="id"    column="sub_id"    />
         <result property="parenId"    column="sub_paren_id"    />
         <result property="stockNo"    column="sub_stock_no"    />
         <result property="commodityId"    column="sub_commodity_id"    />
@@ -498,7 +498,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(stock_no) from stk_io_stocktaking
-        where stock_no like concat('%',#{date},'%') and tenant_id = #{scopedTenantId}
+        where stock_no like concat('PD', #{date}, '%')
+          and (del_flag is null or del_flag != 1)
+          and tenant_id = #{scopedTenantId}
     </select>
 
     <select id="getMonthHandleDataList" resultMap="StkIoStocktakingResult">

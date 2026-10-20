@@ -83,13 +83,16 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
         return rows;
     }
 
-    //result：最终结果，需要的流水号
+    private static final Object GZSL_BILL_NO_LOCK = new Object();
+
+    //result：最终结果，需要的流水号（加锁，避免并发写出重复 GZSL 单号）
     public String getNumber() {
-        String str = "GZSL";
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = gzDepApplyMapper.selectMaxBillNo(date);
-        String result = FillRuleUtil.getNumber(str,maxNum,date);
-        return result;
+        synchronized (GZSL_BILL_NO_LOCK) {
+            String str = "GZSL";
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = gzDepApplyMapper.selectMaxBillNo(date);
+            return FillRuleUtil.getNumber(str, maxNum, date);
+        }
     }
 
     /**

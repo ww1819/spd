@@ -355,33 +355,37 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
      *
      * @return 追溯单号
      */
+    private static final Object GZ_TRACE_NO_LOCK = new Object();
+
     private String generateTraceNo() {
-        String prefix = "GZ-01";
-        // 获取当前日期，格式为yyyyMMd（去掉最后一位）
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-        String dateFull = sdf.format(new Date());
-        String date = dateFull.substring(0, 7); // 取前7位，如2026011
-        
-        // 查询当天最大的单号
-        String maxTraceNo = gzTraceabilityMapper.selectMaxTraceNo(prefix, date);
-        
-        int sequence = 1;
-        if (StringUtils.isNotEmpty(maxTraceNo)) {
-            // 提取序号部分，格式：GZ-01 + 日期 + -序号
-            String expectedPrefix = prefix + date + "-";
-            if (maxTraceNo.startsWith(expectedPrefix)) {
-                String seqStr = maxTraceNo.substring(expectedPrefix.length());
-                try {
-                    sequence = Integer.parseInt(seqStr) + 1;
-                } catch (NumberFormatException e) {
-                    sequence = 1;
+        synchronized (GZ_TRACE_NO_LOCK) {
+            String prefix = "GZ-01";
+            // 获取当前日期，格式为yyyyMMd（去掉最后一位）
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+            String dateFull = sdf.format(new Date());
+            String date = dateFull.substring(0, 7); // 取前7位，如2026011
+
+            // 查询当天最大的单号
+            String maxTraceNo = gzTraceabilityMapper.selectMaxTraceNo(prefix, date);
+
+            int sequence = 1;
+            if (StringUtils.isNotEmpty(maxTraceNo)) {
+                // 提取序号部分，格式：GZ-01 + 日期 + -序号
+                String expectedPrefix = prefix + date + "-";
+                if (maxTraceNo.startsWith(expectedPrefix)) {
+                    String seqStr = maxTraceNo.substring(expectedPrefix.length());
+                    try {
+                        sequence = Integer.parseInt(seqStr) + 1;
+                    } catch (NumberFormatException e) {
+                        sequence = 1;
+                    }
                 }
             }
+
+            // 格式化序号为两位数字
+            String seqStr = String.format("%02d", sequence);
+            return prefix + date + "-" + seqStr;
         }
-        
-        // 格式化序号为两位数字
-        String seqStr = String.format("%02d", sequence);
-        return prefix + date + "-" + seqStr;
     }
     
     /**

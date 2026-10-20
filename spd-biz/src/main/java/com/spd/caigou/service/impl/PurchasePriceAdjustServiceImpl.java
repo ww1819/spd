@@ -267,10 +267,14 @@ public class PurchasePriceAdjustServiceImpl implements IPurchasePriceAdjustServi
         return count;
     }
 
+    private static final Object TJ_BILL_NO_LOCK = new Object();
+
     private String nextBillNo() {
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = purchasePriceAdjustMapper.selectMaxBillNo(date);
-        return FillRuleUtil.getNumber(BILL_PREFIX, maxNum, date);
+        synchronized (TJ_BILL_NO_LOCK) {
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = purchasePriceAdjustMapper.selectMaxBillNo(date);
+            return FillRuleUtil.getNumber(BILL_PREFIX, maxNum, date);
+        }
     }
 
     private void validateForSave(PurchasePriceAdjust bill) {

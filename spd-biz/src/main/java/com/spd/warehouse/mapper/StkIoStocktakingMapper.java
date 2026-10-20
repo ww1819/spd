@@ -113,7 +113,7 @@ public interface StkIoStocktakingMapper
      * @param date
      * @return
      */
-    String selectMaxBillNo(String date);
+    String selectMaxBillNo(@Param("date") String date);
 
     /**
      * 月结处理

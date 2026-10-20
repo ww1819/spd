@@ -171,13 +171,16 @@ public class StkIoStocktakingServiceImpl implements IStkIoStocktakingService
         return rows;
     }
 
-    //流水号
+    private static final Object PD_BILL_NO_LOCK = new Object();
+
+    //流水号（加锁，避免并发读到同一 max 写出重复 PD 单号）
     public String getNumber() {
-        String str = "PD";
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = stkIoStocktakingMapper.selectMaxBillNo(date);
-        String result = FillRuleUtil.getNumber(str,maxNum,date);
-        return result;
+        synchronized (PD_BILL_NO_LOCK) {
+            String str = "PD";
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = stkIoStocktakingMapper.selectMaxBillNo(date);
+            return FillRuleUtil.getNumber(str, maxNum, date);
+        }
     }
 
     /**

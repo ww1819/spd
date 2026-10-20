@@ -23,6 +23,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectByDocKind" resultMap="SysPrintDocRowsResult">
         <include refid="selectSysPrintDocRowsVo"/>
         where doc_kind = #{docKind}
+        order by id desc
+        limit 1
     </select>
 
     <insert id="insertSysPrintDocRows" parameterType="SysPrintDocRows" useGeneratedKeys="true" keyProperty="id">

@@ -21,7 +21,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <resultMap type="BasApply" id="BasApplyResult">
-        <result property="id"    column="id"    />
+        <id     property="id"    column="id"    />
         <result property="applyBillNo"    column="apply_bill_no"    />
         <result property="applyBillDate"    column="apply_bill_date"    />
         <result property="warehouseId"    column="warehouse_id"    />
@@ -101,7 +101,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <resultMap type="BasApplyEntry" id="BasApplyEntryResult">
-        <result property="id"    column="sub_id"    />
+        <id     property="id"    column="sub_id"    />
         <result property="parenId"    column="sub_paren_id"    />
         <result property="materialId"    column="sub_material_id"    />
         <result property="stockWarehouseId" column="sub_stock_warehouse_id"/>
@@ -396,7 +396,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(apply_bill_no) from bas_apply
-        where apply_bill_no like concat('%',#{date},'%') and tenant_id = #{scopedTenantId}
+        where apply_bill_no like concat(#{prefix}, #{date}, '%')
+          and (del_flag is null or del_flag != 1)
+          and tenant_id = #{scopedTenantId}
     </select>
 
     <!-- 首页等：按筛选条件汇总申领明细数量（与逐单拉详情后 sum(qty) 口径一致） -->

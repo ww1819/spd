@@ -5,7 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.spd.gz.mapper.GzRefundGoodsMapper">
 
     <resultMap type="GzRefundGoods" id="GzRefundGoodsResult">
-        <result property="id"    column="id"    />
+        <id     property="id"    column="id"    />
         <result property="goodsNo"    column="goods_no"    />
         <result property="supplerId"    column="suppler_id"    />
         <result property="goodsDate"    column="goods_date"    />
@@ -50,7 +50,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <resultMap type="GzRefundGoodsEntry" id="GzRefundGoodsEntryResult">
-        <result property="id"    column="sub_id"    />
+        <id     property="id"    column="sub_id"    />
         <result property="parenId"    column="sub_paren_id"    />
         <result property="materialId"    column="sub_material_id"    />
         <result property="qty"    column="sub_qty"    />
@@ -254,7 +254,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectMaxBillNoByPrefix" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(goods_no) from gz_refund_goods
-        where goods_no like concat(#{prefix}, '%', #{date}, '%')
+        where goods_no like concat(#{prefix}, #{date}, '%')
           and del_flag != 1 and tenant_id = #{scopedTenantId}
     </select>
 
@@ -541,7 +541,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectMaxStockBillNoByPrefix" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(refund_no) from gz_refund_stock
-        where refund_no like concat(#{prefix}, '%', #{date}, '%')
+        where refund_no like concat(#{prefix}, #{date}, '%')
           and del_flag != 1 and tenant_id = #{scopedTenantId}
     </select>
 </mapper>

@@ -500,11 +500,15 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         stkIoProfitLossMapper.batchStkIoProfitLossEntry(list);
     }
 
+    private static final Object PL_BILL_NO_LOCK = new Object();
+
     private String generateBillNo(String bizScope) {
-        String prefix = SCOPE_DEP.equals(bizScope) ? "DPL" : "PL";
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = stkIoProfitLossMapper.selectMaxBillNo(prefix + date);
-        return FillRuleUtil.getNumber(prefix, maxNum, date);
+        synchronized (PL_BILL_NO_LOCK) {
+            String prefix = SCOPE_DEP.equals(bizScope) ? "DPL" : "PL";
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = stkIoProfitLossMapper.selectMaxBillNo(prefix + date);
+            return FillRuleUtil.getNumber(prefix, maxNum, date);
+        }
     }
 
     /** 科室盘点：departmentId 有值且非仓库盘点（warehouseId 为空） */

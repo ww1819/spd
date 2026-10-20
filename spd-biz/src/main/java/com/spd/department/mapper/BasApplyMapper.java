@@ -83,7 +83,7 @@ public interface BasApplyMapper
      */
     public int deleteBasApplyEntryByParenId(@Param("id") Long id, @Param("deleteBy") String deleteBy);
 
-    String selectMaxBillNo(String date);
+    String selectMaxBillNo(@Param("prefix") String prefix, @Param("date") String date);
 
     /**
      * 科室申领单关联的出库单明细（经 wh_wh_apply_ck_entry_ref）

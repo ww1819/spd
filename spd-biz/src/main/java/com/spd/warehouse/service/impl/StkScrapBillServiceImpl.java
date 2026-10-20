@@ -225,10 +225,14 @@ public class StkScrapBillServiceImpl implements IStkScrapBillService {
         return count;
     }
 
+    private static final Object BS_BILL_NO_LOCK = new Object();
+
     private String nextBillNo() {
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = stkScrapBillMapper.selectMaxBillNo(date);
-        return FillRuleUtil.getNumber(BILL_PREFIX, maxNum, date);
+        synchronized (BS_BILL_NO_LOCK) {
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = stkScrapBillMapper.selectMaxBillNo(date);
+            return FillRuleUtil.getNumber(BILL_PREFIX, maxNum, date);
+        }
     }
 
     private void validateForSave(StkScrapBill bill) {

@@ -464,12 +464,15 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
      *
      * @return 计划单号
      */
+    private static final Object JH_PLAN_NO_LOCK = new Object();
+
     public String getPlanNumber() {
-        String str = "JH";
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = purchasePlanMapper.selectMaxPlanNo(date);
-        String result = FillRuleUtil.getNumber(str, maxNum, date);
-        return result;
+        synchronized (JH_PLAN_NO_LOCK) {
+            String str = "JH";
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = purchasePlanMapper.selectMaxPlanNo(date);
+            return FillRuleUtil.getNumber(str, maxNum, date);
+        }
     }
 
     /**

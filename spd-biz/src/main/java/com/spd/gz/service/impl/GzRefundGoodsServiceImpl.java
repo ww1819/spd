@@ -245,18 +245,25 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         return rows;
     }
 
+    private static final Object GZTH_BILL_NO_LOCK = new Object();
+    private static final Object GZTK_STOCK_BILL_NO_LOCK = new Object();
+
     private String nextGoodsNoForGoods() {
-        String prefix = "GZTH-";
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = gzRefundGoodsMapper.selectMaxBillNoByPrefix(prefix, date);
-        return FillRuleUtil.getNumber(prefix, maxNum, date);
+        synchronized (GZTH_BILL_NO_LOCK) {
+            String prefix = "GZTH-";
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = gzRefundGoodsMapper.selectMaxBillNoByPrefix(prefix, date);
+            return FillRuleUtil.getNumber(prefix, maxNum, date);
+        }
     }
 
     private String nextGoodsNoForStock() {
-        String prefix = "GZTK-";
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = gzRefundGoodsMapper.selectMaxStockBillNoByPrefix(prefix, date);
-        return FillRuleUtil.getNumber(prefix, maxNum, date);
+        synchronized (GZTK_STOCK_BILL_NO_LOCK) {
+            String prefix = "GZTK-";
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = gzRefundGoodsMapper.selectMaxStockBillNoByPrefix(prefix, date);
+            return FillRuleUtil.getNumber(prefix, maxNum, date);
+        }
     }
 
     /**

@@ -324,12 +324,16 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         return deptIds.get(0);
     }
 
+    private static final Object GZ_CONFIRM_NO_LOCK = new Object();
+
     private String nextConfirmNo(String tenantId)
     {
-        String date = FillRuleUtil.getDateNum();
-        String prefix = PREFIX_CONFIRM + date;
-        String max = gzHighConsumeConfirmMapper.selectMaxConfirmNo(tenantId, prefix);
-        return FillRuleUtil.getNumber(PREFIX_CONFIRM, max, date);
+        synchronized (GZ_CONFIRM_NO_LOCK) {
+            String date = FillRuleUtil.getDateNum();
+            String prefix = PREFIX_CONFIRM + date;
+            String max = gzHighConsumeConfirmMapper.selectMaxConfirmNo(tenantId, prefix);
+            return FillRuleUtil.getNumber(PREFIX_CONFIRM, max, date);
+        }
     }
 
     private String requireTenant()

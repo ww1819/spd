@@ -382,10 +382,14 @@ public class ForecastReplenishServiceImpl implements IForecastReplenishService {
         return sb.toString();
     }
 
+    private static final Object YCB_TASK_NO_LOCK = new Object();
+
     private String nextTaskNo() {
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = forecastReplenishMapper.selectMaxTaskNo(date);
-        return FillRuleUtil.getNumber("YCB", maxNum, date);
+        synchronized (YCB_TASK_NO_LOCK) {
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = forecastReplenishMapper.selectMaxTaskNo(date);
+            return FillRuleUtil.getNumber("YCB", maxNum, date);
+        }
     }
 
     private Map<Long, BigDecimal> toQtyMap(List<ForecastMaterialQtyRow> rows) {

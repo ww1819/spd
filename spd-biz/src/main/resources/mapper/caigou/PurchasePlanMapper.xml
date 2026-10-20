@@ -5,7 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.spd.caigou.mapper.PurchasePlanMapper">
     
     <resultMap type="PurchasePlan" id="PurchasePlanResult">
-        <result property="id"    column="id"    />
+        <id     property="id"    column="id"    />
         <result property="planNo"    column="plan_no"    />
         <result property="supplierId"    column="supplier_id"    />
         <result property="warehouseId"    column="warehouse_id"    />

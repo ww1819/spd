@@ -15,7 +15,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
     
     <resultMap type="DepPurchaseApply" id="DepPurchaseApplyResult">
-        <result property="id"    column="id"    />
+        <id     property="id"    column="id"    />
         <result property="purchaseBillNo"    column="purchase_bill_no"    />
         <result property="purchaseBillDate"    column="purchase_bill_date"    />
         <result property="warehouseId"    column="warehouse_id"    />
@@ -75,7 +75,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <resultMap type="DepPurchaseApplyEntry" id="DepPurchaseApplyEntryResult">
-        <result property="id"    column="sub_id"    />
+        <id     property="id"    column="sub_id"    />
         <result property="parentId"    column="sub_parent_id"    />
         <result property="materialId"    column="sub_material_id"    />
         <result property="materialName"    column="sub_material_name"    />

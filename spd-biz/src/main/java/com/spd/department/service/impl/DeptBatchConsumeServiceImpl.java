@@ -224,12 +224,15 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
      * 生成消耗单号
      * @return 消耗单号
      */
+    private static final Object KSXH_BILL_NO_LOCK = new Object();
+
     public String getNumber() {
-        String str = "KSXH"; // 消耗单前缀
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = deptBatchConsumeMapper.selectMaxBillNo(date);
-        String result = FillRuleUtil.getNumber(str, maxNum, date);
-        return result;
+        synchronized (KSXH_BILL_NO_LOCK) {
+            String str = "KSXH"; // 消耗单前缀
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = deptBatchConsumeMapper.selectMaxBillNo(date);
+            return FillRuleUtil.getNumber(str, maxNum, date);
+        }
     }
 
     /**

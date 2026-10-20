@@ -71,5 +71,5 @@ public interface GzDepApplyMapper
      * @param date
      * @return
      */
-    String selectMaxBillNo(String date);
+    String selectMaxBillNo(@Param("date") String date);
 }

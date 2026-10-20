@@ -455,11 +455,15 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         return v.setScale(6, RoundingMode.HALF_UP);
     }
 
+    private static final Object QC_BILL_NO_LOCK = new Object();
+
     private String getQcBillNo() {
-        String str = "QC";
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = stkInitialImportMapper.selectMaxBillNo(str + date);
-        return FillRuleUtil.getNumber(str, maxNum, date);
+        synchronized (QC_BILL_NO_LOCK) {
+            String str = "QC";
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = stkInitialImportMapper.selectMaxBillNo(str + date);
+            return FillRuleUtil.getNumber(str, maxNum, date);
+        }
     }
 
     private StkBatch buildStkBatchForInitial(StkInitialImport main, StkInitialImportEntry entry) {

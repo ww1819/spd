@@ -5,7 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.spd.foundation.mapper.FdMaterialMapper">
 
     <resultMap type="FdMaterial" id="FdMaterialResult">
-        <result property="id"    column="id"    />
+        <id     property="id"    column="id"    />
         <result property="code"    column="m_code"    />
         <result property="name"    column="m_name"    />
         <result property="supplierId"    column="supplier_id"    />

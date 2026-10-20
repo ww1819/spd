@@ -12,7 +12,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <resultMap type="StkIoBill" id="StkIoBillResult">
-        <result property="id"    column="id"    />
+        <id     property="id"    column="id"    />
         <result property="billNo"    column="bill_no"    />
         <result property="refBillNo"    column="ref_bill_no"    />
         <result property="supplerId"    column="suppler_id"    />
@@ -123,7 +123,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <resultMap type="StkIoBillEntry" id="StkIoBillEntryResult">
-        <result property="id"    column="sub_id"    />
+        <id     property="id"    column="sub_id"    />
         <result property="parenId"    column="sub_paren_id"    />
         <result property="billNo"    column="sub_bill_no"    />
         <result property="commodityId"    column="sub_commodity_id"    />
@@ -1583,8 +1583,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(bill_no) from stk_io_bill
-        where bill_no like concat('%',#{billNo},'%')
-        and bill_type = 101
+        where bill_no like concat('RK', #{billNo}, '%')
+        and (del_flag is null or del_flag != 1)
         and tenant_id = #{scopedTenantId}
     </select>
 
@@ -1606,6 +1606,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         and tenant_id = #{scopedTenantId}
     </select>
 
+    <select id="selectRkMaxSerial" resultType="java.lang.Long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select max(cast(substring(bill_no, 11) as unsigned))
+        from stk_io_bill
+        where bill_no like concat('RK', #{date}, '%')
+        and length(bill_no) &gt; 10
+        and (del_flag is null or del_flag != 1)
+        and tenant_id = #{scopedTenantId}
+    </select>
+
     <select id="selectMaxSettlementBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(bill_no) from stk_io_bill
@@ -1617,24 +1627,54 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectTHMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(bill_no) from stk_io_bill
-        where bill_no like concat('%',#{billNo},'%')
-        and bill_type = 301
+        where bill_no like concat('TH', #{date}, '%')
+        and (del_flag is null or del_flag != 1)
         and tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectTKMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(bill_no) from stk_io_bill
-        where bill_no like concat('%',#{billNo},'%')
-        and bill_type = 401
+        where bill_no like concat('TK', #{date}, '%')
+        and (del_flag is null or del_flag != 1)
         and tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectJSMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(bill_no) from stk_io_bill
-        where bill_no like concat('%',#{billNo},'%')
-        and bill_type = 501
+        where bill_no like concat('DB', #{date}, '%')
+        and (del_flag is null or del_flag != 1)
+        and tenant_id = #{scopedTenantId}
+    </select>
+
+    <select id="selectTkMaxSerial" resultType="java.lang.Long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select max(cast(substring(bill_no, 11) as unsigned))
+        from stk_io_bill
+        where bill_no like concat('TK', #{date}, '%')
+        and length(bill_no) &gt; 10
+        and (del_flag is null or del_flag != 1)
+        and tenant_id = #{scopedTenantId}
+    </select>
+
+    <select id="selectThMaxSerial" resultType="java.lang.Long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select max(cast(substring(bill_no, 11) as unsigned))
+        from stk_io_bill
+        where bill_no like concat('TH', #{date}, '%')
+        and length(bill_no) &gt; 10
+        and (del_flag is null or del_flag != 1)
+        and tenant_id = #{scopedTenantId}
+    </select>
+
+    <select id="selectJsMaxSerial" resultType="java.lang.Long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select max(cast(substring(bill_no, 11) as unsigned))
+        from stk_io_bill
+        where bill_no like concat('DB', #{date}, '%')
+        and length(bill_no) &gt; 10
+        and (del_flag is null or del_flag != 1)
         and tenant_id = #{scopedTenantId}
     </select>
 

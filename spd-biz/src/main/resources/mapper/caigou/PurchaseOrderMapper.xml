@@ -5,7 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.spd.caigou.mapper.PurchaseOrderMapper">
     
     <resultMap type="com.spd.caigou.domain.PurchaseOrder" id="PurchaseOrderResult">
-        <result property="id"    column="id"    />
+        <id     property="id"    column="id"    />
         <result property="orderNo"    column="order_no"    />
         <result property="planNo"    column="plan_no"    />
         <result property="orderDate"    column="order_date"    />
@@ -61,7 +61,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <resultMap type="com.spd.caigou.domain.PurchaseOrderEntry" id="PurchaseOrderEntryResult">
-        <result property="id"    column="id"    />
+        <id     property="id"    column="id"    />
         <result property="parentId"    column="parent_id"    />
         <result property="orderNo"    column="order_no"    />
         <result property="materialId"    column="material_id"    />

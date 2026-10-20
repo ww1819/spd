@@ -5,7 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.spd.gz.mapper.GzShipmentMapper">
 
     <resultMap type="GzShipment" id="GzShipmentResult">
-        <result property="id"    column="id"    />
+        <id     property="id"    column="id"    />
         <result property="shipmentNo"    column="shipment_no"    />
         <result property="departmentId"    column="department_id"    />
         <result property="shipmentDate"    column="shipment_date"    />
@@ -57,7 +57,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <resultMap type="GzShipmentEntry" id="GzShipmentEntryResult">
-        <result property="id"    column="sub_id"    />
+        <id     property="id"    column="sub_id"    />
         <result property="parenId"    column="sub_paren_id"    />
         <result property="materialId"    column="sub_material_id"    />
         <result property="qty"    column="sub_qty"    />
@@ -244,8 +244,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(shipment_no) from gz_shipment
-        where shipment_no like concat(#{prefix},'%')
-        and shipment_no like concat('%',#{date},'%')
+        where shipment_no like concat(#{prefix}, #{date}, '%')
         and del_flag != 1
         and tenant_id = #{scopedTenantId}
     </select>

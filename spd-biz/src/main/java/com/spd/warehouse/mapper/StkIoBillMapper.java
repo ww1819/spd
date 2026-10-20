@@ -148,6 +148,15 @@ public interface StkIoBillMapper
     /** 出库单（CK+日期）当日最大流水号，不按 bill_type 过滤，避免漏计已占号单据 */
     Long selectOutMaxCkSerial(@Param("date") String date);
 
+    /** 入库单（RK+日期）当日最大流水号，不按 bill_type 过滤，避免漏计已占号单据 */
+    Long selectRkMaxSerial(@Param("date") String date);
+
+    Long selectTkMaxSerial(@Param("date") String date);
+
+    Long selectThMaxSerial(@Param("date") String date);
+
+    Long selectJsMaxSerial(@Param("date") String date);
+
     /**
      * 逻辑删除
      * @param stkIoBillEntry
@@ -182,21 +191,21 @@ public interface StkIoBillMapper
      * @param date 当天日期
      * @return
      */
-    String selectTHMaxBillNo(String date);
+    String selectTHMaxBillNo(@Param("date") String date);
 
     /**
      * 查询出入库表退库当天最大的单号
      * @param date 当天日期
      * @return
      */
-    String selectTKMaxBillNo(String date);
+    String selectTKMaxBillNo(@Param("date") String date);
 
     /**
      * 查询出入库表结算当天最大的单号
      * @param date 当天日期
      * @return
      */
-    String selectJSMaxBillNo(String date);
+    String selectJSMaxBillNo(@Param("date") String date);
 
     /**
      * 查询入退货列表

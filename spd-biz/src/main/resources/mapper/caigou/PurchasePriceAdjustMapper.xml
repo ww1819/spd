@@ -4,7 +4,7 @@
 <mapper namespace="com.spd.caigou.mapper.PurchasePriceAdjustMapper">
 
     <resultMap type="com.spd.caigou.domain.PurchasePriceAdjust" id="PurchasePriceAdjustResult">
-        <result property="id" column="id"/>
+        <id     property="id" column="id"/>
         <result property="billNo" column="bill_no"/>
         <result property="adjustType" column="adjust_type"/>
         <result property="adjustTypeName" column="adjust_type_name"/>
@@ -32,7 +32,7 @@
     </resultMap>
 
     <resultMap type="com.spd.caigou.domain.PurchasePriceAdjustEntry" id="PurchasePriceAdjustEntryResult">
-        <result property="id" column="id"/>
+        <id     property="id" column="id"/>
         <result property="parentId" column="parent_id"/>
         <result property="billNo" column="bill_no"/>
         <result property="adjustType" column="adjust_type"/>

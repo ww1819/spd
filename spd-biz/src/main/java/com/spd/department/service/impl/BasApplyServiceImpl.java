@@ -404,19 +404,22 @@ public class BasApplyServiceImpl implements IBasApplyService
     //str：单号前缀
     //date：日期
     //result：最终结果，需要的流水号
+    private static final Object BAS_APPLY_BILL_NO_LOCK = new Object();
+
     public String getNumber(Integer billType) {
-        String str = "SL"; // 默认申领单前缀
-        if (billType != null) {
-            if (billType == 2) {
-                str = "SG"; // 申购单前缀
-            } else if (billType == 3) {
-                str = "ZK"; // 转科申请单前缀
+        synchronized (BAS_APPLY_BILL_NO_LOCK) {
+            String str = "SL"; // 默认申领单前缀
+            if (billType != null) {
+                if (billType == 2) {
+                    str = "SG"; // 申购单前缀
+                } else if (billType == 3) {
+                    str = "ZK"; // 转科申请单前缀
+                }
             }
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = basApplyMapper.selectMaxBillNo(str, date);
+            return FillRuleUtil.getNumber(str, maxNum, date);
         }
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = basApplyMapper.selectMaxBillNo(date);
-        String result = FillRuleUtil.getNumber(str,maxNum,date);
-        return result;
     }
 
     /**

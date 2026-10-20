@@ -5,7 +5,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <mapper namespace="com.spd.gz.mapper.GzTraceabilityMapper">
 
     <resultMap type="GzTraceability" id="GzTraceabilityResult">
-        <result property="id"    column="id"    />
+        <id     property="id"    column="id"    />
         <result property="traceNo"    column="trace_no"    />
         <result property="medicalRecordNo"    column="medical_record_no"    />
         <result property="patientName"    column="patient_name"    />

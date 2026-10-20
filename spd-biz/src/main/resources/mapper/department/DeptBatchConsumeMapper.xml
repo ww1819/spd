@@ -15,7 +15,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <resultMap type="DeptBatchConsume" id="DeptBatchConsumeResult">
-        <result property="id"    column="id"    />
+        <id     property="id"    column="id"    />
         <result property="consumeBillNo"    column="consume_bill_no"    />
         <result property="consumeBillDate"    column="consume_bill_date"    />
         <result property="warehouseId"    column="warehouse_id"    />
@@ -86,7 +86,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <resultMap type="DeptBatchConsumeEntry" id="DeptBatchConsumeEntryResult">
-        <result property="id"    column="sub_id"    />
+        <id     property="id"    column="sub_id"    />
         <result property="parenId"    column="sub_paren_id"    />
         <result property="materialId"    column="sub_material_id"    />
         <result property="unitPrice"    column="sub_unit_price"    />
@@ -421,7 +421,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <select id="selectMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select max(consume_bill_no) from t_hc_ks_xh
-        where consume_bill_no like concat('%',#{date},'%') and tenant_id = #{scopedTenantId}
+        where consume_bill_no like concat('KSXH', #{date}, '%') and tenant_id = #{scopedTenantId}
     </select>
 
     <select id="selectOutRefEntryList" parameterType="DeptBatchConsume" resultType="java.util.Map">

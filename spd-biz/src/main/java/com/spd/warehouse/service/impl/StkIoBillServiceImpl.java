@@ -464,15 +464,18 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         return rows;
     }
 
-    //str：单号前缀
-    //date：日期
-    //result：最终结果，需要的流水号
+    private static final Object RK_BILL_NO_LOCK = new Object();
+
+    /**
+     * 入库单号：RK + yyyyMMdd + 流水（租户内当日唯一递增）。
+     * 与出库 getBillNumber 一样加 JVM 锁，避免并发/重复保存读到同一 max 写出重复 bill_no。
+     */
     public String getNumber() {
-        String str = "RK";
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = stkIoBillMapper.selectMaxBillNo(date);
-        String result = FillRuleUtil.getNumber(str,maxNum,date);
-        return result;
+        synchronized (RK_BILL_NO_LOCK) {
+            String date = FillRuleUtil.getDateNum();
+            Long maxSerial = stkIoBillMapper.selectRkMaxSerial(date);
+            return FillRuleUtil.buildBillNo("RK", date, maxSerial);
+        }
     }
 
 
@@ -2549,30 +2552,41 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         return rows;
     }
 
+    private static final Object TK_BILL_NO_LOCK = new Object();
+    private static final Object TH_BILL_NO_LOCK = new Object();
+    private static final Object JS_BILL_NO_LOCK = new Object();
+    private static final Object SETTLEMENT_BILL_NO_LOCK = new Object();
+
     public String getTKNumber(String str) {
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = stkIoBillMapper.selectTKMaxBillNo(date);
-        String result = FillRuleUtil.getNumber(str,maxNum,date);
-        return result;
+        synchronized (TK_BILL_NO_LOCK) {
+            String date = FillRuleUtil.getDateNum();
+            Long maxSerial = stkIoBillMapper.selectTkMaxSerial(date);
+            return FillRuleUtil.buildBillNo(str, date, maxSerial);
+        }
     }
 
     public String getTHNumber(String str) {
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = stkIoBillMapper.selectTHMaxBillNo(date);
-        String result = FillRuleUtil.getNumber(str,maxNum,date);
-        return result;
+        synchronized (TH_BILL_NO_LOCK) {
+            String date = FillRuleUtil.getDateNum();
+            Long maxSerial = stkIoBillMapper.selectThMaxSerial(date);
+            return FillRuleUtil.buildBillNo(str, date, maxSerial);
+        }
     }
 
     public String getJSNumber(String str) {
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = stkIoBillMapper.selectJSMaxBillNo(date);
-        return FillRuleUtil.getNumber(str, maxNum, date);
+        synchronized (JS_BILL_NO_LOCK) {
+            String date = FillRuleUtil.getDateNum();
+            Long maxSerial = stkIoBillMapper.selectJsMaxSerial(date);
+            return FillRuleUtil.buildBillNo(str, date, maxSerial);
+        }
     }
 
     /** 按指定日期生成单号（调拨单用制单日期，与前端“今天”一致） */
     public String getJSNumber(String str, String date) {
-        String maxNum = stkIoBillMapper.selectJSMaxBillNo(date);
-        return FillRuleUtil.getNumber(str, maxNum, date);
+        synchronized (JS_BILL_NO_LOCK) {
+            Long maxSerial = stkIoBillMapper.selectJsMaxSerial(date);
+            return FillRuleUtil.buildBillNo(str, date, maxSerial);
+        }
     }
 
     @Transactional
@@ -6103,8 +6117,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     public String getSettlementBillNumber(String prefix, Integer billType)
     {
-        String date = FillRuleUtil.getDateNum();
-        String maxNum = stkIoBillMapper.selectMaxSettlementBillNo(prefix, billType);
-        return FillRuleUtil.getNumber(prefix, maxNum, date);
+        synchronized (SETTLEMENT_BILL_NO_LOCK) {
+            String date = FillRuleUtil.getDateNum();
+            String maxNum = stkIoBillMapper.selectMaxSettlementBillNo(prefix, billType);
+            return FillRuleUtil.getNumber(prefix, maxNum, date);
+        }
     }
 }

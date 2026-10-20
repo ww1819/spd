@@ -91,7 +91,7 @@
     <select id="selectMaxBillNo" resultType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         select max(apply_bill_no) from wh_warehouse_apply
-        where apply_bill_no like concat('%', #{date}, '%')
+        where apply_bill_no like concat('CKSQ', #{date}, '%')
           and tenant_id = #{scopedTenantId}
           and (del_flag = 0 or del_flag is null)
     </select>

@@ -26,6 +26,9 @@ import java.util.stream.Collectors;
 @Service
 public class WhSettlementBillServiceImpl implements IWhSettlementBillService {
 
+    private static final Object CKD_BILL_NO_LOCK = new Object();
+    private static final Object GYS_BILL_NO_LOCK = new Object();
+
     @Autowired
     private WhSettlementBillMapper whSettlementBillMapper;
     @Autowired
@@ -75,10 +78,12 @@ public class WhSettlementBillServiceImpl implements IWhSettlementBillService {
             }
         }
         if (StringUtils.isEmpty(row.getBillNo())) {
-            String dateStr = FillRuleUtil.getDateNum();
-            String prefix = "CKD" + dateStr;
-            String maxNo = whSettlementBillMapper.selectMaxBillNo(prefix);
-            row.setBillNo(FillRuleUtil.getNumber("CKD", maxNo, dateStr));
+            synchronized (CKD_BILL_NO_LOCK) {
+                String dateStr = FillRuleUtil.getDateNum();
+                String prefix = "CKD" + dateStr;
+                String maxNo = whSettlementBillMapper.selectMaxBillNo(prefix);
+                row.setBillNo(FillRuleUtil.getNumber("CKD", maxNo, dateStr));
+            }
         }
         row.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(row.getCreateBy())) {
@@ -235,9 +240,11 @@ public class WhSettlementBillServiceImpl implements IWhSettlementBillService {
             SuppSettlementBill supp = new SuppSettlementBill();
             supp.setId(UUID7.generateUUID7());
             supp.setTenantId(tenantId);
-            String prefix = "GYS" + dateStr;
-            String maxNo = suppSettlementBillMapper.selectMaxBillNo(prefix);
-            supp.setBillNo(FillRuleUtil.getNumber("GYS", maxNo, dateStr));
+            synchronized (GYS_BILL_NO_LOCK) {
+                String prefix = "GYS" + dateStr;
+                String maxNo = suppSettlementBillMapper.selectMaxBillNo(prefix);
+                supp.setBillNo(FillRuleUtil.getNumber("GYS", maxNo, dateStr));
+            }
             supp.setSupplierId(supplierId);
             supp.setSupplierName(supplierName);
             supp.setWhSettlementId(id);
