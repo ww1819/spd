@@ -19,6 +19,7 @@ import com.spd.caigou.domain.vo.PurchasePlanEntryDepRefRow;
 import com.spd.caigou.domain.vo.PurchasePlanEntrySupplierExportVO;
 import com.spd.caigou.domain.vo.PurchasePlanSummaryExportVO;
 import com.spd.caigou.domain.vo.PurchaseRecordExportVO;
+import com.spd.foundation.domain.FdDepartment;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.domain.FdSupplier;
 import com.spd.foundation.mapper.FdMaterialMapper;
@@ -44,6 +45,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -160,17 +162,51 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
             List<PurchasePlanEntryDepRefRow> depRefs = purchasePlanEntryDepApplyMapper.selectDepApplyRefsByPlanId(id);
             if (depRefs != null && !depRefs.isEmpty()) {
                 Map<Long, List<Long>> depIdsByEntry = new HashMap<>();
+                Map<Long, LinkedHashSet<String>> deptNamesByEntry = new HashMap<>();
+                Map<Long, LinkedHashSet<Long>> deptIdsByEntry = new HashMap<>();
                 for (PurchasePlanEntryDepRefRow row : depRefs) {
-                    if (row.getEntryId() == null || row.getDepApplyEntryId() == null) {
+                    if (row.getEntryId() == null) {
                         continue;
                     }
-                    depIdsByEntry.computeIfAbsent(row.getEntryId(), k -> new ArrayList<>()).add(row.getDepApplyEntryId());
+                    if (row.getDepApplyEntryId() != null) {
+                        depIdsByEntry.computeIfAbsent(row.getEntryId(), k -> new ArrayList<>()).add(row.getDepApplyEntryId());
+                    }
+                    if (row.getDepartmentName() != null && !row.getDepartmentName().trim().isEmpty()) {
+                        deptNamesByEntry.computeIfAbsent(row.getEntryId(), k -> new LinkedHashSet<>())
+                            .add(row.getDepartmentName().trim());
+                    }
+                    if (row.getDepartmentId() != null) {
+                        deptIdsByEntry.computeIfAbsent(row.getEntryId(), k -> new LinkedHashSet<>())
+                            .add(row.getDepartmentId());
+                    }
                 }
                 for (PurchasePlanEntry entry : purchasePlanEntryList) {
-                    if (entry.getId() != null) {
-                        List<Long> depIds = depIdsByEntry.get(entry.getId());
-                        if (depIds != null && !depIds.isEmpty()) {
-                            entry.setDepApplyEntryIds(depIds);
+                    if (entry.getId() == null) {
+                        continue;
+                    }
+                    List<Long> depIds = depIdsByEntry.get(entry.getId());
+                    if (depIds != null && !depIds.isEmpty()) {
+                        entry.setDepApplyEntryIds(depIds);
+                    }
+                    // 低值按产品汇总常未落 apply_department_id：从关联申购单回填申请科室展示
+                    LinkedHashSet<String> names = deptNamesByEntry.get(entry.getId());
+                    LinkedHashSet<Long> deptIds = deptIdsByEntry.get(entry.getId());
+                    boolean needDeptFill = entry.getApplyDepartment() == null
+                        || entry.getApplyDepartment().getName() == null
+                        || entry.getApplyDepartment().getName().trim().isEmpty();
+                    if (needDeptFill && names != null && !names.isEmpty()) {
+                        String joined = String.join(",", names);
+                        entry.setApplyDepartmentName(joined);
+                        FdDepartment dept = new FdDepartment();
+                        if (deptIds != null && deptIds.size() == 1) {
+                            dept.setId(deptIds.iterator().next());
+                        } else if (entry.getApplyDepartmentId() != null) {
+                            dept.setId(entry.getApplyDepartmentId());
+                        }
+                        dept.setName(joined);
+                        entry.setApplyDepartment(dept);
+                        if (entry.getApplyDepartmentId() == null && deptIds != null && deptIds.size() == 1) {
+                            entry.setApplyDepartmentId(deptIds.iterator().next());
                         }
                     }
                 }

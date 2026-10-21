@@ -71,6 +71,8 @@ public class PurchasePlanEntry extends BaseEntity
     private Long applyDepartmentId;
     /** 申请科室（查询时填充，不持久化） */
     private FdDepartment applyDepartment;
+    /** 申请科室名称（可多科室逗号拼接；查询/展示，不持久化） */
+    private String applyDepartmentName;
 
     /** 耗材信息 */
     private FdMaterial material;
@@ -212,6 +214,8 @@ public class PurchasePlanEntry extends BaseEntity
     public void setApplyDepartmentId(Long applyDepartmentId) { this.applyDepartmentId = applyDepartmentId; }
     public FdDepartment getApplyDepartment() { return applyDepartment; }
     public void setApplyDepartment(FdDepartment applyDepartment) { this.applyDepartment = applyDepartment; }
+    public String getApplyDepartmentName() { return applyDepartmentName; }
+    public void setApplyDepartmentName(String applyDepartmentName) { this.applyDepartmentName = applyDepartmentName; }
 
     public FdMaterial getMaterial() 
     {

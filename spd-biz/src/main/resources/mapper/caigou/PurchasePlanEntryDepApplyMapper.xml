@@ -127,9 +127,19 @@
 
     <select id="selectDepApplyRefsByPlanId" resultType="com.spd.caigou.domain.vo.PurchasePlanEntryDepRefRow">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select r.purchase_plan_entry_id as entryId, r.dep_purchase_apply_entry_id as depApplyEntryId
+        select r.purchase_plan_entry_id as entryId,
+               r.dep_purchase_apply_entry_id as depApplyEntryId,
+               dpa.department_id as departmentId,
+               d.name as departmentName
         from purchase_plan_entry_dep_apply r
         inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id and e.tenant_id = #{scopedTenantId}
+        left join dep_purchase_apply_entry e2 on r.dep_purchase_apply_entry_id = e2.id
+            and e2.tenant_id = #{scopedTenantId}
+            and (e2.del_flag is null or e2.del_flag != 1)
+        left join dep_purchase_apply dpa on coalesce(r.dep_purchase_apply_id, e2.parent_id) = dpa.id
+            and dpa.tenant_id = #{scopedTenantId}
+            and (dpa.del_flag = 0 or dpa.del_flag is null)
+        left join fd_department d on dpa.department_id = d.id
         where e.parent_id = #{planId} and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
         order by r.purchase_plan_entry_id, r.id
     </select>

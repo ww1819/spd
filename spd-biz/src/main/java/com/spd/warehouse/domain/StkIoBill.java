@@ -162,9 +162,8 @@ public class StkIoBill extends BaseEntity
     private String invoiceAmount;
 
     /** 发票时间 */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    @Excel(name = "发票时间", width = 30, dateFormat = "yyyy-MM-dd")
-    private Date invoiceTime;
+    @Excel(name = "发票时间")
+    private String invoiceTime;
 
     /** 采购员 */
     @Excel(name = "采购员")
@@ -859,11 +858,11 @@ public class StkIoBill extends BaseEntity
         this.invoiceAmount = invoiceAmount;
     }
 
-    public Date getInvoiceTime() {
+    public String getInvoiceTime() {
         return invoiceTime;
     }
 
-    public void setInvoiceTime(Date invoiceTime) {
+    public void setInvoiceTime(String invoiceTime) {
         this.invoiceTime = invoiceTime;
     }
 

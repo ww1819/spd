@@ -1604,7 +1604,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_bill` (
   `total_amount` decimal(18,6) DEFAULT NULL COMMENT '金额',
   `invoice_number` varchar(128) DEFAULT NULL COMMENT '发票号',
   `invoice_amount` varchar(64) DEFAULT NULL COMMENT '发票金额',
-  `invoice_time` date DEFAULT NULL COMMENT '发票时间',
+  `invoice_time` varchar(64) DEFAULT NULL COMMENT '发票时间',
   `pro_person` bigint DEFAULT NULL COMMENT '采购员',
   `return_reason` varchar(500) DEFAULT NULL COMMENT '退货原因',
   `is_month_init` int DEFAULT NULL COMMENT '是否月结',

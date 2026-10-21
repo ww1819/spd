@@ -7,6 +7,10 @@ public class PurchasePlanEntryDepRefRow
 {
     private Long entryId;
     private Long depApplyEntryId;
+    /** 申购单科室ID（展示申请科室用） */
+    private Long departmentId;
+    /** 申购单科室名称 */
+    private String departmentName;
 
     public Long getEntryId()
     {
@@ -26,5 +30,25 @@ public class PurchasePlanEntryDepRefRow
     public void setDepApplyEntryId(Long depApplyEntryId)
     {
         this.depApplyEntryId = depApplyEntryId;
+    }
+
+    public Long getDepartmentId()
+    {
+        return departmentId;
+    }
+
+    public void setDepartmentId(Long departmentId)
+    {
+        this.departmentId = departmentId;
+    }
+
+    public String getDepartmentName()
+    {
+        return departmentName;
+    }
+
+    public void setDepartmentName(String departmentName)
+    {
+        this.departmentName = departmentName;
     }
 }

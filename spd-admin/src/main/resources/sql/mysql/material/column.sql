@@ -3565,3 +3565,8 @@ CALL add_table_column('new_product_apply_detail', 'del_flag', 'int', 'delete fla
 /
 CALL add_table_column('new_product_apply_entry', 'del_flag', 'int', 'delete flag', '0');
 /
+
+-- 发票时间：date → varchar(64)，允许非严格日期文本录入（SqlInitRunner 更新重启自动执行）
+ALTER TABLE `stk_io_bill`
+  MODIFY COLUMN `invoice_time` varchar(64) DEFAULT NULL COMMENT '发票时间';
+/
