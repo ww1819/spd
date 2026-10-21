@@ -59,6 +59,33 @@
           and ifnull(l.del_flag, 0) = 0
     </select>
 
+    <select id="sumActiveNetAllocQtyForMirrorRow" resultType="java.math.BigDecimal">
+        select coalesce(sum(<include refid="linkNetAllocQtyExpr"/>), 0) from his_mirror_consume_link l
+        where l.tenant_id = #{tenantId} and l.visit_kind = #{visitKind} and l.mirror_row_id = #{mirrorRowId}
+          and ifnull(l.del_flag, 0) = 0
+          and (
+            (
+              l.traceability_id is not null
+              and exists (
+                select 1 from gz_traceability t
+                where t.id = l.traceability_id
+                  and t.tenant_id = l.tenant_id
+                  and ifnull(t.del_flag, 0) = 0
+              )
+            )
+            or
+            (
+              l.dept_batch_consume_id is not null
+              and exists (
+                select 1 from t_hc_ks_xh h
+                where h.id = l.dept_batch_consume_id
+                  and h.tenant_id = l.tenant_id
+                  and ifnull(h.del_flag, 0) = 0
+              )
+            )
+          )
+    </select>
+
     <select id="selectDistinctBillSourcesForMirror" resultType="java.lang.String">
         select distinct ifnull(h.bill_source, '')
         from his_mirror_consume_link l
@@ -441,6 +468,18 @@
             update_time = now()
         where tenant_id = #{tenantId}
           and id = #{id}
+          and ifnull(del_flag, 0) = 0
+    </update>
+
+    <update id="softDeleteLinksByTraceabilityId">
+        update his_mirror_consume_link
+        set del_flag = 1,
+            delete_by = #{deleteBy},
+            delete_time = now(),
+            update_by = #{deleteBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and traceability_id = #{traceabilityId}
           and ifnull(del_flag, 0) = 0
     </update>
 

@@ -17,6 +17,13 @@ public interface HisMirrorConsumeLinkMapper
     BigDecimal sumNetAllocQtyForMirrorRow(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
         @Param("mirrorRowId") String mirrorRowId);
 
+    /**
+     * 有效净核销量：关联行未删，且对应高值追溯单/科室消耗单仍有效。
+     * 追溯单已删但 link 残留时，按 0 计（与「消耗记录」展示一致）。
+     */
+    BigDecimal sumActiveNetAllocQtyForMirrorRow(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
+        @Param("mirrorRowId") String mirrorRowId);
+
     List<String> selectDistinctBillSourcesForMirror(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
         @Param("mirrorRowId") String mirrorRowId);
 
@@ -65,6 +72,10 @@ public interface HisMirrorConsumeLinkMapper
 
     /** 高值冲销：软删关联行（释放后可重新扫码核销） */
     int softDeleteLinkById(@Param("tenantId") String tenantId, @Param("id") String id,
+        @Param("deleteBy") String deleteBy);
+
+    /** 删除高值追溯单时：软删该单下全部消耗关联行 */
+    int softDeleteLinksByTraceabilityId(@Param("tenantId") String tenantId, @Param("traceabilityId") Long traceabilityId,
         @Param("deleteBy") String deleteBy);
 
     /** 确认批次下仍有效且尚有净核销量的关联行（反向后同批一并冲销回补） */

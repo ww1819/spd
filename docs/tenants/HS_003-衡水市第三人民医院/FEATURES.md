@@ -39,7 +39,7 @@
 | 菜单/功能 | 差异说明 | 关键实现 |
 |-----------|----------|----------|
 | 患者收费查询 | HIS 计费镜像抓取与查询；菜单挂在 **科室消耗** 下 | `department/patientCharge`；`move_patient_charge_to_consume_public.sql` |
-| 高值扫描核销 | HIS 计费镜像高值扫码核销 | `gz/highChargeScan` |
+| 高值扫描核销 | HIS 计费镜像高值扫码核销；条码/追溯删除后无有效消耗则回退待核销 | `gz/highChargeScan` |
 | HIS 计费自动处理 | 抓取后自动低值消耗 / 自动退费开关 | `HisBillingTenantConstants`；`sb_tenant_setting`；菜单「衡水计费自动消耗开关」 |
 | 众阳 HIS 单据推送 | **未接入**（与枣强不同） | `MSUN_INTEGRATED_TENANT_IDS` 不含本租户 |
 

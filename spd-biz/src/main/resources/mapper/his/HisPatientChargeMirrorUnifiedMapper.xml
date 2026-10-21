@@ -31,26 +31,16 @@
         </if>
     </sql>
 
-    <!-- 高低值判定：仅以耗材档案 fd_material.is_gz 为准（通过 his_charge_item_id 对照 charge_item_id） -->
-    <sql id="unifiedHighMaterialJoin">
-        left join (
-            select distinct fm.tenant_id as tenant_id, trim(fm.his_charge_item_id) as charge_item_id
-            from fd_material fm
-            where fm.tenant_id = #{tenantId}
-              and (fm.del_flag = 0 or fm.del_flag is null)
-              and trim(fm.is_gz) = '1'
-              and fm.his_charge_item_id is not null
-              and trim(fm.his_charge_item_id) != ''
-        ) fm_high on fm_high.tenant_id = m.tenant_id and fm_high.charge_item_id = trim(m.charge_item_id)
-    </sql>
-
+    <!--
+      列表高低值：直接用冗余列 m.value_level（入库/绑定/refreshAllValueLevelsForTenant 维护）。
+      禁止再 left join fd_material 派生表 + trim()，否则 list+count 易超 2s。
+    -->
     <sql id="resolvedValueLevelExpr">
-        case when fm_high.charge_item_id is not null then '1' else '2' end
+        ifnull(nullif(trim(m.value_level), ''), '2')
     </sql>
 
     <sql id="unifiedListFrom">
         from his_patient_charge_mirror_unified m
-        <include refid="unifiedHighMaterialJoin"/>
     </sql>
 
     <sql id="unifiedSelectColumns">
@@ -63,6 +53,7 @@
         m.use_date, m.charge_date_display, m.charge_at,
         m.quantity, m.unit_price, m.total_amount, m.charge_operator, m.payment_type, m.receipt_no, m.remark, m.row_fingerprint,
         m.process_status, m.process_type, m.process_time, m.process_by, m.process_party, m.process_situation,
+        m.value_level,
         m.create_by, m.create_time, m.update_by, m.update_time
     </sql>
 
@@ -188,11 +179,11 @@
         <if test="endChargeDate != null"> and m.charge_at &lt;= #{endChargeDate}</if>
         <if test="beginProcessTime != null"> and m.process_time &gt;= #{beginProcessTime}</if>
         <if test="endProcessTime != null"> and m.process_time &lt;= #{endProcessTime}</if>
-        <if test="chargeListMode != null and chargeListMode == 'HIGH'"> and fm_high.charge_item_id is not null</if>
-        <if test="chargeListMode != null and chargeListMode == 'LOW'"> and fm_high.charge_item_id is null</if>
+        <if test="chargeListMode != null and chargeListMode == 'HIGH'"> and m.value_level = '1'</if>
+        <if test="chargeListMode != null and chargeListMode == 'LOW'"> and (m.value_level is null or m.value_level &lt;&gt; '1')</if>
         <if test="chargeListMode == null or chargeListMode == ''">
-            <if test='valueLevel != null and valueLevel.toString() == "1"'> and fm_high.charge_item_id is not null</if>
-            <if test='valueLevel != null and valueLevel.toString() == "2"'> and fm_high.charge_item_id is null</if>
+            <if test='valueLevel != null and valueLevel.toString() == "1"'> and m.value_level = '1'</if>
+            <if test='valueLevel != null and valueLevel.toString() == "2"'> and (m.value_level is null or m.value_level &lt;&gt; '1')</if>
         </if>
         <if test="valueLevelIn != null and valueLevelIn.size() &gt; 0">
             and (<include refid="resolvedValueLevelExpr"/>) in
@@ -527,8 +518,7 @@
 
     <select id="selectList" resultMap="UnifiedResult">
         select
-            <include refid="unifiedSelectColumns"/>,
-            <include refid="resolvedValueLevelExpr"/> as value_level
+            <include refid="unifiedSelectColumns"/>
         <include refid="unifiedListFrom"/>
         <include refid="unifiedListWhere"/>
         <include refid="unifiedListOrderBy"/>
@@ -549,7 +539,6 @@
             ifnull(cim.unit, '') as unitName,
             m.unit_price as unitPrice
         from his_patient_charge_mirror_unified m
-        <include refid="unifiedHighMaterialJoin"/>
         left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
             and trim(cim.charge_item_id) = trim(m.charge_item_id)
             and (cim.deleted_flag is null or cim.deleted_flag != 1)
@@ -562,7 +551,6 @@
             resultType="long">
         select count(1)
         from his_patient_charge_mirror_unified m
-        <include refid="unifiedHighMaterialJoin"/>
         <include refid="unifiedListWhere"/>
     </select>
 

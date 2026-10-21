@@ -3570,3 +3570,67 @@ CALL add_table_column('new_product_apply_entry', 'del_flag', 'int', 'delete flag
 ALTER TABLE `stk_io_bill`
   MODIFY COLUMN `invoice_time` varchar(64) DEFAULT NULL COMMENT '发票时间';
 /
+
+-- 高值核销确认列表加速索引（SqlInitRunner 更新重启自动执行；已存在则跳过）
+SET @idx_hmcl_trace := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'his_mirror_consume_link' AND index_name = 'idx_hmcl_tenant_confirm_trace'
+);
+/
+SET @sql_hmcl_trace := IF(@idx_hmcl_trace = 0,
+  'ALTER TABLE his_mirror_consume_link ADD INDEX idx_hmcl_tenant_confirm_trace (tenant_id, confirm_status, del_flag, gz_dep_inventory_id, traceability_id)',
+  'SELECT 1');
+/
+PREPARE stmt_hmcl_trace FROM @sql_hmcl_trace;
+/
+EXECUTE stmt_hmcl_trace;
+/
+DEALLOCATE PREPARE stmt_hmcl_trace;
+/
+SET @idx_hmcl_legacy := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'his_mirror_consume_link' AND index_name = 'idx_hmcl_tenant_confirm_legacy'
+);
+/
+SET @sql_hmcl_legacy := IF(@idx_hmcl_legacy = 0,
+  'ALTER TABLE his_mirror_consume_link ADD INDEX idx_hmcl_tenant_confirm_legacy (tenant_id, confirm_status, del_flag, gz_dep_inventory_id, dept_batch_consume_id)',
+  'SELECT 1');
+/
+PREPARE stmt_hmcl_legacy FROM @sql_hmcl_legacy;
+/
+EXECUTE stmt_hmcl_legacy;
+/
+DEALLOCATE PREPARE stmt_hmcl_legacy;
+/
+SET @idx_gz_tr_ctime := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'gz_traceability' AND index_name = 'idx_gz_tr_list_ctime'
+);
+/
+SET @sql_gz_tr_ctime := IF(@idx_gz_tr_ctime = 0,
+  'ALTER TABLE gz_traceability ADD INDEX idx_gz_tr_list_ctime (tenant_id, trace_source, order_status, del_flag, create_time)',
+  'SELECT 1');
+/
+PREPARE stmt_gz_tr_ctime FROM @sql_gz_tr_ctime;
+/
+EXECUTE stmt_gz_tr_ctime;
+/
+DEALLOCATE PREPARE stmt_gz_tr_ctime;
+/
+
+-- 高值扫描核销/患者收费统一镜像列表：按 value_level + charge_at 加速（SqlInitRunner 幂等）
+SET @idx_hpcm_vl_at := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'his_patient_charge_mirror_unified' AND index_name = 'idx_hpcm_unified_tenant_vl_at'
+);
+/
+SET @sql_hpcm_vl_at := IF(@idx_hpcm_vl_at = 0,
+  'ALTER TABLE his_patient_charge_mirror_unified ADD INDEX idx_hpcm_unified_tenant_vl_at (tenant_id, value_level, charge_at)',
+  'SELECT 1');
+/
+PREPARE stmt_hpcm_vl_at FROM @sql_hpcm_vl_at;
+/
+EXECUTE stmt_hpcm_vl_at;
+/
+DEALLOCATE PREPARE stmt_hpcm_vl_at;
+/

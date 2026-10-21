@@ -1,5 +1,6 @@
 package com.spd.gz.mapper;
 
+import java.math.BigDecimal;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import com.spd.gz.domain.GzHighConsumeConfirm;
@@ -13,6 +14,9 @@ public interface GzHighConsumeConfirmMapper
     List<GzHighChargeConfirmRowVo> selectConfirmList(GzHighChargeConfirmQuery query);
 
     long selectConfirmListCount(GzHighChargeConfirmQuery query);
+
+    /** 列表合计金额（瘦 JOIN，勿走宽表） */
+    BigDecimal selectConfirmListSumAmt(GzHighChargeConfirmQuery query);
 
     /** 分页第一步：仅返回本页 linkId */
     List<String> selectConfirmListIds(GzHighChargeConfirmQuery query);

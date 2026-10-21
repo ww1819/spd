@@ -1,28 +1,33 @@
 package com.spd.gz.service.impl;
 
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.spd.common.utils.DateUtils;
 import com.spd.common.exception.ServiceException;
+import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
-import java.math.BigDecimal;
-import com.spd.gz.domain.GzTraceabilityEntry;
-import com.spd.gz.mapper.GzTraceabilityMapper;
-import com.spd.gz.domain.GzTraceability;
+import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.domain.GzMaterialUsageReportQuery;
 import com.spd.gz.domain.GzMaterialUsageReportVo;
+import com.spd.gz.domain.GzTraceability;
+import com.spd.gz.domain.GzTraceabilityEntry;
 import com.spd.gz.domain.GzTraceabilitySummaryVo;
-import com.spd.gz.service.IGzTraceabilityService;
 import com.spd.gz.mapper.GzDepInventoryMapper;
-import com.spd.gz.domain.GzDepInventory;
+import com.spd.gz.mapper.GzTraceabilityMapper;
+import com.spd.gz.service.IGzTraceabilityService;
 import com.spd.gz.support.GzTraceSourceConstants;
 import com.spd.hc.service.IHcBarcodeLifecycleService;
+import com.spd.his.mapper.HisInpatientChargeMirrorMapper;
+import com.spd.his.mapper.HisMirrorConsumeLinkMapper;
+import com.spd.his.mapper.HisOutpatientChargeMirrorMapper;
+import com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper;
 
 /**
  * 高值追溯单Service业务层处理
@@ -41,6 +46,18 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
 
     @Autowired
     private IHcBarcodeLifecycleService hcBarcodeLifecycleService;
+
+    @Autowired
+    private HisMirrorConsumeLinkMapper hisMirrorConsumeLinkMapper;
+
+    @Autowired
+    private HisInpatientChargeMirrorMapper hisInpatientChargeMirrorMapper;
+
+    @Autowired
+    private HisOutpatientChargeMirrorMapper hisOutpatientChargeMirrorMapper;
+
+    @Autowired
+    private HisPatientChargeMirrorUnifiedMapper hisPatientChargeMirrorUnifiedMapper;
 
     /**
      * 查询高值追溯单
@@ -244,11 +261,12 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         if (ids == null || ids.length == 0) {
             return 0;
         }
-        // 恢复库存
+        String operator = SecurityUtils.getUserIdStr();
         for (Long id : ids) {
+            releaseMirrorLinksAfterTraceDelete(id, operator);
             restoreDepartmentInventory(id);
         }
-        return gzTraceabilityMapper.deleteGzTraceabilityByIds(ids, SecurityUtils.getUserIdStr());
+        return gzTraceabilityMapper.deleteGzTraceabilityByIds(ids, operator);
     }
 
     /**
@@ -261,9 +279,62 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
     @Transactional
     public int deleteGzTraceabilityById(Long id)
     {
-        // 恢复库存
+        String operator = SecurityUtils.getUserIdStr();
+        releaseMirrorLinksAfterTraceDelete(id, operator);
         restoreDepartmentInventory(id);
-        return gzTraceabilityMapper.deleteGzTraceabilityById(id, SecurityUtils.getUserIdStr());
+        return gzTraceabilityMapper.deleteGzTraceabilityById(id, operator);
+    }
+
+    /**
+     * HIS 镜像高值核销单删除后：软删消耗关联；若该计费行已无有效净核销量则回退为待核销。
+     */
+    private void releaseMirrorLinksAfterTraceDelete(Long traceabilityId, String operator)
+    {
+        if (traceabilityId == null)
+        {
+            return;
+        }
+        GzTraceability trace = gzTraceabilityMapper.selectGzTraceabilityById(traceabilityId);
+        if (trace == null)
+        {
+            return;
+        }
+        String tenantId = StringUtils.isNotEmpty(trace.getTenantId())
+            ? trace.getTenantId() : SecurityUtils.getCustomerId();
+        if (StringUtils.isEmpty(tenantId))
+        {
+            return;
+        }
+        hisMirrorConsumeLinkMapper.softDeleteLinksByTraceabilityId(tenantId, traceabilityId, operator);
+        if (!GzTraceSourceConstants.HIS_MIRROR_HIGH.equals(StringUtils.trimToEmpty(trace.getTraceSource())))
+        {
+            return;
+        }
+        String visitKind = StringUtils.trimToEmpty(trace.getVisitKind()).toUpperCase();
+        String mirrorRowId = StringUtils.trimToEmpty(trace.getMirrorRowId());
+        if (StringUtils.isEmpty(visitKind) || StringUtils.isEmpty(mirrorRowId))
+        {
+            return;
+        }
+        BigDecimal net = hisMirrorConsumeLinkMapper.sumActiveNetAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId);
+        if (net != null && net.compareTo(BigDecimal.ZERO) > 0)
+        {
+            return;
+        }
+        Date procTime = DateUtils.getNowDate();
+        List<String> ids = Collections.singletonList(mirrorRowId);
+        if ("INPATIENT".equals(visitKind))
+        {
+            hisInpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids,
+                "PENDING_CONSUME", "", procTime, operator, "", "");
+        }
+        else
+        {
+            hisOutpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids,
+                "PENDING_CONSUME", "", procTime, operator, "", "");
+        }
+        hisPatientChargeMirrorUnifiedMapper.updateMirrorProcessByIds(tenantId, ids,
+            "PENDING_CONSUME", "", procTime, operator, "", "");
     }
 
     /**

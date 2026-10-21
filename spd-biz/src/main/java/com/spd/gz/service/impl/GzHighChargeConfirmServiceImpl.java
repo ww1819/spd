@@ -1,5 +1,6 @@
 package com.spd.gz.service.impl;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -132,6 +133,30 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         page.setTotal(total);
         page.addAll(rows);
         return page;
+    }
+
+    @Override
+    public BigDecimal selectConfirmListSumAmt(GzHighChargeConfirmQuery query)
+    {
+        if (query == null)
+        {
+            query = new GzHighChargeConfirmQuery();
+        }
+        if (StringUtils.isBlank(query.getTenantId()))
+        {
+            query.setTenantId(requireTenant());
+        }
+        normalizeSortParams(query);
+        PageUtils.clearPage();
+        try
+        {
+            BigDecimal amt = gzHighConsumeConfirmMapper.selectConfirmListSumAmt(query);
+            return amt != null ? amt : BigDecimal.ZERO;
+        }
+        finally
+        {
+            PageUtils.clearPage();
+        }
     }
 
     private static void normalizeSortParams(GzHighChargeConfirmQuery query)

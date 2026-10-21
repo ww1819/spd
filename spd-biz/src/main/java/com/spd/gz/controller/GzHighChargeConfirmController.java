@@ -1,5 +1,6 @@
 package com.spd.gz.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,11 +11,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.github.pagehelper.Page;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.annotation.Log;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
+import com.spd.common.core.page.TotalInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.gz.domain.dto.GzHighChargeConfirmBody;
 import com.spd.gz.domain.dto.GzHighChargeConfirmQuery;
@@ -52,7 +55,14 @@ public class GzHighChargeConfirmController extends BaseController
         try
         {
             List<GzHighChargeConfirmRowVo> list = gzHighChargeConfirmService.selectConfirmList(query);
-            return getDataTable(list);
+            TotalInfo totalInfo = new TotalInfo();
+            totalInfo.setTotalAmt(gzHighChargeConfirmService.selectConfirmListSumAmt(query));
+            if (totalInfo.getTotalAmt() == null)
+            {
+                totalInfo.setTotalAmt(BigDecimal.ZERO);
+            }
+            long total = (list instanceof Page) ? ((Page<?>) list).getTotal() : (list == null ? 0L : list.size());
+            return getDataTable(list, totalInfo, total);
         }
         finally
         {

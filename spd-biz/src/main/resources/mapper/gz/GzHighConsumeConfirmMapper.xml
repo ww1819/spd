@@ -849,6 +849,117 @@
         ) confirm_union
     </select>
 
+    <!--
+      合计金额：瘦 JOIN + 仅补明细价税字段，禁止走宽表/5000 行回退。
+      追溯路径强制 join entry；legacy 强制 join entry。
+    -->
+    <select id="selectConfirmListSumAmt" resultType="java.math.BigDecimal">
+        select ifnull(sum(x.line_amt), 0) from (
+            select case
+                when te.charge_price is not null and coalesce(l.alloc_qty, te.quantity) is not null
+                then te.charge_price * coalesce(l.alloc_qty, te.quantity)
+                else 0
+            end as line_amt
+            from his_mirror_consume_link l
+            inner join gz_traceability t on t.id = l.traceability_id
+                and t.tenant_id = l.tenant_id
+                and ifnull(t.del_flag, 0) = 0
+                and t.trace_source = 'HIS_MIRROR_HIGH'
+                and t.order_status = 2
+            inner join gz_traceability_entry te on te.id = l.traceability_entry_id
+                and te.tenant_id = l.tenant_id
+                and ifnull(te.del_flag, 0) = 0
+            <if test="(sortField != null and sortField != '')
+                or (inHospitalCode != null and inHospitalCode != '')">
+                left join gz_dep_inventory gdi on gdi.id = l.gz_dep_inventory_id and gdi.tenant_id = l.tenant_id
+            </if>
+            <if test="(sortField != null and sortField != '')
+                or (materialSpeci != null and materialSpeci != '')
+                or (materialModel != null and materialModel != '')">
+                left join fd_material m on m.id = te.material_id and m.tenant_id = l.tenant_id
+            </if>
+            <if test="(sortField != null and sortField != '')
+                or (patientName != null and patientName != '')
+                or (visitNo != null and visitNo != '')
+                or (hisChargeId != null and hisChargeId != '')
+                or (chargeItemId != null and chargeItemId != '')
+                or orderingDepartmentId != null
+                or execDepartmentId != null">
+                left join his_inpatient_charge_mirror inp on l.visit_kind = 'INPATIENT' and inp.id = l.mirror_row_id and inp.tenant_id = l.tenant_id
+                left join his_outpatient_charge_mirror outp on l.visit_kind = 'OUTPATIENT' and outp.id = l.mirror_row_id and outp.tenant_id = l.tenant_id
+            </if>
+            <if test="pendingRefundReverse != null and pendingRefundReverse == '1'">
+                left join gz_high_consume_confirm_bill th_bill on th_bill.confirm_id = l.confirm_id
+                    and th_bill.tenant_id = l.tenant_id
+                    and th_bill.bill_type = 301
+                    and ifnull(th_bill.del_flag, 0) = 0
+                    and th_bill.supplier_id = cast(te.supplier_id as char)
+                left join gz_high_consume_confirm_bill tk_bill on tk_bill.confirm_id = l.confirm_id
+                    and tk_bill.tenant_id = l.tenant_id
+                    and tk_bill.bill_type = 401
+                    and ifnull(tk_bill.del_flag, 0) = 0
+                    and tk_bill.supplier_id = cast(te.supplier_id as char)
+            </if>
+            where l.tenant_id = #{tenantId}
+              and ifnull(l.del_flag, 0) = 0
+              and l.gz_dep_inventory_id is not null
+              and l.traceability_id is not null
+            <include refid="confirmListIdTraceFilters"/>
+            union all
+            select case
+                when e.unit_price is not null and coalesce(l.alloc_qty, e.qty) is not null
+                then e.unit_price * coalesce(l.alloc_qty, e.qty)
+                else ifnull(e.amt, 0)
+            end as line_amt
+            from his_mirror_consume_link l
+            inner join t_hc_ks_xh h on h.id = l.dept_batch_consume_id
+                and h.tenant_id = l.tenant_id
+                and ifnull(h.del_flag, 0) = 0
+                and ifnull(h.reverse_flag, 0) = 0
+                and h.bill_source = 'HIS_MIRROR_ROW_HIGH'
+                and h.consume_bill_status = 2
+            inner join t_hc_ks_xh_entry e on e.id = l.dept_batch_consume_entry_id
+                and ifnull(e.del_flag, 0) = 0
+            <if test="(sortField != null and sortField != '')
+                or (inHospitalCode != null and inHospitalCode != '')">
+                left join gz_dep_inventory gzi on gzi.id = l.gz_dep_inventory_id and gzi.tenant_id = l.tenant_id
+            </if>
+            <if test="(sortField != null and sortField != '')
+                or (materialSpeci != null and materialSpeci != '')
+                or (materialModel != null and materialModel != '')">
+                left join fd_material m on m.id = e.material_id and m.tenant_id = l.tenant_id
+            </if>
+            <if test="(sortField != null and sortField != '')
+                or (patientName != null and patientName != '')
+                or (visitNo != null and visitNo != '')
+                or (hisChargeId != null and hisChargeId != '')
+                or (chargeItemId != null and chargeItemId != '')
+                or orderingDepartmentId != null
+                or execDepartmentId != null">
+                left join his_inpatient_charge_mirror inp on l.visit_kind = 'INPATIENT' and inp.id = l.mirror_row_id and inp.tenant_id = l.tenant_id
+                left join his_outpatient_charge_mirror outp on l.visit_kind = 'OUTPATIENT' and outp.id = l.mirror_row_id and outp.tenant_id = l.tenant_id
+            </if>
+            <if test="pendingRefundReverse != null and pendingRefundReverse == '1'">
+                left join gz_high_consume_confirm_bill th_bill on th_bill.confirm_id = l.confirm_id
+                    and th_bill.tenant_id = l.tenant_id
+                    and th_bill.bill_type = 301
+                    and ifnull(th_bill.del_flag, 0) = 0
+                    and th_bill.supplier_id = cast(e.supplier_id as char)
+                left join gz_high_consume_confirm_bill tk_bill on tk_bill.confirm_id = l.confirm_id
+                    and tk_bill.tenant_id = l.tenant_id
+                    and tk_bill.bill_type = 401
+                    and ifnull(tk_bill.del_flag, 0) = 0
+                    and tk_bill.supplier_id = cast(e.supplier_id as char)
+            </if>
+            where l.tenant_id = #{tenantId}
+              and ifnull(l.del_flag, 0) = 0
+              and l.gz_dep_inventory_id is not null
+              and l.traceability_id is null
+              and l.dept_batch_consume_id is not null
+            <include refid="confirmListIdLegacyFilters"/>
+        ) x
+    </select>
+
     <select id="selectConfirmLineDetailsByLinkIds" resultType="com.spd.gz.domain.dto.GzHighChargeConfirmRowVo">
         select
             l.id as linkId,

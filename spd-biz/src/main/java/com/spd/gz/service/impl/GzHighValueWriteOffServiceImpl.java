@@ -205,7 +205,7 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
             int p = key.indexOf('|');
             String visitKind = key.substring(0, p);
             String mirrorRowId = key.substring(p + 1);
-            BigDecimal net = nz(hisMirrorConsumeLinkMapper.sumNetAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId));
+            BigDecimal net = nz(hisMirrorConsumeLinkMapper.sumActiveNetAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId));
             if (net.compareTo(BigDecimal.ZERO) <= 0)
             {
                 resetMirrorToPending(tenantId, visitKind, mirrorRowId);
@@ -319,7 +319,7 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
             {
                 return;
             }
-            BigDecimal net = nz(hisMirrorConsumeLinkMapper.sumNetAllocQtyForMirrorRow(
+            BigDecimal net = nz(hisMirrorConsumeLinkMapper.sumActiveNetAllocQtyForMirrorRow(
                 tenantId, t.getVisitKind().trim().toUpperCase(), t.getMirrorRowId().trim()));
             if (net.compareTo(BigDecimal.ZERO) <= 0)
             {
@@ -337,18 +337,19 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
         Date procTime = DateUtils.getNowDate();
         String procBy = SecurityUtils.getUserIdStr();
         List<String> ids = java.util.Collections.singletonList(mirrorRowId);
+        // processSituation/processParty 传空串以清空「核销成功」等旧文案（null 不会更新列）
         if (KIND_IN.equals(visitKind))
         {
             hisInpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids,
-                STATUS_PENDING, PROC_TYPE_EMPTY, procTime, procBy, null, null);
+                STATUS_PENDING, PROC_TYPE_EMPTY, procTime, procBy, "", "");
         }
         else
         {
             hisOutpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids,
-                STATUS_PENDING, PROC_TYPE_EMPTY, procTime, procBy, null, null);
+                STATUS_PENDING, PROC_TYPE_EMPTY, procTime, procBy, "", "");
         }
         hisPatientChargeMirrorUnifiedMapper.updateMirrorProcessByIds(tenantId, ids,
-            STATUS_PENDING, PROC_TYPE_EMPTY, procTime, procBy, null, null);
+            STATUS_PENDING, PROC_TYPE_EMPTY, procTime, procBy, "", "");
     }
 
     private static BigDecimal refundableOnLink(HisMirrorConsumeLink lk)

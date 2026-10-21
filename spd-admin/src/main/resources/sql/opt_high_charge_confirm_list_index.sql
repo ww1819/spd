@@ -1,4 +1,5 @@
 -- 高值核销确认列表（状态+日期）加速索引
+-- 手工入口；更新系统重启时由 SqlInitRunner 执行 material/column.sql 同段（幂等）。
 -- 已在开发库 aspt 执行；生产可按需执行（先 SHOW INDEX 确认是否已存在）。
 
 ALTER TABLE his_mirror_consume_link

@@ -1877,8 +1877,63 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             {
                 continue;
             }
+            // 仅高值：条码/追溯已删导致无有效消耗时，校正「已核销」为待核销
+            if (isHighValueLevel(u.getValueLevel()))
+            {
+                reconcileHighConsumedWithoutActiveAlloc(u);
+            }
             u.setProcessByName(resolveProcessByDisplayName(u.getProcessBy(), nameCache));
         }
+    }
+
+    private static boolean isHighValueLevel(String valueLevel)
+    {
+        return "1".equals(StringUtils.trimToEmpty(valueLevel));
+    }
+
+    /**
+     * 高值专用：追溯/条码已删导致消耗记录为空，但镜像仍标 CONSUMED 时，回退为 PENDING_CONSUME。
+     */
+    private void reconcileHighConsumedWithoutActiveAlloc(HisPatientChargeMirrorUnified u)
+    {
+        String status = StringUtils.trimToEmpty(u.getProcessStatus());
+        if (!"CONSUMED".equals(status) && !"PARTIALLY_CONSUMED".equals(status) && !"CONSUMING".equals(status))
+        {
+            return;
+        }
+        String tenantId = StringUtils.trimToEmpty(u.getTenantId());
+        String visitKind = StringUtils.trimToEmpty(u.getVisitKind()).toUpperCase();
+        String mirrorRowId = StringUtils.trimToEmpty(u.getId());
+        if (StringUtils.isAnyBlank(tenantId, visitKind, mirrorRowId))
+        {
+            return;
+        }
+        BigDecimal activeNet = hisMirrorConsumeLinkMapper.sumActiveNetAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId);
+        if (activeNet != null && activeNet.compareTo(BigDecimal.ZERO) > 0)
+        {
+            return;
+        }
+        Date procTime = DateUtils.getNowDate();
+        String procBy = SecurityUtils.getUserIdStr();
+        List<String> ids = Collections.singletonList(mirrorRowId);
+        if (KIND_IN.equals(visitKind))
+        {
+            hisInpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids,
+                "PENDING_CONSUME", "", procTime, procBy, "", "");
+        }
+        else
+        {
+            hisOutpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids,
+                "PENDING_CONSUME", "", procTime, procBy, "", "");
+        }
+        hisPatientChargeMirrorUnifiedMapper.updateMirrorProcessByIds(tenantId, ids,
+            "PENDING_CONSUME", "", procTime, procBy, "", "");
+        u.setProcessStatus("PENDING_CONSUME");
+        u.setProcessType("");
+        u.setProcessSituation("");
+        u.setProcessParty("");
+        u.setProcessTime(procTime);
+        u.setProcessBy(procBy);
     }
 
     private String resolveProcessByDisplayName(String processBy, Map<String, String> cache)
