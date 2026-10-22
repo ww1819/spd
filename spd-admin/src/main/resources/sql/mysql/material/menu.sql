@@ -6946,6 +6946,41 @@ INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3821);
 /
 INSERT IGNORE INTO sys_role_menu (role_id, menu_id) VALUES (1, 3822);
 /
+-- HV-F-007 住院高值扫码页「冲销」按钮（整单冲销，仅整单全部未确认）；凡有 3822 高值扫码核销授权处同步授予
+SET @gz_high_charge_scan_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'C' AND component = 'gz/highChargeScan/index' ORDER BY menu_id DESC LIMIT 1);
+/
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, `query`, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark, is_platform, default_open_to_customer)
+SELECT 3823, '高值扫码冲销', @gz_high_charge_scan_menu, 3, '#', '', NULL, 1, 0, 'F', '0', '0', 'gz:highChargeScan:writeOff', '#', 'admin', NOW(), '1', NOW(), 'POST /gz/highChargeMirror/mirror/writeOff', '0', '1'
+FROM DUAL WHERE @gz_high_charge_scan_menu IS NOT NULL AND (NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_type = 'F' AND parent_id = @gz_high_charge_scan_menu AND perms = 'gz:highChargeScan:writeOff') OR EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = 3823))
+ON DUPLICATE KEY UPDATE menu_name = VALUES(menu_name), parent_id = VALUES(parent_id), order_num = VALUES(order_num), perms = VALUES(perms), status = VALUES(status), remark = VALUES(remark), update_time = VALUES(update_time);
+/
+SET @gz_high_charge_writeoff_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'F' AND perms = 'gz:highChargeScan:writeOff' AND parent_id = @gz_high_charge_scan_menu ORDER BY menu_id LIMIT 1);
+/
+SET @gz_high_charge_apply_menu := (SELECT menu_id FROM sys_menu WHERE menu_type = 'F' AND perms = 'gz:highChargeScan:apply' AND parent_id = @gz_high_charge_scan_menu ORDER BY menu_id LIMIT 1);
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
+SELECT rm.role_id, @gz_high_charge_writeoff_menu
+FROM sys_role_menu rm
+WHERE rm.menu_id = @gz_high_charge_apply_menu AND @gz_high_charge_writeoff_menu IS NOT NULL;
+/
+INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
+SELECT h.tenant_id, @gz_high_charge_writeoff_menu, h.status, h.is_enabled, 'admin', NOW()
+FROM hc_customer_menu h
+WHERE h.menu_id = @gz_high_charge_apply_menu AND @gz_high_charge_writeoff_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM hc_customer_menu x WHERE x.tenant_id = h.tenant_id AND x.menu_id = @gz_high_charge_writeoff_menu);
+/
+INSERT INTO sys_post_menu (post_id, menu_id, tenant_id)
+SELECT pm.post_id, @gz_high_charge_writeoff_menu, pm.tenant_id
+FROM sys_post_menu pm
+WHERE pm.menu_id = @gz_high_charge_apply_menu AND @gz_high_charge_writeoff_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_post_menu x WHERE x.post_id = pm.post_id AND x.menu_id = @gz_high_charge_writeoff_menu);
+/
+INSERT INTO sys_user_menu (user_id, menu_id, tenant_id)
+SELECT um.user_id, @gz_high_charge_writeoff_menu, um.tenant_id
+FROM sys_user_menu um
+WHERE um.menu_id = @gz_high_charge_apply_menu AND @gz_high_charge_writeoff_menu IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_user_menu x WHERE x.user_id = um.user_id AND x.menu_id = @gz_high_charge_writeoff_menu);
+/
 -- 拥有患者收费查询或原计费消耗权限的角色，补全高值管理→高值使用→高值扫描核销菜单链（MCP aspt）
 INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
 SELECT DISTINCT rm.role_id, tgt.menu_id

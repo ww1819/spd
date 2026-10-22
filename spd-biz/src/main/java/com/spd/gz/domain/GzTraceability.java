@@ -144,8 +144,27 @@ public class GzTraceability extends BaseEntity
     /** HIS计费镜像行ID */
     private String mirrorRowId;
 
-    /** 来源：HIS_MIRROR_HIGH=HIS高值扫码核销 */
+    /** 来源：HIS_MIRROR_HIGH=HIS高值扫码核销；HIS_MIRROR_HIGH_REVERSE=高值冲销反向单 */
     private String traceSource;
+
+    /** 是否冲销反向单 0否 1是 */
+    private Integer reverseFlag;
+
+    /** 冲销对应的原计费单ID */
+    private Long reverseOfTraceId;
+
+    /** 冲销对应的原计费单号 */
+    private String reverseOfTraceNo;
+
+    /** 正向单冲销状态 0未冲销 1已冲销 */
+    private Integer writeOffStatus;
+
+    private String writeOffBy;
+
+    private Date writeOffTime;
+
+    /** 反向计费单号 */
+    private String writeOffBillNo;
 
     /** 申请科室对象 */
     private FdDepartment applyDept;
@@ -515,6 +534,23 @@ public class GzTraceability extends BaseEntity
 
     public String getTraceSource() { return traceSource; }
     public void setTraceSource(String traceSource) { this.traceSource = traceSource; }
+
+    public Integer getReverseFlag() { return reverseFlag; }
+    public void setReverseFlag(Integer reverseFlag) { this.reverseFlag = reverseFlag; }
+
+    public Long getReverseOfTraceId() { return reverseOfTraceId; }
+    public void setReverseOfTraceId(Long reverseOfTraceId) { this.reverseOfTraceId = reverseOfTraceId; }
+
+    public String getReverseOfTraceNo() { return reverseOfTraceNo; }
+    public void setReverseOfTraceNo(String reverseOfTraceNo) { this.reverseOfTraceNo = reverseOfTraceNo; }
+    public Integer getWriteOffStatus() { return writeOffStatus; }
+    public void setWriteOffStatus(Integer writeOffStatus) { this.writeOffStatus = writeOffStatus; }
+    public String getWriteOffBy() { return writeOffBy; }
+    public void setWriteOffBy(String writeOffBy) { this.writeOffBy = writeOffBy; }
+    public Date getWriteOffTime() { return writeOffTime; }
+    public void setWriteOffTime(Date writeOffTime) { this.writeOffTime = writeOffTime; }
+    public String getWriteOffBillNo() { return writeOffBillNo; }
+    public void setWriteOffBillNo(String writeOffBillNo) { this.writeOffBillNo = writeOffBillNo; }
 
     public FdDepartment getApplyDept() {
         return applyDept;

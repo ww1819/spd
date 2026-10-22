@@ -1453,6 +1453,13 @@ CREATE TABLE IF NOT EXISTS `gz_traceability` (
   `visit_kind` varchar(16) DEFAULT NULL COMMENT 'INPATIENT/OUTPATIENT（HIS镜像高值计费）',
   `mirror_row_id` varchar(36) DEFAULT NULL COMMENT 'HIS计费镜像行ID',
   `trace_source` varchar(32) DEFAULT NULL COMMENT '来源：HIS_MIRROR_HIGH=HIS高值扫码核销；空=手工住院高值扫码',
+  `reverse_flag` tinyint NOT NULL DEFAULT 0 COMMENT '是否冲销反向单 0否 1是',
+  `reverse_of_trace_id` bigint DEFAULT NULL COMMENT '冲销对应的原计费单ID',
+  `reverse_of_trace_no` varchar(50) DEFAULT NULL COMMENT '冲销对应的原计费单号',
+  `write_off_status` tinyint NOT NULL DEFAULT 0 COMMENT '正向单冲销状态 0未冲销 1已冲销',
+  `write_off_by` varchar(64) DEFAULT NULL COMMENT '冲销人',
+  `write_off_time` datetime DEFAULT NULL COMMENT '冲销时间',
+  `write_off_bill_no` varchar(50) DEFAULT NULL COMMENT '反向计费单号',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
@@ -1491,6 +1498,7 @@ CREATE TABLE IF NOT EXISTS `gz_traceability_entry` (
   `supplier_id` bigint DEFAULT NULL COMMENT '供应商ID',
   `certificate_no` varchar(100) DEFAULT NULL COMMENT '注册证号',
   `billing_follow` varchar(64) DEFAULT NULL COMMENT '计费随访',
+  `src_consume_link_id` varchar(36) DEFAULT NULL COMMENT '反向明细对应的原消耗关联ID(his_mirror_consume_link.id)',
   `del_flag` int NOT NULL DEFAULT 0 COMMENT '删除标志',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -2959,6 +2967,12 @@ CREATE TABLE IF NOT EXISTS `his_mirror_consume_link` (
   `instant_io_audit_status` tinyint NOT NULL DEFAULT 0 COMMENT '即入即出审核 0待审核 1已审核 2已冲销',
   `instant_io_audit_by` varchar(64) DEFAULT NULL COMMENT '即入即出审核人',
   `instant_io_audit_time` datetime DEFAULT NULL COMMENT '即入即出审核时间',
+  `write_off_status` tinyint NOT NULL DEFAULT 0 COMMENT '高值冲销状态 0未冲销 1已冲销',
+  `write_off_by` varchar(64) DEFAULT NULL COMMENT '冲销人',
+  `write_off_time` datetime DEFAULT NULL COMMENT '冲销时间',
+  `write_off_bill_no` varchar(50) DEFAULT NULL COMMENT '反向计费单号',
+  `io_return_goods_bill_no` varchar(64) DEFAULT NULL COMMENT '按明细生成的即入即出退货单号(301)',
+  `io_return_depot_bill_no` varchar(64) DEFAULT NULL COMMENT '按明细生成的即入即出退库单号(401)',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -2973,7 +2987,8 @@ CREATE TABLE IF NOT EXISTS `his_mirror_consume_link` (
   KEY `idx_hmcl_fetch` (`tenant_id`,`fetch_batch_id`),
   KEY `idx_hmcl_dep_inv` (`tenant_id`,`dep_inventory_id`),
   KEY `idx_hmcl_tenant_del` (`tenant_id`,`del_flag`),
-  KEY `idx_hmcl_confirm` (`tenant_id`,`confirm_status`)
+  KEY `idx_hmcl_confirm` (`tenant_id`,`confirm_status`),
+  KEY `idx_hmcl_trace_id` (`tenant_id`,`traceability_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费镜像与科室消耗明细关联（含退费返还累计与库存行快照）';
 /
 
@@ -3042,6 +3057,7 @@ CREATE TABLE IF NOT EXISTS `gz_high_consume_confirm_bill` (
   `bill_type` int NOT NULL COMMENT '101入库 201出库 301退货 401退库',
   `stk_io_bill_id` bigint NOT NULL COMMENT 'stk_io_bill.id',
   `bill_no` varchar(64) NOT NULL COMMENT '单号 G-RK/G-CK/G-TH/G-TK',
+  `link_scoped` tinyint NOT NULL DEFAULT 0 COMMENT '1=按明细生成的反向单(301/401) 0=按确认批次',
   `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),

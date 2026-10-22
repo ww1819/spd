@@ -11,6 +11,22 @@
         end
     </sql>
 
+    <!-- 冲销范围：默认仅未冲销；1=仅已冲销；all=全部。已冲销关联为软删行，仅展示不可操作 -->
+    <sql id="linkWriteOffScope">
+        <choose>
+            <when test="writeOffStatus != null and writeOffStatus == 'all'">
+                and (ifnull(l.del_flag, 0) = 0 or ifnull(l.write_off_status, 0) = 1)
+            </when>
+            <when test="writeOffStatus != null and writeOffStatus == '1'.toString()">
+                and ifnull(l.write_off_status, 0) = 1
+            </when>
+            <otherwise>
+                and ifnull(l.del_flag, 0) = 0
+                and ifnull(l.write_off_status, 0) = 0
+            </otherwise>
+        </choose>
+    </sql>
+
     <sql id="writeOffDeptIdExpr">
         coalesce(l.write_off_dept_id, t.write_off_dept_id)
     </sql>
@@ -69,18 +85,18 @@
             and out_bill.supplier_id = cast(te.supplier_id as char)
         left join gz_high_consume_confirm_bill th_bill on th_bill.confirm_id = l.confirm_id
             and th_bill.tenant_id = l.tenant_id
-            and th_bill.bill_type = 301
+            and th_bill.bill_type = 301 and ifnull(th_bill.link_scoped, 0) = 0
             and ifnull(th_bill.del_flag, 0) = 0
             and th_bill.supplier_id = cast(te.supplier_id as char)
         left join gz_high_consume_confirm_bill tk_bill on tk_bill.confirm_id = l.confirm_id
             and tk_bill.tenant_id = l.tenant_id
-            and tk_bill.bill_type = 401
+            and tk_bill.bill_type = 401 and ifnull(tk_bill.link_scoped, 0) = 0
             and ifnull(tk_bill.del_flag, 0) = 0
             and tk_bill.supplier_id = cast(te.supplier_id as char)
         left join his_inpatient_charge_mirror inp on l.visit_kind = 'INPATIENT' and inp.id = l.mirror_row_id and inp.tenant_id = l.tenant_id
         left join his_outpatient_charge_mirror outp on l.visit_kind = 'OUTPATIENT' and outp.id = l.mirror_row_id and outp.tenant_id = l.tenant_id
         where l.tenant_id = #{tenantId}
-          and ifnull(l.del_flag, 0) = 0
+          <include refid="linkWriteOffScope"/>
           and l.gz_dep_inventory_id is not null
           and l.traceability_id is not null
     </sql>
@@ -124,6 +140,7 @@
                 and ifnull(l.returned_qty, 0) &gt; 0
                 and th_bill.id is null
                 and tk_bill.id is null
+                and l.io_return_goods_bill_no is null
             </when>
             <when test="instantIoAuditStatus != null and instantIoAuditStatus != ''">
                 and ifnull(l.instant_io_audit_status, 0) = #{instantIoAuditStatus}
@@ -205,18 +222,18 @@
             and out_bill.supplier_id = cast(e.supplier_id as char)
         left join gz_high_consume_confirm_bill th_bill on th_bill.confirm_id = l.confirm_id
             and th_bill.tenant_id = l.tenant_id
-            and th_bill.bill_type = 301
+            and th_bill.bill_type = 301 and ifnull(th_bill.link_scoped, 0) = 0
             and ifnull(th_bill.del_flag, 0) = 0
             and th_bill.supplier_id = cast(e.supplier_id as char)
         left join gz_high_consume_confirm_bill tk_bill on tk_bill.confirm_id = l.confirm_id
             and tk_bill.tenant_id = l.tenant_id
-            and tk_bill.bill_type = 401
+            and tk_bill.bill_type = 401 and ifnull(tk_bill.link_scoped, 0) = 0
             and ifnull(tk_bill.del_flag, 0) = 0
             and tk_bill.supplier_id = cast(e.supplier_id as char)
         left join his_inpatient_charge_mirror inp on l.visit_kind = 'INPATIENT' and inp.id = l.mirror_row_id and inp.tenant_id = l.tenant_id
         left join his_outpatient_charge_mirror outp on l.visit_kind = 'OUTPATIENT' and outp.id = l.mirror_row_id and outp.tenant_id = l.tenant_id
         where l.tenant_id = #{tenantId}
-          and ifnull(l.del_flag, 0) = 0
+          <include refid="linkWriteOffScope"/>
           and l.gz_dep_inventory_id is not null
           and l.traceability_id is null
           and l.dept_batch_consume_id is not null
@@ -255,6 +272,7 @@
                 and ifnull(l.returned_qty, 0) &gt; 0
                 and th_bill.id is null
                 and tk_bill.id is null
+                and l.io_return_goods_bill_no is null
             </when>
             <when test="instantIoAuditStatus != null and instantIoAuditStatus != ''">
                 and ifnull(l.instant_io_audit_status, 0) = #{instantIoAuditStatus}
@@ -347,6 +365,7 @@
                 and ifnull(l.returned_qty, 0) &gt; 0
                 and th_bill.id is null
                 and tk_bill.id is null
+                and l.io_return_goods_bill_no is null
             </when>
             <when test="instantIoAuditStatus != null and instantIoAuditStatus != ''">
                 and ifnull(l.instant_io_audit_status, 0) = #{instantIoAuditStatus}
@@ -423,6 +442,7 @@
                 and ifnull(l.returned_qty, 0) &gt; 0
                 and th_bill.id is null
                 and tk_bill.id is null
+                and l.io_return_goods_bill_no is null
             </when>
             <when test="instantIoAuditStatus != null and instantIoAuditStatus != ''">
                 and ifnull(l.instant_io_audit_status, 0) = #{instantIoAuditStatus}
@@ -512,17 +532,17 @@
                 and ifnull(te_bill.del_flag, 0) = 0
             left join gz_high_consume_confirm_bill th_bill on th_bill.confirm_id = l.confirm_id
                 and th_bill.tenant_id = l.tenant_id
-                and th_bill.bill_type = 301
+                and th_bill.bill_type = 301 and ifnull(th_bill.link_scoped, 0) = 0
                 and ifnull(th_bill.del_flag, 0) = 0
                 and th_bill.supplier_id = cast(te_bill.supplier_id as char)
             left join gz_high_consume_confirm_bill tk_bill on tk_bill.confirm_id = l.confirm_id
                 and tk_bill.tenant_id = l.tenant_id
-                and tk_bill.bill_type = 401
+                and tk_bill.bill_type = 401 and ifnull(tk_bill.link_scoped, 0) = 0
                 and ifnull(tk_bill.del_flag, 0) = 0
                 and tk_bill.supplier_id = cast(te_bill.supplier_id as char)
         </if>
         where l.tenant_id = #{tenantId}
-          and ifnull(l.del_flag, 0) = 0
+          <include refid="linkWriteOffScope"/>
           and l.gz_dep_inventory_id is not null
           and l.traceability_id is not null
     </sql>
@@ -568,17 +588,17 @@
                 and ifnull(e_bill.del_flag, 0) = 0
             left join gz_high_consume_confirm_bill th_bill on th_bill.confirm_id = l.confirm_id
                 and th_bill.tenant_id = l.tenant_id
-                and th_bill.bill_type = 301
+                and th_bill.bill_type = 301 and ifnull(th_bill.link_scoped, 0) = 0
                 and ifnull(th_bill.del_flag, 0) = 0
                 and th_bill.supplier_id = cast(e_bill.supplier_id as char)
             left join gz_high_consume_confirm_bill tk_bill on tk_bill.confirm_id = l.confirm_id
                 and tk_bill.tenant_id = l.tenant_id
-                and tk_bill.bill_type = 401
+                and tk_bill.bill_type = 401 and ifnull(tk_bill.link_scoped, 0) = 0
                 and ifnull(tk_bill.del_flag, 0) = 0
                 and tk_bill.supplier_id = cast(e_bill.supplier_id as char)
         </if>
         where l.tenant_id = #{tenantId}
-          and ifnull(l.del_flag, 0) = 0
+          <include refid="linkWriteOffScope"/>
           and l.gz_dep_inventory_id is not null
           and l.traceability_id is null
           and l.dept_batch_consume_id is not null
@@ -657,8 +677,13 @@
             c.confirm_no as confirmNo,
             in_bill.bill_no as inboundBillNo,
             out_bill.bill_no as outboundBillNo,
-            th_bill.bill_no as returnGoodsBillNo,
-            tk_bill.bill_no as returnDepotBillNo,
+            coalesce(l.io_return_goods_bill_no, th_bill.bill_no) as returnGoodsBillNo,
+            coalesce(l.io_return_depot_bill_no, tk_bill.bill_no) as returnDepotBillNo,
+            l.traceability_id as traceabilityId,
+            ifnull(l.write_off_status, 0) as writeOffStatus,
+            l.write_off_by as writeOffBy,
+            l.write_off_time as writeOffTime,
+            l.write_off_bill_no as writeOffBillNo,
             ifnull(l.instant_io_audit_status, 0) as instantIoAuditStatus,
             l.instant_io_audit_by as instantIoAuditBy,
             l.instant_io_audit_time as instantIoAuditTime,
@@ -718,8 +743,13 @@
             c.confirm_no as confirmNo,
             in_bill.bill_no as inboundBillNo,
             out_bill.bill_no as outboundBillNo,
-            th_bill.bill_no as returnGoodsBillNo,
-            tk_bill.bill_no as returnDepotBillNo,
+            coalesce(l.io_return_goods_bill_no, th_bill.bill_no) as returnGoodsBillNo,
+            coalesce(l.io_return_depot_bill_no, tk_bill.bill_no) as returnDepotBillNo,
+            l.traceability_id as traceabilityId,
+            ifnull(l.write_off_status, 0) as writeOffStatus,
+            l.write_off_by as writeOffBy,
+            l.write_off_time as writeOffTime,
+            l.write_off_bill_no as writeOffBillNo,
             ifnull(l.instant_io_audit_status, 0) as instantIoAuditStatus,
             l.instant_io_audit_by as instantIoAuditBy,
             l.instant_io_audit_time as instantIoAuditTime,
@@ -891,17 +921,17 @@
             <if test="pendingRefundReverse != null and pendingRefundReverse == '1'">
                 left join gz_high_consume_confirm_bill th_bill on th_bill.confirm_id = l.confirm_id
                     and th_bill.tenant_id = l.tenant_id
-                    and th_bill.bill_type = 301
+                    and th_bill.bill_type = 301 and ifnull(th_bill.link_scoped, 0) = 0
                     and ifnull(th_bill.del_flag, 0) = 0
                     and th_bill.supplier_id = cast(te.supplier_id as char)
                 left join gz_high_consume_confirm_bill tk_bill on tk_bill.confirm_id = l.confirm_id
                     and tk_bill.tenant_id = l.tenant_id
-                    and tk_bill.bill_type = 401
+                    and tk_bill.bill_type = 401 and ifnull(tk_bill.link_scoped, 0) = 0
                     and ifnull(tk_bill.del_flag, 0) = 0
                     and tk_bill.supplier_id = cast(te.supplier_id as char)
             </if>
             where l.tenant_id = #{tenantId}
-              and ifnull(l.del_flag, 0) = 0
+              <include refid="linkWriteOffScope"/>
               and l.gz_dep_inventory_id is not null
               and l.traceability_id is not null
             <include refid="confirmListIdTraceFilters"/>
@@ -942,17 +972,17 @@
             <if test="pendingRefundReverse != null and pendingRefundReverse == '1'">
                 left join gz_high_consume_confirm_bill th_bill on th_bill.confirm_id = l.confirm_id
                     and th_bill.tenant_id = l.tenant_id
-                    and th_bill.bill_type = 301
+                    and th_bill.bill_type = 301 and ifnull(th_bill.link_scoped, 0) = 0
                     and ifnull(th_bill.del_flag, 0) = 0
                     and th_bill.supplier_id = cast(e.supplier_id as char)
                 left join gz_high_consume_confirm_bill tk_bill on tk_bill.confirm_id = l.confirm_id
                     and tk_bill.tenant_id = l.tenant_id
-                    and tk_bill.bill_type = 401
+                    and tk_bill.bill_type = 401 and ifnull(tk_bill.link_scoped, 0) = 0
                     and ifnull(tk_bill.del_flag, 0) = 0
                     and tk_bill.supplier_id = cast(e.supplier_id as char)
             </if>
             where l.tenant_id = #{tenantId}
-              and ifnull(l.del_flag, 0) = 0
+              <include refid="linkWriteOffScope"/>
               and l.gz_dep_inventory_id is not null
               and l.traceability_id is null
               and l.dept_batch_consume_id is not null
@@ -967,6 +997,7 @@
             l.mirror_row_id as mirrorRowId,
             l.alloc_qty as allocQty,
             l.dept_batch_consume_entry_id as deptBatchConsumeEntryId,
+            l.traceability_id as traceabilityId,
             ifnull(l.confirm_status, 0) as confirmStatus,
             l.confirm_id as confirmId,
             ifnull(l.instant_io_audit_status, 0) as instantIoAuditStatus,
@@ -1006,6 +1037,7 @@
         left join fd_supplier sup on sup.id = te.supplier_id and sup.tenant_id = l.tenant_id
         where l.tenant_id = #{tenantId}
           and ifnull(l.del_flag, 0) = 0
+          and ifnull(l.write_off_status, 0) = 0
           and l.gz_dep_inventory_id is not null
           and l.traceability_id is not null
           and l.id in
@@ -1021,6 +1053,7 @@
             l.mirror_row_id as mirrorRowId,
             l.alloc_qty as allocQty,
             l.dept_batch_consume_entry_id as deptBatchConsumeEntryId,
+            l.traceability_id as traceabilityId,
             ifnull(l.confirm_status, 0) as confirmStatus,
             l.confirm_id as confirmId,
             ifnull(l.instant_io_audit_status, 0) as instantIoAuditStatus,
@@ -1060,6 +1093,7 @@
         left join fd_supplier sup on sup.id = e.supplier_id and sup.tenant_id = l.tenant_id
         where l.tenant_id = #{tenantId}
           and ifnull(l.del_flag, 0) = 0
+          and ifnull(l.write_off_status, 0) = 0
           and l.gz_dep_inventory_id is not null
           and l.traceability_id is null
           and l.dept_batch_consume_id is not null
@@ -1093,11 +1127,11 @@
 
     <insert id="insertConfirmBillBatch">
         insert into gz_high_consume_confirm_bill (
-            id, tenant_id, confirm_id, supplier_id, bill_type, stk_io_bill_id, bill_no, del_flag, create_time
+            id, tenant_id, confirm_id, supplier_id, bill_type, stk_io_bill_id, bill_no, link_scoped, del_flag, create_time
         ) values
         <foreach collection="list" item="e" separator=",">
             (#{e.id}, #{e.tenantId}, #{e.confirmId}, #{e.supplierId}, #{e.billType}, #{e.stkIoBillId}, #{e.billNo},
-             ifnull(#{e.delFlag}, 0), #{e.createTime})
+             ifnull(#{e.linkScoped}, 0), ifnull(#{e.delFlag}, 0), #{e.createTime})
         </foreach>
     </insert>
 
@@ -1151,32 +1185,12 @@
         </foreach>
     </update>
 
-    <update id="updateLinkInstantIoReversedByConfirmIds">
+    <update id="updateLinkIoReturnBills">
         update his_mirror_consume_link
-        set instant_io_audit_status = 2,
-            update_by = #{auditBy},
+        set io_return_goods_bill_no = #{returnGoodsBillNo},
+            io_return_depot_bill_no = #{returnDepotBillNo},
             update_time = now()
         where tenant_id = #{tenantId}
-          and ifnull(del_flag, 0) = 0
-          and ifnull(confirm_status, 0) = 1
-          and ifnull(instant_io_audit_status, 0) = 1
-          and confirm_id in
-        <foreach collection="confirmIds" item="id" open="(" separator="," close=")">
-            #{id}
-        </foreach>
-    </update>
-
-    <update id="clearLinkConfirmForWriteOff">
-        update his_mirror_consume_link
-        set confirm_status = 0,
-            confirm_id = null,
-            instant_io_audit_status = 0,
-            instant_io_audit_by = null,
-            instant_io_audit_time = null,
-            update_by = #{updateBy},
-            update_time = now()
-        where tenant_id = #{tenantId}
-          and ifnull(del_flag, 0) = 0
           and id in
         <foreach collection="linkIds" item="id" open="(" separator="," close=")">
             #{id}
@@ -1203,7 +1217,8 @@
     <select id="selectBillsByConfirmId" resultType="com.spd.gz.domain.GzHighConsumeConfirmBill">
         select
             id, tenant_id as tenantId, confirm_id as confirmId, supplier_id as supplierId,
-            bill_type as billType, stk_io_bill_id as stkIoBillId, bill_no as billNo
+            bill_type as billType, stk_io_bill_id as stkIoBillId, bill_no as billNo,
+            ifnull(link_scoped, 0) as linkScoped
         from gz_high_consume_confirm_bill
         where tenant_id = #{tenantId}
           and confirm_id = #{confirmId}
@@ -1213,7 +1228,8 @@
     <select id="selectBillsByConfirmIds" resultType="com.spd.gz.domain.GzHighConsumeConfirmBill">
         select
             id, tenant_id as tenantId, confirm_id as confirmId, supplier_id as supplierId,
-            bill_type as billType, stk_io_bill_id as stkIoBillId, bill_no as billNo
+            bill_type as billType, stk_io_bill_id as stkIoBillId, bill_no as billNo,
+            ifnull(link_scoped, 0) as linkScoped
         from gz_high_consume_confirm_bill
         where tenant_id = #{tenantId}
           and ifnull(del_flag, 0) = 0

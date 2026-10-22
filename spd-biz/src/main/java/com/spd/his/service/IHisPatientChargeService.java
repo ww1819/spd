@@ -68,6 +68,10 @@ public interface IHisPatientChargeService
     /** 高值扫码核销：消耗记录（不按用户科室权限过滤） */
     List<HisMirrorConsumeRecordVo> listHighChargeMirrorConsumeRecords(String visitKind, String mirrorRowId);
 
+    /** 高值扫码列表：按页批量取计费行的确认/冲销状态，key=visitKind|mirrorRowId */
+    java.util.Map<String, com.spd.his.domain.dto.HisMirrorHighWriteOffStatusVo> listHighChargeMirrorWriteOffStatus(
+        com.spd.his.domain.dto.HisMirrorHighStatusQueryBody body);
+
     List<HisPatientChargeSummaryRow> selectChargeSummary(String beginChargeDate, String endChargeDate);
 
     List<HisChargeFetchBatch> listRecentFetchBatches(int limit);

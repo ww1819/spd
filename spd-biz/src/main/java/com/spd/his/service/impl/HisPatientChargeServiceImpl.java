@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -800,6 +801,81 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             throw new ServiceException("visitKind 仅支持 INPATIENT 或 OUTPATIENT");
         }
         return loadMirrorConsumeRecordsMerged(tenantId, vk, StringUtils.trimToEmpty(mirrorRowId));
+    }
+
+    @Override
+    public Map<String, com.spd.his.domain.dto.HisMirrorHighWriteOffStatusVo> listHighChargeMirrorWriteOffStatus(
+        com.spd.his.domain.dto.HisMirrorHighStatusQueryBody body)
+    {
+        assertTenantAllowed();
+        String tenantId = SecurityUtils.getCustomerId();
+        Map<String, com.spd.his.domain.dto.HisMirrorHighWriteOffStatusVo> out = new LinkedHashMap<>();
+        if (StringUtils.isBlank(tenantId) || body == null)
+        {
+            return out;
+        }
+        collectHighWriteOffStatus(tenantId, "INPATIENT", body.getInpatientRowIds(), out);
+        collectHighWriteOffStatus(tenantId, "OUTPATIENT", body.getOutpatientRowIds(), out);
+        return out;
+    }
+
+    private void collectHighWriteOffStatus(String tenantId, String vk, List<String> rowIds,
+        Map<String, com.spd.his.domain.dto.HisMirrorHighWriteOffStatusVo> out)
+    {
+        if (rowIds == null || rowIds.isEmpty())
+        {
+            return;
+        }
+        List<String> ids = rowIds.stream().filter(StringUtils::isNotBlank).map(String::trim)
+            .distinct().limit(500).collect(java.util.stream.Collectors.toList());
+        if (ids.isEmpty())
+        {
+            return;
+        }
+        List<com.spd.his.domain.dto.HisMirrorHighWriteOffStatusVo> rows =
+            hisMirrorConsumeLinkMapper.selectHighLinkStatusRows(tenantId, vk, ids);
+        if (rows == null)
+        {
+            return;
+        }
+        for (com.spd.his.domain.dto.HisMirrorHighWriteOffStatusVo r : rows)
+        {
+            String key = vk + "|" + r.getMirrorRowId();
+            com.spd.his.domain.dto.HisMirrorHighWriteOffStatusVo agg = out.computeIfAbsent(key, k -> {
+                com.spd.his.domain.dto.HisMirrorHighWriteOffStatusVo v = new com.spd.his.domain.dto.HisMirrorHighWriteOffStatusVo();
+                v.setVisitKind(vk);
+                v.setMirrorRowId(r.getMirrorRowId());
+                v.setWriteOffStatus(0);
+                v.setCanWriteOff(Boolean.FALSE);
+                return v;
+            });
+            boolean active = r.getDelFlag() == null || r.getDelFlag() == 0;
+            if (active && r.getTraceabilityId() != null)
+            {
+                boolean first = agg.getTraceabilityId() == null;
+                agg.setTraceabilityId(r.getTraceabilityId());
+                agg.setTraceNo(r.getTraceNo());
+                int cs = r.getConfirmStatus() == null ? 0 : r.getConfirmStatus();
+                int io = r.getInstantIoAuditStatus() == null ? 0 : r.getInstantIoAuditStatus();
+                agg.setConfirmStatus(Math.max(agg.getConfirmStatus() == null ? 0 : agg.getConfirmStatus(), cs));
+                agg.setInstantIoAuditStatus(Math.max(agg.getInstantIoAuditStatus() == null ? 0 : agg.getInstantIoAuditStatus(), io));
+                if (r.getConfirmTime() != null)
+                {
+                    agg.setConfirmBy(r.getConfirmBy());
+                    agg.setConfirmTime(r.getConfirmTime());
+                }
+                boolean rowCan = cs == 0 && io == 0;
+                agg.setCanWriteOff(first ? rowCan : (Boolean.TRUE.equals(agg.getCanWriteOff()) && rowCan));
+            }
+            if (Integer.valueOf(1).equals(r.getWriteOffStatus()) && r.getWriteOffTime() != null
+                && (agg.getWriteOffTime() == null || r.getWriteOffTime().after(agg.getWriteOffTime())))
+            {
+                agg.setWriteOffStatus(1);
+                agg.setWriteOffBy(r.getWriteOffBy());
+                agg.setWriteOffTime(r.getWriteOffTime());
+                agg.setWriteOffBillNo(r.getWriteOffBillNo());
+            }
+        }
     }
 
     private List<HisMirrorConsumeRecordVo> loadMirrorConsumeRecordsMerged(String tenantId, String vk, String rowId)

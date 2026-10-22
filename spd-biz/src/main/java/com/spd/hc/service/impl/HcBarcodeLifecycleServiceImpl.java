@@ -1144,6 +1144,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             if (gzLine.getQty() != null)
             {
                 gzLine.setQty(gzLine.getQty().add(returnQty));
+                gzLine.setAmt(gzLine.getUnitPrice() != null ? gzLine.getUnitPrice().multiply(gzLine.getQty()) : BigDecimal.ZERO);
                 gzDepInventoryMapper.updateGzDepInventory(gzLine);
             }
             insertGzDepFlowForMirrorHighCharge(trace, entry, gzLine, returnQty, true);

@@ -76,6 +76,12 @@ public interface GzTraceabilityMapper
      */
     public int batchGzTraceabilityEntry(List<com.spd.gz.domain.GzTraceabilityEntry> entryList);
 
+    /** 正向计费单冲销留痕 */
+    public int markTraceWrittenOff(@org.apache.ibatis.annotations.Param("id") Long id,
+        @org.apache.ibatis.annotations.Param("writeOffBy") String writeOffBy,
+        @org.apache.ibatis.annotations.Param("writeOffTime") java.util.Date writeOffTime,
+        @org.apache.ibatis.annotations.Param("writeOffBillNo") String writeOffBillNo);
+
     /**
      * 通过追溯单主键删除追溯单明细信息
      *

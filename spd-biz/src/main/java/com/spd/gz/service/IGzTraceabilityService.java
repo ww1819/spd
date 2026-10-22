@@ -52,6 +52,20 @@ public interface IGzTraceabilityService
     GzTraceability insertAuditedMirrorHighBill(GzTraceability gzTraceability);
 
     /**
+     * 高值冲销：单独生成反向计费单（不回补/不扣库存、不触即入即出）。
+     * 明细数量为负的冲销回补量；单据 {@code reverse_flag=1}，来源 {@code HIS_MIRROR_HIGH_REVERSE}；原单标记已冲销。
+     *
+     * @param original 原正向计费单（须含明细）
+     * @param entryReturnQty 原明细ID → 本次冲销数量（正数）
+     * @param entryLinkIds 原明细ID → 原消耗关联ID（反向明细据此继承确认/即入即出状态）
+     * @param remark 备注
+     * @return 反向计费单
+     */
+    GzTraceability insertReverseWriteOffBill(GzTraceability original,
+        java.util.Map<Long, java.math.BigDecimal> entryReturnQty,
+        java.util.Map<Long, String> entryLinkIds, String remark);
+
+    /**
      * 修改高值追溯单
      *
      * @param gzTraceability 高值追溯单
@@ -74,14 +88,6 @@ public interface IGzTraceabilityService
      * @return 结果
      */
     public int deleteGzTraceabilityById(Long id);
-
-    /**
-     * 高值冲销已回补库存并软删关联后：仅软删追溯单/明细，禁止再回补库存或二次处理关联。
-     *
-     * @param id 追溯单主键
-     * @return 影响行数
-     */
-    int softVoidAfterWriteOff(Long id);
 
     /**
      * 审核高值追溯单

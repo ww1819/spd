@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -222,6 +223,111 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
     }
 
     /**
+     * 高值冲销反向计费单：只落单据与明细（数量为负），不改库存（库存已由冲销回补）；同时标记原单已冲销。
+     */
+    @Transactional
+    @Override
+    public GzTraceability insertReverseWriteOffBill(GzTraceability original,
+        Map<Long, BigDecimal> entryReturnQty, Map<Long, String> entryLinkIds, String remark)
+    {
+        if (original == null || original.getId() == null)
+        {
+            throw new ServiceException("冲销反向单失败：原计费单不存在");
+        }
+        if (entryReturnQty == null || entryReturnQty.isEmpty())
+        {
+            throw new ServiceException("冲销反向单失败：无冲销明细");
+        }
+        List<GzTraceabilityEntry> srcEntries = original.getTraceabilityEntryList();
+        if (srcEntries == null || srcEntries.isEmpty())
+        {
+            throw new ServiceException("冲销反向单失败：原计费单无明细");
+        }
+        List<GzTraceabilityEntry> revEntries = new ArrayList<>();
+        for (GzTraceabilityEntry src : srcEntries)
+        {
+            if (src == null || src.getId() == null)
+            {
+                continue;
+            }
+            BigDecimal q = entryReturnQty.get(src.getId());
+            if (q == null || q.compareTo(BigDecimal.ZERO) <= 0)
+            {
+                continue;
+            }
+            GzTraceabilityEntry e = new GzTraceabilityEntry();
+            e.setMaterialId(src.getMaterialId());
+            e.setInventoryId(src.getInventoryId());
+            e.setMaterialName(src.getMaterialName());
+            e.setSpecification(src.getSpecification());
+            e.setModel(src.getModel());
+            e.setUnit(src.getUnit());
+            e.setQuantity(q.negate());
+            e.setSrcConsumeLinkId(entryLinkIds == null ? null : entryLinkIds.get(src.getId()));
+            e.setChargePrice(src.getChargePrice());
+            e.setBatchNo(src.getBatchNo());
+            e.setExpiryDate(src.getExpiryDate());
+            e.setMasterBarcode(src.getMasterBarcode());
+            e.setSecondaryBarcode(src.getSecondaryBarcode());
+            e.setInHospitalCode(src.getInHospitalCode());
+            e.setManufacturer(src.getManufacturer());
+            e.setSupplier(src.getSupplier());
+            e.setSupplierId(src.getSupplierId());
+            e.setCertificateNo(src.getCertificateNo());
+            e.setBillingFollow(src.getBillingFollow());
+            revEntries.add(e);
+        }
+        if (revEntries.isEmpty())
+        {
+            throw new ServiceException("冲销反向单失败：未匹配到可冲销明细");
+        }
+        Date now = DateUtils.getNowDate();
+        String userId = SecurityUtils.getUserIdStr();
+        GzTraceability rev = new GzTraceability();
+        rev.setTenantId(StringUtils.isNotEmpty(original.getTenantId())
+            ? original.getTenantId() : SecurityUtils.getCustomerId());
+        rev.setTraceNo(generateTraceNo());
+        rev.setMedicalRecordNo(original.getMedicalRecordNo());
+        rev.setPatientName(original.getPatientName());
+        rev.setPatientSex(original.getPatientSex());
+        rev.setPatientAge(original.getPatientAge());
+        rev.setHospitalNumber(original.getHospitalNumber());
+        rev.setWard(original.getWard());
+        rev.setWardNo(original.getWardNo());
+        rev.setBedNo(original.getBedNo());
+        rev.setApplyDeptId(original.getApplyDeptId());
+        rev.setExecDeptId(original.getExecDeptId());
+        rev.setWriteOffDeptId(original.getWriteOffDeptId());
+        rev.setHospitalDate(original.getHospitalDate());
+        rev.setContactPhone(original.getContactPhone());
+        rev.setContactAddress(original.getContactAddress());
+        rev.setChiefSurgeon(original.getChiefSurgeon());
+        rev.setSurgeryDate(original.getSurgeryDate());
+        rev.setSurgeryName(original.getSurgeryName());
+        rev.setAdmissionDiagnosis(original.getAdmissionDiagnosis());
+        rev.setSurgeryId(original.getSurgeryId());
+        rev.setVisitKind(original.getVisitKind());
+        rev.setMirrorRowId(original.getMirrorRowId());
+        rev.setTraceSource(GzTraceSourceConstants.HIS_MIRROR_HIGH_REVERSE);
+        rev.setReverseFlag(1);
+        rev.setReverseOfTraceId(original.getId());
+        rev.setReverseOfTraceNo(original.getTraceNo());
+        rev.setOrderStatus(2);
+        rev.setAuditDate(now);
+        rev.setAuditBy(userId);
+        rev.setDelFlag("0");
+        rev.setCreateBy(userId);
+        rev.setCreateTime(now);
+        String rm = StringUtils.isNotEmpty(remark) ? remark.trim() : "高值核销冲销";
+        rev.setRemark(rm + "；冲销原单 " + StringUtils.defaultString(original.getTraceNo()));
+        rev.setTraceabilityEntryList(revEntries);
+        gzTraceabilityMapper.insertGzTraceability(rev);
+        insertGzTraceabilityEntry(rev);
+        gzTraceabilityMapper.markTraceWrittenOff(original.getId(), userId, now, rev.getTraceNo());
+        return selectGzTraceabilityById(rev.getId());
+    }
+
+    /**
      * 修改高值追溯单
      *
      * @param gzTraceability 高值追溯单
@@ -284,22 +390,6 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         String operator = SecurityUtils.getUserIdStr();
         releaseMirrorLinksAfterTraceDelete(id, operator);
         restoreDepartmentInventory(id);
-        return gzTraceabilityMapper.deleteGzTraceabilityById(id, operator);
-    }
-
-    /**
-     * 冲销链路专用作废：库存与关联已由冲销处理完毕，此处只软删单据，避免二次回补。
-     */
-    @Override
-    @Transactional
-    public int softVoidAfterWriteOff(Long id)
-    {
-        if (id == null)
-        {
-            return 0;
-        }
-        String operator = SecurityUtils.getUserIdStr();
-        gzTraceabilityMapper.deleteGzTraceabilityEntryByParentId(id, operator);
         return gzTraceabilityMapper.deleteGzTraceabilityById(id, operator);
     }
 
@@ -403,6 +493,11 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         {
             throw new ServiceException("追溯单不存在或已删除");
         }
+        if (Integer.valueOf(1).equals(existing.getReverseFlag())
+            || GzTraceSourceConstants.HIS_MIRROR_HIGH_REVERSE.equals(StringUtils.trimToEmpty(existing.getTraceSource())))
+        {
+            throw new ServiceException("冲销反向计费单禁止反审核");
+        }
         if (GzTraceSourceConstants.HIS_MIRROR_HIGH.equals(StringUtils.trimToEmpty(existing.getTraceSource())))
         {
             throw new ServiceException(
@@ -418,6 +513,11 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         if (existing == null)
         {
             return;
+        }
+        if (Integer.valueOf(1).equals(existing.getReverseFlag())
+            || GzTraceSourceConstants.HIS_MIRROR_HIGH_REVERSE.equals(StringUtils.trimToEmpty(existing.getTraceSource())))
+        {
+            throw new ServiceException("冲销反向计费单禁止删除，以保留冲销凭证");
         }
         assertNoDownstreamConfirmOrInstantIo(id, "删除");
     }

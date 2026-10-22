@@ -174,8 +174,8 @@
         where l.tenant_id = #{tenantId}
           and l.visit_kind = #{visitKind}
           and l.mirror_row_id = #{mirrorRowId}
-          and ifnull(l.del_flag, 0) = 0
           and l.traceability_id is not null
+          /* 含已冲销软删关联，便于与反向计费单成对展示 */
 
         union all
 
@@ -337,6 +337,58 @@
           and l.mirror_row_id = #{mirrorRowId}
           and ifnull(l.del_flag, 0) = 0
           and l.dept_batch_consume_entry_id is not null
+
+        union all
+
+        /* HV-F-006：高值冲销反向计费单（gz_traceability.reverse_flag=1） */
+        select
+            null as linkId,
+            t.visit_kind as visitKind,
+            t.mirror_row_id as mirrorRowId,
+            te.quantity as allocQty,
+            coalesce(t.audit_date, t.create_time) as createTime,
+            t.id as consumeBillId,
+            t.trace_no as consumeBillNo,
+            coalesce(t.audit_date, t.create_time) as consumeBillDate,
+            'REVERSE' as recordType,
+            1 as reverseFlag,
+            t.reverse_of_trace_no as reverseOfBillNo,
+            t.order_status as consumeBillStatus,
+            te.id as consumeEntryId,
+            te.material_name as materialName,
+            coalesce(nullif(trim(te.specification), ''), nullif(trim(gm.speci), ''), nullif(trim(m.speci), '')) as materialSpeci,
+            coalesce(nullif(trim(te.model), ''), nullif(trim(gm.model), ''), nullif(trim(m.model), '')) as materialModel,
+            coalesce(nullif(trim(te.unit), ''), nullif(trim(gu.unit_name), ''), nullif(trim(u.unit_name), '')) as unit,
+            coalesce(nullif(trim(gdi.batch_no), ''), nullif(trim(te.batch_no), '')) as batchNo,
+            coalesce(nullif(trim(gdi.material_no), ''), nullif(trim(te.batch_no), '')) as batchNumber,
+            te.charge_price as unitPrice,
+            -abs(ifnull(te.quantity, 0)) as entryQty,
+            case when te.charge_price is not null and te.quantity is not null
+                then -(te.charge_price * abs(te.quantity)) else null end as amt,
+            gdi.material_date as beginTime,
+            te.expiry_date as endTime,
+            trim(ifnull(te.in_hospital_code, '')) as inHospitalCode,
+            t.write_off_dept_id as writeOffDeptId,
+            wod.code as writeOffDeptCode,
+            wod.name as writeOffDeptName
+        from gz_traceability t
+        inner join gz_traceability_entry te on te.parent_id = t.id
+            and ifnull(te.del_flag, 0) = 0
+            and te.tenant_id = t.tenant_id
+        left join gz_dep_inventory gdi on gdi.id = te.inventory_id
+            and gdi.tenant_id = t.tenant_id
+            and ifnull(gdi.del_flag, 0) != 1
+        left join fd_material gm on gm.id = coalesce(gdi.material_id, te.material_id)
+        left join fd_unit gu on gu.unit_id = gm.unit_id
+        left join fd_material m on m.id = te.material_id
+        left join fd_unit u on u.unit_id = m.unit_id
+        left join fd_department wod on wod.id = t.write_off_dept_id
+        where t.tenant_id = #{tenantId}
+          and t.visit_kind = #{visitKind}
+          and t.mirror_row_id = #{mirrorRowId}
+          and ifnull(t.del_flag, 0) = 0
+          and ifnull(t.reverse_flag, 0) = 1
+          and t.trace_source = 'HIS_MIRROR_HIGH_REVERSE'
     </select>
 
     <select id="selectCandidateLinksForRefund" resultType="com.spd.his.domain.HisMirrorConsumeLink">
@@ -402,11 +454,88 @@
             returned_qty as returnedQty, refundable_remaining_qty as refundableRemainingQty,
             ifnull(confirm_status, 0) as confirmStatus, confirm_id as confirmId,
             ifnull(instant_io_audit_status, 0) as instantIoAuditStatus,
-            instant_io_audit_by as instantIoAuditBy, instant_io_audit_time as instantIoAuditTime
+            instant_io_audit_by as instantIoAuditBy, instant_io_audit_time as instantIoAuditTime,
+            ifnull(write_off_status, 0) as writeOffStatus
         from his_mirror_consume_link
         where tenant_id = #{tenantId} and id = #{id} and ifnull(del_flag, 0) = 0
         limit 1
     </select>
+
+    <!-- 高值整单冲销/确认：同一正向计费单下全部有效关联（加行锁，防并发重复冲销） -->
+    <select id="selectActiveLinksByTraceabilityIdForUpdate" resultType="com.spd.his.domain.HisMirrorConsumeLink">
+        select
+            id, tenant_id as tenantId, visit_kind as visitKind, mirror_row_id as mirrorRowId,
+            fetch_batch_id as fetchBatchId, dept_batch_consume_id as deptBatchConsumeId,
+            dept_batch_consume_entry_id as deptBatchConsumeEntryId,
+            traceability_id as traceabilityId, traceability_entry_id as traceabilityEntryId,
+            write_off_dept_id as writeOffDeptId,
+            alloc_qty as allocQty, dep_inventory_id as depInventoryId, gz_dep_inventory_id as gzDepInventoryId,
+            in_hospital_code as inHospitalCode,
+            returned_qty as returnedQty, refundable_remaining_qty as refundableRemainingQty,
+            ifnull(confirm_status, 0) as confirmStatus, confirm_id as confirmId,
+            ifnull(instant_io_audit_status, 0) as instantIoAuditStatus,
+            instant_io_audit_by as instantIoAuditBy, instant_io_audit_time as instantIoAuditTime,
+            ifnull(write_off_status, 0) as writeOffStatus
+        from his_mirror_consume_link
+        where tenant_id = #{tenantId}
+          and traceability_id = #{traceabilityId}
+          and ifnull(del_flag, 0) = 0
+        order by create_time asc, id asc
+        for update
+    </select>
+
+    <!-- 同一正向计费单下全部有效关联 ID（整单确认展开用） -->
+    <select id="selectActiveLinkIdsByTraceabilityIds" resultType="java.lang.String">
+        select l.id
+        from his_mirror_consume_link l
+        where l.tenant_id = #{tenantId}
+          and ifnull(l.del_flag, 0) = 0
+          and l.traceability_id in
+        <foreach collection="traceabilityIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="selectHighLinkStatusRows" resultType="com.spd.his.domain.dto.HisMirrorHighWriteOffStatusVo">
+        select
+            l.visit_kind as visitKind,
+            l.mirror_row_id as mirrorRowId,
+            l.traceability_id as traceabilityId,
+            t.trace_no as traceNo,
+            ifnull(l.confirm_status, 0) as confirmStatus,
+            c.confirm_by as confirmBy,
+            c.confirm_time as confirmTime,
+            ifnull(l.instant_io_audit_status, 0) as instantIoAuditStatus,
+            ifnull(l.write_off_status, 0) as writeOffStatus,
+            l.write_off_by as writeOffBy,
+            l.write_off_time as writeOffTime,
+            l.write_off_bill_no as writeOffBillNo,
+            ifnull(l.del_flag, 0) as delFlag
+        from his_mirror_consume_link l
+        left join gz_traceability t on t.id = l.traceability_id and t.tenant_id = l.tenant_id
+        left join gz_high_consume_confirm c on c.id = l.confirm_id and c.tenant_id = l.tenant_id
+        where l.tenant_id = #{tenantId}
+          and l.visit_kind = #{visitKind}
+          and l.gz_dep_inventory_id is not null
+          and (ifnull(l.del_flag, 0) = 0 or ifnull(l.write_off_status, 0) = 1)
+          and l.mirror_row_id in
+        <foreach collection="mirrorRowIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <update id="markLinkWrittenOff">
+        update his_mirror_consume_link
+        set write_off_status = 1,
+            write_off_by = #{writeOffBy},
+            write_off_time = #{writeOffTime},
+            write_off_bill_no = #{writeOffBillNo},
+            update_by = #{writeOffBy},
+            update_time = now()
+        where tenant_id = #{tenantId}
+          and id = #{id}
+          and ifnull(write_off_status, 0) = 0
+    </update>
 
     <select id="selectAllLowValueLinksForMirror" resultType="com.spd.his.domain.HisMirrorConsumeLink">
         select
@@ -504,19 +633,6 @@
           )
     </update>
 
-    <select id="selectActiveLinkIdsByConfirmIds" resultType="java.lang.String">
-        select l.id
-        from his_mirror_consume_link l
-        where l.tenant_id = #{tenantId}
-          and ifnull(l.del_flag, 0) = 0
-          and l.gz_dep_inventory_id is not null
-          and (<include refid="linkNetAllocQtyExpr"/>) &gt; 0
-          and l.confirm_id in
-        <foreach collection="confirmIds" item="id" open="(" separator="," close=")">
-            #{id}
-        </foreach>
-    </select>
-
     <select id="countDownstreamLockedLinksByTraceabilityId" resultType="int">
         select count(1)
         from his_mirror_consume_link l
@@ -525,25 +641,6 @@
           and (
             ifnull(l.confirm_status, 0) = 1
             or ifnull(l.instant_io_audit_status, 0) in (1, 2)
-          )
-    </select>
-
-    <select id="countOtherActiveHighLinksOnGzInventory" resultType="int">
-        select count(1)
-        from his_mirror_consume_link l
-        where l.tenant_id = #{tenantId}
-          and l.gz_dep_inventory_id = #{gzDepInventoryId}
-          and ifnull(l.del_flag, 0) = 0
-          and (<include refid="linkNetAllocQtyExpr"/>) &gt; 0
-          and l.id &lt;&gt; #{excludeLinkId}
-          and (
-            l.traceability_id is not null
-            and exists (
-              select 1 from gz_traceability t
-              where t.id = l.traceability_id
-                and t.tenant_id = l.tenant_id
-                and ifnull(t.del_flag, 0) = 0
-            )
           )
     </select>
 </mapper>

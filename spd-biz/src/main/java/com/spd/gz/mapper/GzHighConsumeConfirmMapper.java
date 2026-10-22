@@ -39,11 +39,9 @@ public interface GzHighConsumeConfirmMapper
     int updateLinkInstantIoReversed(@Param("tenantId") String tenantId, @Param("linkIds") List<String> linkIds,
         @Param("auditBy") String auditBy);
 
-    int updateLinkInstantIoReversedByConfirmIds(@Param("tenantId") String tenantId,
-        @Param("confirmIds") List<String> confirmIds, @Param("auditBy") String auditBy);
-
-    int clearLinkConfirmForWriteOff(@Param("tenantId") String tenantId, @Param("linkIds") List<String> linkIds,
-        @Param("updateBy") String updateBy);
+    /** 按明细反向后回写该明细的退货(301)/退库(401)单号 */
+    int updateLinkIoReturnBills(@Param("tenantId") String tenantId, @Param("linkIds") List<String> linkIds,
+        @Param("returnGoodsBillNo") String returnGoodsBillNo, @Param("returnDepotBillNo") String returnDepotBillNo);
 
     int updateConfirmWarehouse(@Param("tenantId") String tenantId, @Param("confirmId") String confirmId,
         @Param("warehouseId") Long warehouseId, @Param("updateBy") String updateBy);

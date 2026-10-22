@@ -1,6 +1,7 @@
 package com.spd.gz.controller;
 
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,12 +16,17 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.enums.BusinessType;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.gz.domain.dto.GzHighValueWriteOffBody;
+import com.spd.gz.domain.dto.GzHighValueWriteOffResultVo;
+import com.spd.gz.service.IGzHighValueWriteOffService;
 import com.spd.his.domain.HisInpatientChargeMirror;
 import com.spd.his.domain.HisOutpatientChargeMirror;
 import com.spd.his.domain.dto.HisMirrorHighApplyBody;
 import com.spd.his.domain.dto.HisMirrorHighApplyResultVo;
 import com.spd.his.domain.dto.HisMirrorHighScanBody;
 import com.spd.his.domain.dto.HisMirrorHighScanResultVo;
+import com.spd.his.domain.dto.HisMirrorHighStatusQueryBody;
+import com.spd.his.domain.dto.HisMirrorHighWriteOffStatusVo;
 import com.spd.his.domain.dto.HisMirrorConsumeRecordVo;
 import com.spd.his.domain.dto.HisPatientChargeAllQuery;
 import com.spd.his.domain.dto.HisPatientChargeDetailRow;
@@ -36,6 +42,8 @@ public class GzHighChargeMirrorController extends BaseController
 {
     @Autowired
     private IHisPatientChargeService hisPatientChargeService;
+    @Autowired
+    private IGzHighValueWriteOffService gzHighValueWriteOffService;
 
     @PreAuthorize("@ss.hasPermi('gz:highChargeScan:list')")
     @GetMapping("/mirror/inpatient/list")
@@ -103,6 +111,30 @@ public class GzHighChargeMirrorController extends BaseController
     public AjaxResult applyHighConsume(@RequestBody HisMirrorHighApplyBody body)
     {
         HisMirrorHighApplyResultVo vo = hisPatientChargeService.applyMirrorHighConsume(body);
+        return success(vo);
+    }
+
+    /** 本页计费行的高值确认/冲销状态（列表展示用） */
+    @PreAuthorize("@ss.hasPermi('gz:highChargeScan:list')")
+    @PostMapping("/mirror/writeOffStatus")
+    public AjaxResult mirrorWriteOffStatus(@RequestBody HisMirrorHighStatusQueryBody body)
+    {
+        Map<String, HisMirrorHighWriteOffStatusVo> map = hisPatientChargeService.listHighChargeMirrorWriteOffStatus(body);
+        return success(map);
+    }
+
+    /** 整单冲销当前有效核销单：仅整单全部未确认可在本页冲销，否则须库房在即入即出页冲销 */
+    @PreAuthorize("@ss.hasPermi('gz:highChargeScan:writeOff')")
+    @Log(title = "高值扫码冲销", businessType = BusinessType.OTHER)
+    @PostMapping("/mirror/writeOff")
+    public AjaxResult writeOff(@RequestBody GzHighValueWriteOffBody body)
+    {
+        if (body == null)
+        {
+            body = new GzHighValueWriteOffBody();
+        }
+        body.setSource("HIGH_SCAN");
+        GzHighValueWriteOffResultVo vo = gzHighValueWriteOffService.writeOff(body);
         return success(vo);
     }
 }

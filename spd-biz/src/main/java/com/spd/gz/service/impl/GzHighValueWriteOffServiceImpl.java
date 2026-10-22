@@ -3,13 +3,13 @@ package com.spd.gz.service.impl;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -23,6 +23,7 @@ import com.spd.department.service.IDeptBatchConsumeService;
 import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.domain.GzTraceability;
 import com.spd.gz.domain.GzTraceabilityEntry;
+import com.spd.gz.domain.dto.GzHighChargeConfirmResultVo;
 import com.spd.gz.domain.dto.GzHighValueWriteOffBody;
 import com.spd.gz.domain.dto.GzHighValueWriteOffResultVo;
 import com.spd.gz.domain.dto.GzInstantIoReverseBody;
@@ -36,20 +37,22 @@ import com.spd.his.mapper.HisInpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisMirrorConsumeLinkMapper;
 import com.spd.his.mapper.HisOutpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper;
-import com.spd.gz.mapper.GzHighConsumeConfirmMapper;
-import com.spd.gz.support.GzTraceSourceConstants;
 
 /**
- * 高值冲销：档 A/B 回补科室库存；档 C 反向单据 + 回补。
+ * 高值冲销（整单）：按正向计费单冲销全部明细并回补科室库存；已即入即出审核的明细另建 301/401（仅本单明细）；
+ * 消耗侧另建负数反向计费单（HV-F-006/HV-F-007）。
+ * 冲销不等于作废：不软删原正向计费单；确认/即入即出状态保留，冲销状态单独留痕。
  */
 @Service
 public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffService
 {
-    private static final Logger log = LoggerFactory.getLogger(GzHighValueWriteOffServiceImpl.class);
-
     private static final String KIND_IN = "INPATIENT";
     private static final String STATUS_PENDING = "PENDING_CONSUME";
     private static final String PROC_TYPE_EMPTY = "";
+    private static final String SOURCE_CONFIRM = "CONFIRM";
+    private static final String SOURCE_HIGH_SCAN = "HIGH_SCAN";
+    private static final String MSG_CONTACT_WAREHOUSE =
+        "此单存在已确认或已即入即出的明细，请联系库房人员在「高值即入即出」界面进行冲销操作";
 
     @Autowired
     private HisMirrorConsumeLinkMapper hisMirrorConsumeLinkMapper;
@@ -65,8 +68,6 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
     @Autowired
     private IGzInstantIoService gzInstantIoService;
     @Autowired
-    private GzHighConsumeConfirmMapper gzHighConsumeConfirmMapper;
-    @Autowired
     private HisInpatientChargeMirrorMapper hisInpatientChargeMirrorMapper;
     @Autowired
     private HisOutpatientChargeMirrorMapper hisOutpatientChargeMirrorMapper;
@@ -77,124 +78,90 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
     @Transactional(rollbackFor = Exception.class)
     public GzHighValueWriteOffResultVo writeOff(GzHighValueWriteOffBody body)
     {
-        if (body == null || body.getLinkIds() == null || body.getLinkIds().isEmpty())
+        boolean noLinks = body == null || body.getLinkIds() == null || body.getLinkIds().isEmpty();
+        boolean noTraces = body == null || body.getTraceabilityIds() == null || body.getTraceabilityIds().isEmpty();
+        if (noLinks && noTraces)
         {
-            throw new ServiceException("请选择要冲销的高值核销明细");
+            throw new ServiceException("请选择要冲销的高值核销单");
         }
         String tenantId = requireTenant();
         String operator = SecurityUtils.getUserIdStr();
         String remark = StringUtils.defaultIfBlank(body.getRemark(), "高值核销冲销");
-        List<String> linkIds = body.getLinkIds().stream()
+        List<String> linkIds = noLinks ? new ArrayList<>() : body.getLinkIds().stream()
             .filter(StringUtils::isNotBlank).map(String::trim).distinct().collect(Collectors.toList());
 
         String source = StringUtils.trimToEmpty(body.getSource()).toUpperCase();
-        boolean fromConfirmPage = "CONFIRM".equals(source);
+        // 确认页 / 住院高值扫码页：仅允许整单全部未确认（档 A）
+        boolean clinicalEntry = SOURCE_CONFIRM.equals(source) || SOURCE_HIGH_SCAN.equals(source);
 
-        List<HisMirrorConsumeLink> links = new ArrayList<>();
-        for (String id : linkIds)
+        List<HisMirrorConsumeLink> links = loadWholeTraceLinks(tenantId, linkIds, body.getTraceabilityIds());
+        for (HisMirrorConsumeLink lk : links)
         {
-            HisMirrorConsumeLink lk = hisMirrorConsumeLinkMapper.selectById(tenantId, id);
-            if (lk == null)
-            {
-                throw new ServiceException("消耗关联不存在：" + id);
-            }
             if (lk.getGzDepInventoryId() == null && lk.getTraceabilityId() == null)
             {
-                throw new ServiceException("非高值核销关联，无法高值冲销：" + id);
+                throw new ServiceException("非高值核销关联，无法高值冲销：" + lk.getId());
             }
-            BigDecimal rem = refundableOnLink(lk);
-            if (rem.compareTo(BigDecimal.ZERO) <= 0)
+            if (refundableOnLink(lk).compareTo(BigDecimal.ZERO) <= 0)
             {
-                throw new ServiceException("明细已无剩余可冲销量：" + id);
+                throw new ServiceException("明细已无剩余可冲销量：" + lk.getId());
             }
-            if (fromConfirmPage)
+            if (clinicalEntry)
             {
-                // HV-Q-006：确认页仅档 A（未临床确认）；已确认须到即入即出页由库房冲销
-                Integer confirmStatus = lk.getConfirmStatus() == null ? 0 : lk.getConfirmStatus();
-                if (confirmStatus == 1)
+                int confirmStatus = lk.getConfirmStatus() == null ? 0 : lk.getConfirmStatus();
+                int ioStatus = lk.getInstantIoAuditStatus() == null ? 0 : lk.getInstantIoAuditStatus();
+                if (confirmStatus == 1 || ioStatus == 1 || ioStatus == 2)
                 {
-                    throw new ServiceException(
-                        "已临床确认的明细不能在「高值核销确认」冲销，请到「高值即入即出」由库房处理");
-                }
-                Integer ioStatus = lk.getInstantIoAuditStatus() == null ? 0 : lk.getInstantIoAuditStatus();
-                if (ioStatus == 1 || ioStatus == 2)
-                {
-                    throw new ServiceException(
-                        "该明细已做即入即出审核（库房段），禁止在「高值核销确认」冲销，请到「高值即入即出」处理");
+                    throw new ServiceException(MSG_CONTACT_WAREHOUSE);
                 }
             }
-            links.add(lk);
         }
 
-        // 档 C：已审核未冲销 → 先生成反向单据（301+401）；反向按确认批次整批，回补也扩到同批
-        List<HisMirrorConsumeLink> needReverseLinks = fromConfirmPage
-            ? java.util.Collections.emptyList()
-            : links.stream()
-                .filter(l -> Integer.valueOf(1).equals(l.getConfirmStatus())
-                    && Integer.valueOf(1).equals(l.getInstantIoAuditStatus()))
-                .collect(Collectors.toList());
         GzHighValueWriteOffResultVo vo = new GzHighValueWriteOffResultVo();
-        if (!needReverseLinks.isEmpty())
+        vo.setLinkCount(links.size());
+        // 档 C（方案 X）：仅对本单已即入即出审核的明细生成 301/401，同确认批次其他核销单不动
+        List<String> auditedLinkIds = links.stream()
+            .filter(l -> Integer.valueOf(1).equals(l.getConfirmStatus())
+                && Integer.valueOf(1).equals(l.getInstantIoAuditStatus()))
+            .map(HisMirrorConsumeLink::getId)
+            .collect(Collectors.toList());
+        if (!auditedLinkIds.isEmpty())
         {
-            Set<String> confirmIds = needReverseLinks.stream()
-                .map(HisMirrorConsumeLink::getConfirmId)
-                .filter(StringUtils::isNotBlank)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-            List<String> batchLinkIds = hisMirrorConsumeLinkMapper.selectActiveLinkIdsByConfirmIds(
-                tenantId, new ArrayList<>(confirmIds));
-            if (batchLinkIds == null || batchLinkIds.isEmpty())
+            if (clinicalEntry)
             {
-                batchLinkIds = needReverseLinks.stream().map(HisMirrorConsumeLink::getId).collect(Collectors.toList());
+                throw new ServiceException(MSG_CONTACT_WAREHOUSE);
             }
             GzInstantIoReverseBody revBody = new GzInstantIoReverseBody();
-            revBody.setLinkIds(batchLinkIds);
-            gzInstantIoService.reverse(revBody);
-            vo.setReverseBillPairCount(1);
-            vo.getMessages().add("已生成退货/退库反向单据（按确认批次）");
-            // 同批全部纳入后续回补
-            Set<String> expanded = new LinkedHashSet<>(linkIds);
-            expanded.addAll(batchLinkIds);
-            linkIds = new ArrayList<>(expanded);
-            links = reloadLinks(tenantId, linkIds);
+            revBody.setLinkIds(auditedLinkIds);
+            GzHighChargeConfirmResultVo revResult = gzInstantIoService.reverse(revBody);
+            vo.setReverseBillPairCount(revResult == null ? 0 : revResult.getBills().size());
+            vo.getMessages().add("已为 " + auditedLinkIds.size() + " 条已即入即出明细生成退货/退库单");
         }
-        vo.setLinkCount(links.size());
 
+        Date writeOffTime = DateUtils.getNowDate();
         Set<String> mirrorKeys = new LinkedHashSet<>();
-        Set<String> clearConfirmLinkIds = new LinkedHashSet<>();
-        Set<Long> tracesToVoid = new LinkedHashSet<>();
-        int inventoryRestored = 0;
-        int inventorySkipped = 0;
+        // 原计费单ID → (原明细ID → 冲销数量)，用于生成反向计费单
+        Map<Long, Map<Long, BigDecimal>> reverseByTrace = new LinkedHashMap<>();
+        Map<Long, String> entryLinkIds = new LinkedHashMap<>();
+        Map<Long, List<String>> linkIdsByTrace = new LinkedHashMap<>();
+        List<String> legacyLinkIds = new ArrayList<>();
 
         for (HisMirrorConsumeLink lk : links)
         {
-            Integer ioStatus = lk.getInstantIoAuditStatus() == null ? 0 : lk.getInstantIoAuditStatus();
-            Integer confirmStatus = lk.getConfirmStatus() == null ? 0 : lk.getConfirmStatus();
-            if (confirmStatus == 1 && ioStatus == 1)
-            {
-                throw new ServiceException("明细仍为已审核状态，请刷新后重试");
-            }
-            // status=2 表示已有反向单，继续回补；status=0 为 A/B
             BigDecimal rem = refundableOnLink(lk);
-            if (shouldSkipInventoryRestore(tenantId, lk))
+            // 回补为冲销固有步骤：同库存行另有核销时也照常回补；数量异常应暴露以便排查，禁止静默跳过
+            restoreInventory(lk, rem, remark);
+            hisMirrorConsumeLinkMapper.markLinkFullyReturnedById(tenantId, lk.getId(), operator);
+            if (lk.getTraceabilityId() != null && lk.getTraceabilityEntryId() != null)
             {
-                inventorySkipped++;
-                vo.getMessages().add("关联 " + lk.getId() + "：院内码仍被其他有效核销占用，本次跳过库存回补以免虚增");
-                log.warn("高值冲销跳过库存回补 linkId={} gzDepInventoryId={} inHospitalCode={}",
-                    lk.getId(), lk.getGzDepInventoryId(), lk.getInHospitalCode());
+                reverseByTrace
+                    .computeIfAbsent(lk.getTraceabilityId(), k -> new LinkedHashMap<>())
+                    .merge(lk.getTraceabilityEntryId(), rem, BigDecimal::add);
+                entryLinkIds.put(lk.getTraceabilityEntryId(), lk.getId());
+                linkIdsByTrace.computeIfAbsent(lk.getTraceabilityId(), k -> new ArrayList<>()).add(lk.getId());
             }
             else
             {
-                restoreInventory(lk, rem, remark);
-                inventoryRestored++;
-            }
-            hisMirrorConsumeLinkMapper.markLinkFullyReturnedById(tenantId, lk.getId(), operator);
-            if (confirmStatus == 1 || Integer.valueOf(2).equals(ioStatus))
-            {
-                clearConfirmLinkIds.add(lk.getId());
-            }
-            if (lk.getTraceabilityId() != null)
-            {
-                tracesToVoid.add(lk.getTraceabilityId());
+                legacyLinkIds.add(lk.getId());
             }
             vo.setRestoredCount(vo.getRestoredCount() + 1);
             if (StringUtils.isNotBlank(lk.getVisitKind()) && StringUtils.isNotBlank(lk.getMirrorRowId()))
@@ -203,19 +170,31 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
             }
         }
 
-        if (!clearConfirmLinkIds.isEmpty())
+        // 确认/即入即出状态保持原样（反向明细据此继承）；冲销留痕后软删关联，退出确认/即入即出队列与净核销量统计
+        int reverseBillCount = 0;
+        for (Map.Entry<Long, Map<Long, BigDecimal>> en : reverseByTrace.entrySet())
         {
-            gzHighConsumeConfirmMapper.clearLinkConfirmForWriteOff(
-                tenantId, new ArrayList<>(clearConfirmLinkIds), operator);
+            GzTraceability original = gzTraceabilityService.selectGzTraceabilityById(en.getKey());
+            if (original == null)
+            {
+                throw new ServiceException("冲销反向单失败：原计费单不存在 id=" + en.getKey());
+            }
+            GzTraceability rev = gzTraceabilityService.insertReverseWriteOffBill(original, en.getValue(), entryLinkIds, remark);
+            if (rev == null || rev.getId() == null)
+            {
+                throw new ServiceException("冲销反向单生成失败：原计费单 " + StringUtils.defaultString(original.getTraceNo()));
+            }
+            reverseBillCount++;
+            for (String linkId : linkIdsByTrace.getOrDefault(en.getKey(), java.util.Collections.emptyList()))
+            {
+                stampAndRelease(tenantId, linkId, operator, writeOffTime, rev.getTraceNo());
+            }
+            vo.getMessages().add("已生成反向计费单 " + rev.getTraceNo() + "（冲销原单 "
+                + StringUtils.defaultString(original.getTraceNo()) + "）");
         }
-        for (HisMirrorConsumeLink lk : links)
+        for (String linkId : legacyLinkIds)
         {
-            hisMirrorConsumeLinkMapper.softDeleteLinkById(tenantId, lk.getId(), operator);
-        }
-
-        for (Long traceId : tracesToVoid)
-        {
-            tryVoidTraceIfFullyReleased(tenantId, traceId);
+            stampAndRelease(tenantId, linkId, operator, writeOffTime, null);
         }
 
         for (String key : mirrorKeys)
@@ -230,11 +209,10 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
                 vo.setMirrorResetCount(vo.getMirrorResetCount() + 1);
             }
         }
-        if (inventorySkipped > 0)
+        if (reverseBillCount > 0)
         {
-            vo.getMessages().add(String.format(
-                "冲销完成：计费行可重新核销；库存回补 %d 条，因院内码被其他核销占用跳过 %d 条",
-                inventoryRestored, inventorySkipped));
+            vo.getMessages().add("冲销完成：已回补科室库存，并生成 " + reverseBillCount
+                + " 张反向计费单；计费行可重新核销（不影响即入即出）");
         }
         else
         {
@@ -244,32 +222,57 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
     }
 
     /**
-     * 同库存行上仍有其他有效高值核销时，不再回补（常见于追溯单误删回补后码被再次核销）。
+     * 整单冲销：所选明细按正向计费单展开为该单全部有效明细（行锁）；历史无计费单的关联按单条处理。
      */
-    private boolean shouldSkipInventoryRestore(String tenantId, HisMirrorConsumeLink lk)
+    private List<HisMirrorConsumeLink> loadWholeTraceLinks(String tenantId, List<String> linkIds, List<Long> traceabilityIds)
     {
-        if (lk == null || lk.getGzDepInventoryId() == null || StringUtils.isBlank(lk.getId()))
+        Set<Long> traceIds = new LinkedHashSet<>();
+        if (traceabilityIds != null)
         {
-            return false;
+            traceabilityIds.stream().filter(java.util.Objects::nonNull).forEach(traceIds::add);
         }
-        int others = hisMirrorConsumeLinkMapper.countOtherActiveHighLinksOnGzInventory(
-            tenantId, lk.getGzDepInventoryId(), lk.getId());
-        return others > 0;
-    }
-
-    private List<HisMirrorConsumeLink> reloadLinks(String tenantId, List<String> linkIds)
-    {
-        List<HisMirrorConsumeLink> out = new ArrayList<>();
+        List<HisMirrorConsumeLink> legacy = new ArrayList<>();
         for (String id : linkIds)
         {
             HisMirrorConsumeLink lk = hisMirrorConsumeLinkMapper.selectById(tenantId, id);
             if (lk == null)
             {
-                throw new ServiceException("反向单据后关联行不可用：" + id);
+                throw new ServiceException("消耗关联不存在或已冲销，请刷新后重试");
             }
-            out.add(lk);
+            if (lk.getTraceabilityId() != null)
+            {
+                traceIds.add(lk.getTraceabilityId());
+            }
+            else
+            {
+                legacy.add(lk);
+            }
+        }
+        List<HisMirrorConsumeLink> out = new ArrayList<>();
+        for (Long traceId : traceIds)
+        {
+            List<HisMirrorConsumeLink> whole = hisMirrorConsumeLinkMapper.selectActiveLinksByTraceabilityIdForUpdate(tenantId, traceId);
+            if (whole == null || whole.isEmpty())
+            {
+                throw new ServiceException("核销单已冲销或不存在，请刷新后重试");
+            }
+            out.addAll(whole);
+        }
+        out.addAll(legacy);
+        if (out.isEmpty())
+        {
+            throw new ServiceException("请选择要冲销的高值核销明细");
         }
         return out;
+    }
+
+    private void stampAndRelease(String tenantId, String linkId, String operator, Date writeOffTime, String reverseNo)
+    {
+        if (hisMirrorConsumeLinkMapper.markLinkWrittenOff(tenantId, linkId, operator, writeOffTime, reverseNo) != 1)
+        {
+            throw new ServiceException("明细已被他人冲销，请刷新后重试");
+        }
+        hisMirrorConsumeLinkMapper.softDeleteLinkById(tenantId, linkId, operator);
     }
 
     private void restoreInventory(HisMirrorConsumeLink lk, BigDecimal returnQty, String remark)
@@ -293,6 +296,7 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
                 throw new ServiceException("高值科室库存不存在，无法冲销");
             }
             gz.setQty(nz(gz.getQty()).add(returnQty));
+            gz.setAmt(nz(gz.getUnitPrice()).multiply(gz.getQty()));
             gzDepInventoryMapper.updateGzDepInventory(gz);
             return;
         }
@@ -340,40 +344,6 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
         if (rev == null || rev.getId() == null)
         {
             throw new ServiceException("历史高值消耗反消耗失败");
-        }
-    }
-
-    /**
-     * HIS 镜像高值计费单在冲销释放完毕后仅软删单据。
-     * 禁止调用 {@link IGzTraceabilityService#deleteGzTraceabilityById}：其会再次回补库存，造成虚增。
-     */
-    private void tryVoidTraceIfFullyReleased(String tenantId, Long traceId)
-    {
-        if (traceId == null)
-        {
-            return;
-        }
-        try
-        {
-            GzTraceability t = gzTraceabilityService.selectGzTraceabilityById(traceId);
-            if (t == null || !GzTraceSourceConstants.HIS_MIRROR_HIGH.equals(StringUtils.trimToEmpty(t.getTraceSource())))
-            {
-                return;
-            }
-            if (StringUtils.isBlank(t.getVisitKind()) || StringUtils.isBlank(t.getMirrorRowId()))
-            {
-                return;
-            }
-            BigDecimal net = nz(hisMirrorConsumeLinkMapper.sumActiveNetAllocQtyForMirrorRow(
-                tenantId, t.getVisitKind().trim().toUpperCase(), t.getMirrorRowId().trim()));
-            if (net.compareTo(BigDecimal.ZERO) <= 0)
-            {
-                gzTraceabilityService.softVoidAfterWriteOff(traceId);
-            }
-        }
-        catch (Exception e)
-        {
-            log.warn("冲销后软删高值计费单失败 traceId={}，主流程已完成回补/清关联", traceId, e);
         }
     }
 

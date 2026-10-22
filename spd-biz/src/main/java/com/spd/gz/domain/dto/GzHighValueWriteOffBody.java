@@ -4,16 +4,18 @@ import java.util.List;
 import lombok.Data;
 
 /**
- * 高值冲销：按消耗关联行分档回补科室库存；已审核则先生成/校验反向单据。
+ * 高值冲销（整单）：所选明细/计费单按正向计费单展开为该单全部明细冲销。
  */
 @Data
 public class GzHighValueWriteOffBody
 {
     private List<String> linkIds;
+    /** 正向高值计费单ID（住院高值扫码页按单冲销） */
+    private List<Long> traceabilityIds;
     private String remark;
     /**
-     * 冲销入口：CONFIRM=高值核销确认页（仅档 A）；INSTANT_IO=即入即出页（档 B/C）。
-     * 空则按数据状态自动分档（兼容旧调用），确认页必须传 CONFIRM。
+     * 冲销入口：CONFIRM=高值核销确认页、HIGH_SCAN=住院高值扫码页（仅整单全部未确认）；
+     * INSTANT_IO=即入即出页（可混态整单冲销）。
      */
     private String source;
 }

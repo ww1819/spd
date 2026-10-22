@@ -33,10 +33,11 @@ import com.spd.gz.domain.dto.GzHighChargeConfirmResultVo;
 import com.spd.gz.domain.dto.GzHighChargeConfirmRowVo;
 import com.spd.gz.mapper.GzHighConsumeConfirmMapper;
 import com.spd.gz.service.IGzHighChargeConfirmService;
+import com.spd.his.mapper.HisMirrorConsumeLinkMapper;
 import com.spd.system.service.ITenantScopeService;
 
 /**
- * 高值核销确认：仅业务确认，不生成结算入出库单（HV-F-002）。
+ * 高值核销确认：仅业务确认，不生成结算入出库单（HV-F-002）；按核销单整单确认（HV-F-007）。
  */
 @Service
 public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmService
@@ -57,6 +58,8 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
     private GzHighConsumeConfirmMapper gzHighConsumeConfirmMapper;
     @Autowired
     private ITenantScopeService tenantScopeService;
+    @Autowired
+    private HisMirrorConsumeLinkMapper hisMirrorConsumeLinkMapper;
 
     @Override
     public List<GzHighChargeConfirmRowVo> selectConfirmList(GzHighChargeConfirmQuery query)
@@ -95,6 +98,7 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
                     GzHighChargeConfirmQuery detailQuery = new GzHighChargeConfirmQuery();
                     detailQuery.setTenantId(query.getTenantId());
                     detailQuery.setLinkIds(pageIds);
+                    detailQuery.setWriteOffStatus("all");
                     detailQuery.setOffset(0);
                     detailQuery.setLimitSize(pageIds.size());
                     List<GzHighChargeConfirmRowVo> detailRows = gzHighConsumeConfirmMapper.selectConfirmList(detailQuery);
@@ -197,7 +201,7 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         List<GzHighChargeConfirmRowVo> lines = gzHighConsumeConfirmMapper.selectConfirmLineDetailsByLinkIds(tenantId, linkIds);
         if (lines == null || lines.size() != linkIds.size())
         {
-            throw new ServiceException("部分明细不存在或不是高值核销记录");
+            throw new ServiceException("部分明细不存在、已冲销或不是高值核销记录，请刷新后重选");
         }
         for (GzHighChargeConfirmRowVo row : lines)
         {
@@ -205,6 +209,12 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
             {
                 throw new ServiceException("存在已确认的明细，请刷新后重选");
             }
+        }
+        // 整单确认：同一核销单的其他未确认明细一并确认，避免同单混态
+        lines = expandToWholeTrace(tenantId, lines);
+        linkIds = lines.stream().map(GzHighChargeConfirmRowVo::getLinkId).collect(Collectors.toList());
+        for (GzHighChargeConfirmRowVo row : lines)
+        {
             if (StringUtils.isBlank(row.getSupplierId()))
             {
                 throw new ServiceException("耗材【" + StringUtils.defaultString(row.getMaterialName(), "未知")
@@ -329,6 +339,44 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         }
         vo.getBills().addAll(map.values());
         return vo;
+    }
+
+    private List<GzHighChargeConfirmRowVo> expandToWholeTrace(String tenantId, List<GzHighChargeConfirmRowVo> picked)
+    {
+        List<Long> traceIds = picked.stream()
+            .map(GzHighChargeConfirmRowVo::getTraceabilityId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .collect(Collectors.toList());
+        if (traceIds.isEmpty())
+        {
+            return picked;
+        }
+        List<String> siblingIds = hisMirrorConsumeLinkMapper.selectActiveLinkIdsByTraceabilityIds(tenantId, traceIds);
+        java.util.Set<String> pickedIds = picked.stream()
+            .map(GzHighChargeConfirmRowVo::getLinkId)
+            .collect(Collectors.toSet());
+        List<String> extraIds = siblingIds == null ? Collections.emptyList() : siblingIds.stream()
+            .filter(id -> !pickedIds.contains(id))
+            .collect(Collectors.toList());
+        if (extraIds.isEmpty())
+        {
+            return picked;
+        }
+        List<GzHighChargeConfirmRowVo> out = new ArrayList<>(picked);
+        List<GzHighChargeConfirmRowVo> extras = gzHighConsumeConfirmMapper.selectConfirmLineDetailsByLinkIds(tenantId, extraIds);
+        if (extras != null)
+        {
+            for (GzHighChargeConfirmRowVo r : extras)
+            {
+                // 历史上已单独确认的同单明细保持原批次，不重复确认
+                if (r.getConfirmStatus() == null || r.getConfirmStatus() != 1)
+                {
+                    out.add(r);
+                }
+            }
+        }
+        return out;
     }
 
     private Long resolveSingleWriteOffDepartment(List<GzHighChargeConfirmRowVo> lines)

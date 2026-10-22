@@ -41,6 +41,12 @@ public class HisMirrorConsumeLink
     private Integer instantIoAuditStatus;
     private String instantIoAuditBy;
     private Date instantIoAuditTime;
+    /** 高值冲销：0未冲销 1已冲销 */
+    private Integer writeOffStatus;
+    private String writeOffBy;
+    private Date writeOffTime;
+    /** 反向计费单号 */
+    private String writeOffBillNo;
     /** 核销科室（SPD fd_department.id，高值扫码实际扣减科室） */
     private Long writeOffDeptId;
 }

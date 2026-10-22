@@ -3634,3 +3634,88 @@ EXECUTE stmt_hpcm_vl_at;
 /
 DEALLOCATE PREPARE stmt_hpcm_vl_at;
 /
+
+-- ========== HV-F-006 高值冲销生成反向计费单 ==========
+CALL add_table_column('gz_traceability', 'reverse_flag', 'tinyint NOT NULL', '是否冲销反向单 0否 1是', '0');
+/
+CALL add_table_column('gz_traceability', 'reverse_of_trace_id', 'bigint', '冲销对应的原计费单ID', NULL);
+/
+CALL add_table_column('gz_traceability', 'reverse_of_trace_no', 'varchar(50)', '冲销对应的原计费单号', NULL);
+/
+
+-- ========== HV-F-007 高值整单冲销 + 冲销留痕 + 即入即出按明细反向（方案X） ==========
+CALL add_table_column('his_mirror_consume_link', 'write_off_status', 'tinyint NOT NULL', '高值冲销状态 0未冲销 1已冲销', '0');
+/
+CALL add_table_column('his_mirror_consume_link', 'write_off_by', 'varchar(64)', '冲销人', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'write_off_time', 'datetime', '冲销时间', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'write_off_bill_no', 'varchar(50)', '反向计费单号', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'io_return_goods_bill_no', 'varchar(64)', '按明细生成的即入即出退货单号(301)', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'io_return_depot_bill_no', 'varchar(64)', '按明细生成的即入即出退库单号(401)', NULL);
+/
+CALL add_table_column('gz_traceability', 'write_off_status', 'tinyint NOT NULL', '正向单冲销状态 0未冲销 1已冲销', '0');
+/
+CALL add_table_column('gz_traceability', 'write_off_by', 'varchar(64)', '冲销人', NULL);
+/
+CALL add_table_column('gz_traceability', 'write_off_time', 'datetime', '冲销时间', NULL);
+/
+CALL add_table_column('gz_traceability', 'write_off_bill_no', 'varchar(50)', '反向计费单号', NULL);
+/
+CALL add_table_column('gz_traceability_entry', 'src_consume_link_id', 'varchar(36)', '反向明细对应的原消耗关联ID(his_mirror_consume_link.id)', NULL);
+/
+CALL add_table_column('gz_high_consume_confirm_bill', 'link_scoped', 'tinyint NOT NULL', '1=按明细生成的反向单(301/401) 0=按确认批次', '0');
+/
+SET @idx_hmcl_trace_id := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'his_mirror_consume_link' AND index_name = 'idx_hmcl_trace_id'
+);
+/
+SET @sql_hmcl_trace_id := IF(@idx_hmcl_trace_id = 0,
+  'ALTER TABLE his_mirror_consume_link ADD INDEX idx_hmcl_trace_id (tenant_id, traceability_id)',
+  'SELECT 1');
+/
+PREPARE stmt_hmcl_trace_id FROM @sql_hmcl_trace_id;
+/
+EXECUTE stmt_hmcl_trace_id;
+/
+DEALLOCATE PREPARE stmt_hmcl_trace_id;
+/
+-- 历史反向计费单明细改为负数（HV-F-006 曾以正数落库；仅处理正数，重复执行无影响）
+UPDATE gz_traceability_entry te
+INNER JOIN gz_traceability t ON t.id = te.parent_id
+SET te.quantity = -ABS(te.quantity)
+WHERE IFNULL(t.reverse_flag, 0) = 1
+  AND te.quantity > 0;
+/
+-- 已冲销的高值关联补写冲销状态（冲销 = 全额返还 + 软删）
+UPDATE his_mirror_consume_link l
+LEFT JOIN gz_traceability r ON r.tenant_id = l.tenant_id
+  AND r.reverse_of_trace_id = l.traceability_id
+  AND IFNULL(r.reverse_flag, 0) = 1
+  AND IFNULL(r.del_flag, 0) = 0
+SET l.write_off_status = 1,
+    l.write_off_by = COALESCE(l.delete_by, l.update_by),
+    l.write_off_time = COALESCE(l.delete_time, l.update_time),
+    l.write_off_bill_no = r.trace_no
+WHERE l.del_flag = 1
+  AND l.gz_dep_inventory_id IS NOT NULL
+  AND l.alloc_qty > 0
+  AND l.returned_qty >= l.alloc_qty
+  AND l.write_off_status = 0;
+/
+-- 正向计费单：存在有效反向单即视为已冲销
+UPDATE gz_traceability t
+INNER JOIN gz_traceability r ON r.tenant_id = t.tenant_id
+  AND r.reverse_of_trace_id = t.id
+  AND IFNULL(r.reverse_flag, 0) = 1
+  AND IFNULL(r.del_flag, 0) = 0
+SET t.write_off_status = 1,
+    t.write_off_by = r.create_by,
+    t.write_off_time = r.create_time,
+    t.write_off_bill_no = r.trace_no
+WHERE IFNULL(t.reverse_flag, 0) = 0
+  AND t.write_off_status = 0;
+/

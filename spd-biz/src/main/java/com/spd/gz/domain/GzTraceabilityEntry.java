@@ -102,6 +102,9 @@ public class GzTraceabilityEntry extends BaseEntity
     /** 租户ID */
     private String tenantId;
 
+    /** 反向明细对应的原消耗关联ID（his_mirror_consume_link.id） */
+    private String srcConsumeLinkId;
+
     /** 追溯单状态（1=未审核，2=已审核） */
     private Integer parentOrderStatus;
 
@@ -395,6 +398,8 @@ public class GzTraceabilityEntry extends BaseEntity
 
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+    public String getSrcConsumeLinkId() { return srcConsumeLinkId; }
+    public void setSrcConsumeLinkId(String srcConsumeLinkId) { this.srcConsumeLinkId = srcConsumeLinkId; }
 
     public void setParentOrderStatus(Integer parentOrderStatus)
     {

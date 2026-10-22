@@ -360,6 +360,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         BigDecimal netAllocatedBefore = netAllocatedQty(tenantId, visitKind, mirrorRowId);
         BigDecimal remaining = billQty.subtract(netAllocatedBefore);
         assertHighMirrorConsumable(line, remaining);
+        // 一条收费明细同一时刻只允许一张有效核销单：并发提交时仅一方认领成功
+        claimMirrorRowForConsume(tenantId, visitKind, mirrorRowId, processParty);
         assertSourcesForHigh(listDistinctSources(tenantId, visitKind, mirrorRowId));
         requireMirrorUnitPrice(line);
         FdDepartment writeOffDept = resolveConsumeDepartment(tenantId, body == null ? null : body.getConsumeDepartmentId(), line);

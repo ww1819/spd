@@ -39,6 +39,15 @@ public class GzHighChargeConfirmRowVo
     private String returnGoodsBillNo;
     /** 退库单号 G-TK */
     private String returnDepotBillNo;
+    /** 正向高值计费单ID（整单确认/冲销分组） */
+    private Long traceabilityId;
+    /** 冲销：0未冲销 1已冲销 */
+    private Integer writeOffStatus;
+    private String writeOffBy;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date writeOffTime;
+    /** 反向计费单号 */
+    private String writeOffBillNo;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date consumeAuditTime;

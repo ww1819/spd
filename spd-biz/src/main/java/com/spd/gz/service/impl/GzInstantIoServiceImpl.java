@@ -267,26 +267,40 @@ public class GzInstantIoServiceImpl implements IGzInstantIoService
         GzHighChargeConfirmResultVo result = new GzHighChargeConfirmResultVo();
         result.setLineCount(lines.size());
 
-        // 按确认批次+供应商对原 101/201 生成 301/401；仓库取原单
-        for (String confirmId : confirmIds)
+        // 方案 X：只对所选明细生成 301/401（原 101/201 中按 link 标识取对应明细），同批其他核销单不动
+        Map<String, Map<String, List<GzHighChargeConfirmRowVo>>> byConfirmSupplier = new LinkedHashMap<>();
+        for (GzHighChargeConfirmRowVo row : lines)
         {
+            byConfirmSupplier
+                .computeIfAbsent(row.getConfirmId(), k -> new LinkedHashMap<>())
+                .computeIfAbsent(StringUtils.defaultString(row.getSupplierId(), "").trim(), k -> new ArrayList<>())
+                .add(row);
+        }
+        for (Map.Entry<String, Map<String, List<GzHighChargeConfirmRowVo>>> ce : byConfirmSupplier.entrySet())
+        {
+            String confirmId = ce.getKey();
             List<GzHighConsumeConfirmBill> cbs = billsByConfirm.getOrDefault(confirmId, java.util.Collections.emptyList());
-            boolean alreadyReversed = cbs.stream().anyMatch(b -> b.getBillType() != null
+            boolean batchReversed = cbs.stream().anyMatch(b -> b.getBillType() != null
+                && !Integer.valueOf(1).equals(b.getLinkScoped())
                 && (b.getBillType() == BILL_TYPE_RETURN_GOODS || b.getBillType() == BILL_TYPE_RETURN_DEPOT));
-            if (alreadyReversed)
+            if (batchReversed)
             {
-                throw new ServiceException("确认批次已存在退货/退库单，请勿重复生成");
+                throw new ServiceException("确认批次已整批生成退货/退库单，请勿重复生成");
             }
-            Map<String, List<GzHighConsumeConfirmBill>> bySupplier = cbs.stream()
-                .filter(b -> b.getBillType() != null && (b.getBillType() == BILL_TYPE_IN || b.getBillType() == BILL_TYPE_OUT))
-                .collect(Collectors.groupingBy(b -> StringUtils.defaultString(b.getSupplierId(), ""), LinkedHashMap::new, Collectors.toList()));
-            for (Map.Entry<String, List<GzHighConsumeConfirmBill>> en : bySupplier.entrySet())
+            for (Map.Entry<String, List<GzHighChargeConfirmRowVo>> se : ce.getValue().entrySet())
             {
-                String supplierId = en.getKey();
-                GzHighConsumeConfirmBill inRef = en.getValue().stream()
-                    .filter(b -> Integer.valueOf(BILL_TYPE_IN).equals(b.getBillType())).findFirst().orElse(null);
-                GzHighConsumeConfirmBill outRef = en.getValue().stream()
-                    .filter(b -> Integer.valueOf(BILL_TYPE_OUT).equals(b.getBillType())).findFirst().orElse(null);
+                String supplierId = se.getKey();
+                List<GzHighChargeConfirmRowVo> group = se.getValue();
+                Set<String> groupLinkIds = group.stream().map(GzHighChargeConfirmRowVo::getLinkId)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+                GzHighConsumeConfirmBill inRef = cbs.stream()
+                    .filter(b -> Integer.valueOf(BILL_TYPE_IN).equals(b.getBillType())
+                        && supplierId.equals(StringUtils.defaultString(b.getSupplierId(), "").trim()))
+                    .findFirst().orElse(null);
+                GzHighConsumeConfirmBill outRef = cbs.stream()
+                    .filter(b -> Integer.valueOf(BILL_TYPE_OUT).equals(b.getBillType())
+                        && supplierId.equals(StringUtils.defaultString(b.getSupplierId(), "").trim()))
+                    .findFirst().orElse(null);
                 if (inRef == null || outRef == null)
                 {
                     throw new ServiceException("确认批次缺少成对的入库/出库单，无法反向");
@@ -303,16 +317,24 @@ public class GzInstantIoServiceImpl implements IGzInstantIoService
                     throw new ServiceException("原入出库单缺少仓库，无法反向");
                 }
                 StkIoBill thBill = buildReverseFromSource(tenantId, BILL_TYPE_RETURN_GOODS, warehouseId,
-                    srcIn.getDepartmentId(), supplierId, now, userId, srcIn, "高值即入即出退货");
+                    srcIn.getDepartmentId(), supplierId, now, userId, srcIn, groupLinkIds, "高值即入即出退货");
                 Long thId = stkIoBillService.insertHighValueSettlementBill(thBill, PREFIX_TH);
                 StkIoBill tkBill = buildReverseFromSource(tenantId, BILL_TYPE_RETURN_DEPOT, warehouseId,
-                    srcOut.getDepartmentId(), supplierId, now, userId, srcOut, "高值即入即出退库");
+                    srcOut.getDepartmentId(), supplierId, now, userId, srcOut, groupLinkIds, "高值即入即出退库");
                 Long tkId = stkIoBillService.insertHighValueSettlementBill(tkBill, PREFIX_TK);
-                newRefs.add(newBillRef(tenantId, confirmId, supplierId, BILL_TYPE_RETURN_GOODS, thId, thBill.getBillNo(), now));
-                newRefs.add(newBillRef(tenantId, confirmId, supplierId, BILL_TYPE_RETURN_DEPOT, tkId, tkBill.getBillNo(), now));
+                GzHighConsumeConfirmBill thRef = newBillRef(tenantId, confirmId, supplierId, BILL_TYPE_RETURN_GOODS, thId, thBill.getBillNo(), now);
+                thRef.setLinkScoped(1);
+                GzHighConsumeConfirmBill tkRef = newBillRef(tenantId, confirmId, supplierId, BILL_TYPE_RETURN_DEPOT, tkId, tkBill.getBillNo(), now);
+                tkRef.setLinkScoped(1);
+                newRefs.add(thRef);
+                newRefs.add(tkRef);
+                gzHighConsumeConfirmMapper.updateLinkIoReturnBills(tenantId, new ArrayList<>(groupLinkIds),
+                    thBill.getBillNo(), tkBill.getBillNo());
 
                 GzHighChargeConfirmResultVo.GzHighChargeConfirmBillVo bv = new GzHighChargeConfirmResultVo.GzHighChargeConfirmBillVo();
                 bv.setSupplierId(supplierId);
+                bv.setSupplierName(group.stream().map(GzHighChargeConfirmRowVo::getSupplierName)
+                    .filter(StringUtils::isNotBlank).findFirst().orElse(supplierId));
                 bv.setReturnGoodsBillNo(thBill.getBillNo());
                 bv.setReturnGoodsBillId(thId);
                 bv.setReturnDepotBillNo(tkBill.getBillNo());
@@ -328,18 +350,33 @@ public class GzInstantIoServiceImpl implements IGzInstantIoService
         {
             gzHighConsumeConfirmMapper.insertConfirmBillBatch(newRefs);
         }
-        // 同一确认批次共享入出库单，反向后整批标记已冲销
-        int updated = gzHighConsumeConfirmMapper.updateLinkInstantIoReversedByConfirmIds(
-            tenantId, new ArrayList<>(confirmIds), userId);
-        if (updated <= 0)
+        int updated = gzHighConsumeConfirmMapper.updateLinkInstantIoReversed(tenantId, linkIds, userId);
+        if (updated != linkIds.size())
         {
             throw new ServiceException("明细状态已变更，请刷新后重试");
         }
         return result;
     }
 
+    /** 原单明细备注形如「… link=<消耗关联ID>」（审核建单时写入） */
+    private static String extractLinkId(String remark)
+    {
+        if (StringUtils.isBlank(remark))
+        {
+            return null;
+        }
+        int p = remark.lastIndexOf("link=");
+        if (p < 0)
+        {
+            return null;
+        }
+        String tail = remark.substring(p + 5).trim();
+        int sp = tail.indexOf(' ');
+        return sp > 0 ? tail.substring(0, sp) : tail;
+    }
+
     private StkIoBill buildReverseFromSource(String tenantId, int billType, Long warehouseId, Long departmentId,
-        String supplierId, Date billTime, String userId, StkIoBill source, String remark)
+        String supplierId, Date billTime, String userId, StkIoBill source, Set<String> linkIds, String remark)
     {
         StkIoBill bill = new StkIoBill();
         bill.setTenantId(tenantId);
@@ -372,6 +409,10 @@ public class GzInstantIoServiceImpl implements IGzInstantIoService
                 {
                     continue;
                 }
+                if (!linkIds.contains(extractLinkId(src.getRemark())))
+                {
+                    continue;
+                }
                 StkIoBillEntry e = new StkIoBillEntry();
                 e.setMaterialId(src.getMaterialId());
                 e.setMaterialName(src.getMaterialName());
@@ -393,13 +434,14 @@ public class GzInstantIoServiceImpl implements IGzInstantIoService
                 e.setSubBarcode(src.getSubBarcode());
                 e.setMaterialFactoryId(src.getMaterialFactoryId());
                 e.setSupplerId(src.getSupplerId());
-                e.setRemark(remark + " 原明细=" + src.getId());
+                e.setRemark(remark + " 原明细=" + src.getId() + " link=" + extractLinkId(src.getRemark()));
                 entries.add(e);
             }
         }
-        if (entries.isEmpty())
+        if (entries.size() != linkIds.size())
         {
-            throw new ServiceException("原单【" + source.getBillNo() + "】无明细，无法反向");
+            throw new ServiceException("原单【" + source.getBillNo() + "】未匹配到全部所选明细（应 "
+                + linkIds.size() + " 条，实 " + entries.size() + " 条），无法按明细反向");
         }
         bill.setStkIoBillEntryList(entries);
         return bill;
