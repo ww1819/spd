@@ -70,6 +70,11 @@ public interface IFdMaterialService
     int clearMaterialHisChargeItem(Long materialId);
 
     /**
+     * 异步按收费编码刷新统一计费镜像 value_level（key=chargeItemId, value=1高值/2低值）
+     */
+    void scheduleRefreshUnifiedValueLevels(String tenantId, Map<String, String> chargeItemToLevel);
+
+    /**
      * 批量删除耗材产品
      *
      * @param ids 需要删除的耗材产品主键集合

@@ -23,8 +23,8 @@
 | 生产厂家 | 新增/导入须填 **HIS 生产厂家 ID** | `factoryImportRequiresHisId`；`FdFactory*` |
 | 财务分类 | 新增须填 HIS ID | `FdFinanceCategory*` |
 | 库房分类 | 新增须填 HIS ID | `FdWarehouseCategory*` |
-| 耗材档案 | 编码由系统按分类前缀生成：**GZ / DZ / SJ + 5 位**，前端禁用手改；产品档案 is_gz 变更可同步 HIS 收费镜像 | `FdMaterialServiceImpl`；`material/index.vue` |
-| 耗材对照 / HIS对照 | **公共共享页样式**（与枣强同一 `materialCompare/index`）；绑定只写 `fd_material.his_charge_item_id`（与解绑同路径，请求内不刷计费镜像大表） | `foundation/materialCompare/index.vue`；`FdMaterialController.bindHisChargeItem`；`bindMaterialHisChargeItem` |
+| 耗材档案 | 编码由系统按分类前缀生成：**GZ / DZ / SJ + 5 位**，前端禁用手改；产品档案 is_gz 变更可同步 HIS 收费镜像；**高低值仅两档**（is_gz=1 高值，其余低值） | `FdMaterialServiceImpl`；`HisMirrorValueLevelSupport`；`material/index.vue` |
+| 耗材对照 / HIS对照 | **公共共享页样式**（与枣强同一 `materialCompare/index`）；绑定只写对照字段，**异步**按档案 is_gz 刷收费项+统一计费镜像 `value_level` | `foundation/materialCompare/index.vue`；`bindMaterialHisChargeItem`；`scheduleRefreshUnifiedValueLevels` |
 
 ### 2. 仓储业务
 
@@ -38,8 +38,8 @@
 
 | 菜单/功能 | 差异说明 | 关键实现 |
 |-----------|----------|----------|
-| 患者收费查询 | HIS 计费镜像抓取与查询；菜单挂在 **科室消耗** 下 | `department/patientCharge`；`move_patient_charge_to_consume_public.sql` |
-| 高值扫描核销 | HIS 计费镜像高值扫码核销；条码/追溯删除后无有效消耗则回退待核销 | `gz/highChargeScan` |
+| 患者收费查询 | HIS 计费镜像抓取与查询；**高低值均展示**（类型列按镜像 value_level；低值核销按钮仍仅低值可用）；菜单挂在 **科室消耗** 下 | `department/patientCharge`；`applyPatientChargeListScope` |
+| 高值扫描核销 | HIS 计费镜像**仅高值**（`value_level=1`，以档案 is_gz 对照为准）；与患者收费查询并存；条码/追溯删除后无有效消耗则回退待核销 | `gz/highChargeScan`；`applyHighChargeListScope` |
 | HIS 计费自动处理 | 抓取后自动低值消耗 / 自动退费开关 | `HisBillingTenantConstants`；`sb_tenant_setting`；菜单「衡水计费自动消耗开关」 |
 | 众阳 HIS 单据推送 | **未接入**（与枣强不同） | `MSUN_INTEGRATED_TENANT_IDS` 不含本租户 |
 

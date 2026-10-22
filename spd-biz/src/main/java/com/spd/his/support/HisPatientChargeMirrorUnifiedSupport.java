@@ -135,8 +135,23 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setValueLevel(null);
     }
 
-    /** 患者收费查询：固定仅显示 is_gz≠1（未对照视同低值），忽略前端 valueLevel */
+    /**
+     * 患者收费查询：高低值均展示（与高值扫描核销并存；列表「高低值类型」按镜像 value_level 显示）。
+     * 忽略前端 valueLevel，避免误筛掉一侧。
+     */
     public static void applyPatientChargeListScope(HisPatientChargeMirrorUnifiedQuery u)
+    {
+        if (u == null)
+        {
+            return;
+        }
+        u.setChargeListMode(null);
+        u.setValueLevel(null);
+        u.setValueLevelIn(null);
+    }
+
+    /** 仅低值口径（科室销提醒 / 自动低值消耗等） */
+    public static void applyLowChargeListScope(HisPatientChargeMirrorUnifiedQuery u)
     {
         if (u == null)
         {
@@ -299,7 +314,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setCreateTime(u.getCreateTime());
         r.setUpdateBy(u.getUpdateBy());
         r.setUpdateTime(u.getUpdateTime());
-        r.setValueLevel(u.getValueLevel());
+        r.setValueLevel(HisMirrorValueLevelSupport.normalizeStoredLevel(u.getValueLevel()));
         r.setHighValueStockQty(u.getHighValueStockQty() != null ? u.getHighValueStockQty() : BigDecimal.ZERO);
         r.setLowValueStockQty(u.getLowValueStockQty() != null ? u.getLowValueStockQty() : BigDecimal.ZERO);
         return r;
@@ -353,7 +368,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setCreateTime(u.getCreateTime());
         r.setUpdateBy(u.getUpdateBy());
         r.setUpdateTime(u.getUpdateTime());
-        r.setValueLevel(u.getValueLevel());
+        r.setValueLevel(HisMirrorValueLevelSupport.normalizeStoredLevel(u.getValueLevel()));
         r.setHighValueStockQty(u.getHighValueStockQty() != null ? u.getHighValueStockQty() : BigDecimal.ZERO);
         r.setLowValueStockQty(u.getLowValueStockQty() != null ? u.getLowValueStockQty() : BigDecimal.ZERO);
         return r;
@@ -411,7 +426,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setProcessSituation(u.getProcessSituation());
         r.setProcessByName(u.getProcessByName());
         r.setCreateTime(u.getCreateTime());
-        r.setValueLevel(u.getValueLevel());
+        r.setValueLevel(HisMirrorValueLevelSupport.normalizeStoredLevel(u.getValueLevel()));
         r.setHighValueStockQty(u.getHighValueStockQty() != null ? u.getHighValueStockQty() : BigDecimal.ZERO);
         r.setLowValueStockQty(u.getLowValueStockQty() != null ? u.getLowValueStockQty() : BigDecimal.ZERO);
         return r;

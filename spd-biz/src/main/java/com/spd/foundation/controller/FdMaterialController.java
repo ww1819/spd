@@ -325,6 +325,9 @@ public class FdMaterialController extends BaseController
         {
             return error("收费项目不存在或不可维护");
         }
+        Map<String, String> refresh = new LinkedHashMap<>();
+        refresh.put(chargeItemId, valueLevel);
+        fdMaterialService.scheduleRefreshUnifiedValueLevels(tenantId, refresh);
         return success("保存成功");
     }
 
@@ -385,6 +388,12 @@ public class FdMaterialController extends BaseController
         {
             return error("所选收费项目不存在或不可维护");
         }
+        Map<String, String> refresh = new LinkedHashMap<>();
+        for (String cid : chargeItemIds)
+        {
+            refresh.put(cid, valueLevel);
+        }
+        fdMaterialService.scheduleRefreshUnifiedValueLevels(tenantId, refresh);
         return AjaxResult.success("批量保存成功，共更新 " + updated + " 条");
     }
 
@@ -431,7 +440,6 @@ public class FdMaterialController extends BaseController
         // chargeItemId -> valueLevel（同一收费项多条档案时以后者为准）
         Map<String, String> chargeItemToLevel = new LinkedHashMap<>();
         int skippedNoBind = 0;
-        int skippedInvalidGz = 0;
         for (FdMaterial m : materials)
         {
             if (m == null)
@@ -444,17 +452,13 @@ public class FdMaterialController extends BaseController
                 skippedNoBind++;
                 continue;
             }
-            String valueLevel = StringUtils.trimToEmpty(m.getIsGz());
-            if (!"1".equals(valueLevel) && !"2".equals(valueLevel))
-            {
-                skippedInvalidGz++;
-                continue;
-            }
+            // 仅两档：is_gz=1→高值，其余→低值（不再因空/0 跳过成「未识别」）
+            String valueLevel = com.spd.his.support.HisMirrorValueLevelSupport.fromIsGzFlag(m.getIsGz());
             chargeItemToLevel.put(chargeItemId, valueLevel);
         }
         if (chargeItemToLevel.isEmpty())
         {
-            return error("所选产品均未对照收费项目，或高低值标志无效");
+            return error("所选产品均未对照收费项目");
         }
 
         Map<String, List<String>> grouped = new LinkedHashMap<>();
@@ -474,14 +478,15 @@ public class FdMaterialController extends BaseController
                 updated += hisChargeItemMirrorMapper.updateValueLevelBatch(tenantId, ids.subList(i, end), entry.getKey());
             }
         }
+        // 计费统一镜像 value_level 异步刷，避免同步大表拖垮接口
+        fdMaterialService.scheduleRefreshUnifiedValueLevels(tenantId, chargeItemToLevel);
 
         Map<String, Object> data = new HashMap<>();
         data.put("requestedMaterialCount", materialIds.size());
         data.put("syncChargeItemCount", chargeItemToLevel.size());
         data.put("updatedCount", updated);
         data.put("skippedNoBind", skippedNoBind);
-        data.put("skippedInvalidGz", skippedInvalidGz);
-        return AjaxResult.success("同步完成，共更新收费项目 " + updated + " 条", data);
+        return AjaxResult.success("同步完成，共更新收费项目 " + updated + " 条（计费镜像高低值后台刷新中）", data);
     }
 
     private List<Long> resolveSyncMaterialTargetIds(MaterialSyncHisChargeItemDto dto)

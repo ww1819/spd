@@ -2176,7 +2176,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     }
 
     /**
-     * 消息提醒科室销：与「患者费用明细」相同数据源与低值口径，且 processed=N（仅 PENDING_CONSUME），
+     * 消息提醒科室销：仅低值待处理（PENDING_CONSUME），
      * 并按当前用户科室数据权限过滤（非机构管理员）。
      */
     private HisPatientChargeMirrorUnifiedQuery buildDepartmentConsumeReminderUnifiedQuery()
@@ -2190,7 +2190,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         q.setTenantId(tenantId);
         q.setProcessed("N");
         HisPatientChargeMirrorUnifiedQuery uq = HisPatientChargeMirrorUnifiedSupport.fromAllQuery(q);
-        HisPatientChargeMirrorUnifiedSupport.applyPatientChargeListScope(uq);
+        HisPatientChargeMirrorUnifiedSupport.applyLowChargeListScope(uq);
         applyPatientChargeDepartmentScopeIfNeeded(uq);
         return uq;
     }

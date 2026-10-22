@@ -25,6 +25,22 @@ public final class HisMirrorValueLevelSupport
     }
 
     /**
+     * 业务仅两档：档案 is_gz=1 → 高值；其余（含空/0/2）→ 低值。不再使用「未识别」。
+     */
+    public static String fromIsGzFlag(String isGz)
+    {
+        return "1".equals(StringUtils.trimToEmpty(isGz)) ? LEVEL_HIGH : LEVEL_LOW;
+    }
+
+    /**
+     * 列表/导出展示归一：历史 0/空 视同低值，避免页面出现「未识别」。
+     */
+    public static String normalizeStoredLevel(String level)
+    {
+        return LEVEL_HIGH.equals(StringUtils.trimToEmpty(level)) ? LEVEL_HIGH : LEVEL_LOW;
+    }
+
+    /**
      * 按耗材档案 is_gz 解析：1→高值；无对照、未维护或其它取值→低值。
      */
     public static String resolveFromMaterial(FdMaterial mat)
@@ -33,12 +49,7 @@ public final class HisMirrorValueLevelSupport
         {
             return LEVEL_LOW;
         }
-        String isGz = StringUtils.trimToEmpty(mat.getIsGz());
-        if ("1".equals(isGz))
-        {
-            return LEVEL_HIGH;
-        }
-        return LEVEL_LOW;
+        return fromIsGzFlag(mat.getIsGz());
     }
 
     public static String resolveFromMaterial(FdMaterialMapper mapper, String tenantId, String chargeItemId)
@@ -53,16 +64,12 @@ public final class HisMirrorValueLevelSupport
 
     public static void assertKnownForConsume(String level)
     {
-        if (LEVEL_UNKNOWN.equals(StringUtils.trimToEmpty(level)))
-        {
-            throw new ServiceException(MSG_UNKNOWN);
-        }
+        // 兼容历史：未识别已视同低值，核销前不再拦截
     }
 
     public static void assertLowValue(String level)
     {
-        assertKnownForConsume(level);
-        if (LEVEL_HIGH.equals(level))
+        if (isHighValue(level))
         {
             throw new ServiceException("收费项目为高值属性，请至高值扫描核销处理");
         }
@@ -70,8 +77,7 @@ public final class HisMirrorValueLevelSupport
 
     public static void assertHighValue(String level)
     {
-        assertKnownForConsume(level);
-        if (LEVEL_LOW.equals(level))
+        if (!isHighValue(level))
         {
             throw new ServiceException("收费项目为低值属性，请至患者收费查询低值核销");
         }
@@ -79,7 +85,8 @@ public final class HisMirrorValueLevelSupport
 
     public static boolean isLowValue(String level)
     {
-        return LEVEL_LOW.equals(StringUtils.trimToEmpty(level));
+        // 历史「未识别」(0/空) 与低值同一业务口径
+        return !isHighValue(level);
     }
 
     public static boolean isHighValue(String level)
@@ -90,6 +97,6 @@ public final class HisMirrorValueLevelSupport
     public static boolean isUnknown(String level)
     {
         String v = StringUtils.trimToEmpty(level);
-        return LEVEL_UNKNOWN.equals(v);
+        return LEVEL_UNKNOWN.equals(v) || v.isEmpty();
     }
 }

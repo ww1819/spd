@@ -67,6 +67,7 @@ import com.spd.foundation.service.IFdUnitService;
 import com.spd.foundation.service.IFdLocationService;
 import com.spd.his.mapper.HisChargeItemMirrorMapper;
 import com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper;
+import com.spd.his.support.HisMirrorValueLevelSupport;
 
 import javax.validation.Validator;
 
@@ -626,7 +627,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         return rows;
     }
 
-    /** 衡水三院：产品档案 is_gz 变更时同步到已对照 HIS 收费项目镜像 value_level */
+    /** 衡水三院：产品档案 is_gz 变更时同步到已对照 HIS 收费项目镜像 value_level（仅 1 高值 / 2 低值） */
     private void syncHisChargeItemValueLevelFromMaterial(FdMaterial before, FdMaterial after)
     {
         if (after == null)
@@ -647,18 +648,16 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         {
             return;
         }
-        String isGz = StringUtils.trimToEmpty(StringUtils.isNotEmpty(after.getIsGz())
+        String isGz = StringUtils.isNotEmpty(after.getIsGz())
             ? after.getIsGz()
-            : (before != null ? before.getIsGz() : null));
-        if (!"1".equals(isGz) && !"2".equals(isGz))
-        {
-            return;
-        }
+            : (before != null ? before.getIsGz() : null);
+        // 未标高值一律低值，避免落成历史「未识别」(0/空)
+        String valueLevel = HisMirrorValueLevelSupport.fromIsGzFlag(isGz);
         try
         {
-            hisChargeItemMirrorMapper.updateValueLevel(tenantId, chargeItemId, isGz);
-            // 统一计费镜像表生产数据量大；TRIM 列无法走索引，同步刷新会拖垮绑定请求
-            scheduleRefreshUnifiedValueLevel(tenantId, chargeItemId, isGz);
+            hisChargeItemMirrorMapper.updateValueLevel(tenantId, chargeItemId, valueLevel);
+            // 统一计费镜像表生产数据量大；请求内不刷，异步按收费编码等值更新
+            scheduleRefreshUnifiedValueLevel(tenantId, chargeItemId, valueLevel);
         }
         catch (Exception e)
         {
@@ -669,15 +668,43 @@ public class FdMaterialServiceImpl implements IFdMaterialService
 
     private void scheduleRefreshUnifiedValueLevel(String tenantId, String chargeItemId, String valueLevel)
     {
+        if (StringUtils.isEmpty(tenantId) || StringUtils.isEmpty(chargeItemId) || StringUtils.isEmpty(valueLevel))
+        {
+            return;
+        }
+        Map<String, String> one = new LinkedHashMap<>();
+        one.put(chargeItemId, valueLevel);
+        scheduleRefreshUnifiedValueLevels(tenantId, one);
+    }
+
+    /**
+     * 异步按收费编码刷新统一计费镜像 value_level（绑定/同步后调用，请求内不刷大表）。
+     */
+    @Override
+    public void scheduleRefreshUnifiedValueLevels(String tenantId, Map<String, String> chargeItemToLevel)
+    {
+        if (StringUtils.isEmpty(tenantId) || chargeItemToLevel == null || chargeItemToLevel.isEmpty())
+        {
+            return;
+        }
+        final Map<String, String> snapshot = new LinkedHashMap<>(chargeItemToLevel);
         Runnable task = () -> {
-            try
+            for (Map.Entry<String, String> e : snapshot.entrySet())
             {
-                hisPatientChargeMirrorUnifiedMapper.refreshValueLevelByChargeItemId(tenantId, chargeItemId, valueLevel);
-            }
-            catch (Exception e)
-            {
-                log.warn("异步刷新计费镜像高低值失败 tenantId={} chargeItemId={} err={}",
-                    tenantId, chargeItemId, e.toString());
+                if (e == null || StringUtils.isEmpty(e.getKey()) || StringUtils.isEmpty(e.getValue()))
+                {
+                    continue;
+                }
+                try
+                {
+                    hisPatientChargeMirrorUnifiedMapper.refreshValueLevelByChargeItemId(
+                        tenantId, e.getKey(), e.getValue());
+                }
+                catch (Exception ex)
+                {
+                    log.warn("异步刷新计费镜像高低值失败 tenantId={} chargeItemId={} err={}",
+                        tenantId, e.getKey(), ex.toString());
+                }
             }
         };
         if (TransactionSynchronizationManager.isSynchronizationActive())
@@ -717,8 +744,18 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         {
             throw new ServiceException("当前租户未启用 HIS 收费项目对照");
         }
-        // 只写对照字段，与解绑同路径。高低值以耗材档案 is_gz 为准，不在请求内刷新大表
-        return fdMaterialMapper.bindHisChargeItemIdByMaterialId(materialId, cid, SecurityUtils.getUserIdStr());
+        // 只写对照字段，与解绑同路径。高低值按档案 is_gz 异步刷冗余列（请求内不刷大表）
+        int rows = fdMaterialMapper.bindHisChargeItemIdByMaterialId(materialId, cid, SecurityUtils.getUserIdStr());
+        if (rows > 0)
+        {
+            FdMaterial bound = new FdMaterial();
+            bound.setId(material.getId());
+            bound.setTenantId(material.getTenantId());
+            bound.setHisChargeItemId(cid);
+            bound.setIsGz(material.getIsGz());
+            syncHisChargeItemValueLevelFromMaterial(material, bound);
+        }
+        return rows;
     }
 
     @Override
