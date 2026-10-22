@@ -263,6 +263,7 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         }
         String operator = SecurityUtils.getUserIdStr();
         for (Long id : ids) {
+            assertMayDeleteTrace(id);
             releaseMirrorLinksAfterTraceDelete(id, operator);
             restoreDepartmentInventory(id);
         }
@@ -279,9 +280,26 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
     @Transactional
     public int deleteGzTraceabilityById(Long id)
     {
+        assertMayDeleteTrace(id);
         String operator = SecurityUtils.getUserIdStr();
         releaseMirrorLinksAfterTraceDelete(id, operator);
         restoreDepartmentInventory(id);
+        return gzTraceabilityMapper.deleteGzTraceabilityById(id, operator);
+    }
+
+    /**
+     * 冲销链路专用作废：库存与关联已由冲销处理完毕，此处只软删单据，避免二次回补。
+     */
+    @Override
+    @Transactional
+    public int softVoidAfterWriteOff(Long id)
+    {
+        if (id == null)
+        {
+            return 0;
+        }
+        String operator = SecurityUtils.getUserIdStr();
+        gzTraceabilityMapper.deleteGzTraceabilityEntryByParentId(id, operator);
         return gzTraceabilityMapper.deleteGzTraceabilityById(id, operator);
     }
 
@@ -359,18 +377,63 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
     /**
      * 反审核高值追溯单
      *
+     * <p>仅翻转 order_status，不回补库存、不清理消耗关联、不生成退货退库。
+     * HIS 核销单及已进入确认/即入即出的单据禁止反审核，须走 HV-Q-006 冲销。</p>
+     *
      * @param id 高值追溯单主键
      * @return 结果
      */
     @Override
     public int unauditGzTraceability(Long id)
     {
+        GzTraceability existing = gzTraceabilityMapper.selectGzTraceabilityById(id);
+        assertMayUnauditTrace(existing);
         GzTraceability gzTraceability = new GzTraceability();
         gzTraceability.setId(id);
         gzTraceability.setOrderStatus(1); // 未审核
         gzTraceability.setUpdateTime(DateUtils.getNowDate());
         gzTraceability.setUpdateBy(SecurityUtils.getUserIdStr());
         return gzTraceabilityMapper.updateGzTraceability(gzTraceability);
+    }
+
+    /** HIS 核销单禁止反审核；已确认/即入即出的单据亦禁止（与冲销入口冲突） */
+    private void assertMayUnauditTrace(GzTraceability existing)
+    {
+        if (existing == null)
+        {
+            throw new ServiceException("追溯单不存在或已删除");
+        }
+        if (GzTraceSourceConstants.HIS_MIRROR_HIGH.equals(StringUtils.trimToEmpty(existing.getTraceSource())))
+        {
+            throw new ServiceException(
+                "HIS高值扫码核销生成的计费单禁止反审核。纠错请按进度到「高值核销确认」或「高值即入即出」做冲销");
+        }
+        assertNoDownstreamConfirmOrInstantIo(existing.getId(), "反审核");
+    }
+
+    /** 已进入临床确认或即入即出时禁止删除，须走冲销（否则库存/库房单据不一致） */
+    private void assertMayDeleteTrace(Long id)
+    {
+        GzTraceability existing = gzTraceabilityMapper.selectGzTraceabilityById(id);
+        if (existing == null)
+        {
+            return;
+        }
+        assertNoDownstreamConfirmOrInstantIo(id, "删除");
+    }
+
+    private void assertNoDownstreamConfirmOrInstantIo(Long traceabilityId, String action)
+    {
+        if (traceabilityId == null)
+        {
+            return;
+        }
+        int locked = hisMirrorConsumeLinkMapper.countDownstreamLockedLinksByTraceabilityId(traceabilityId);
+        if (locked > 0)
+        {
+            throw new ServiceException(
+                "该计费单已进入临床确认或即入即出，禁止" + action + "；请到「高值核销确认」或「高值即入即出」冲销");
+        }
     }
 
     /**

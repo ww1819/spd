@@ -193,9 +193,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectGzTraceabilityVo">
         select t.id, t.trace_no, t.medical_record_no, t.patient_name, t.patient_sex, t.patient_age,
                t.hospital_number, t.ward, t.ward_no, t.bed_no, t.apply_dept_id, t.exec_dept_id,
-               t.hospital_date, t.contact_phone, t.contact_address, t.chief_surgeon,
+               t.write_off_dept_id, t.hospital_date, t.contact_phone, t.contact_address, t.chief_surgeon,
                t.surgery_date, t.surgery_name, t.admission_diagnosis, t.surgery_id, t.remark,
-               t.order_status, t.audit_date, t.audit_by, t.del_flag,
+               t.order_status, t.audit_date, t.audit_by, t.visit_kind, t.mirror_row_id, t.trace_source, t.del_flag,
                t.create_by, t.create_time, t.update_by, t.update_time,
                ad.id as applyDeptId, ad.code as applyDeptCode, ad.name as applyDeptName,
                ed.id as execDeptId, ed.code as execDeptCode, ed.name as execDeptName
@@ -225,9 +225,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select t.id, t.trace_no, t.medical_record_no, t.patient_name, t.patient_sex, t.patient_age,
                t.hospital_number, t.ward, t.ward_no, t.bed_no, t.apply_dept_id, t.exec_dept_id,
-               t.hospital_date, t.contact_phone, t.contact_address, t.chief_surgeon,
+               t.write_off_dept_id, t.hospital_date, t.contact_phone, t.contact_address, t.chief_surgeon,
                t.surgery_date, t.surgery_name, t.admission_diagnosis, t.surgery_id, t.remark,
-               t.order_status, t.audit_date, t.audit_by, t.del_flag,
+               t.order_status, t.audit_date, t.audit_by, t.visit_kind, t.mirror_row_id, t.trace_source, t.del_flag,
                t.create_by, t.create_time, t.update_by, t.update_time,
                ad.id as applyDeptId, ad.code as applyDeptCode, ad.name as applyDeptName,
                ed.id as execDeptId, ed.code as execDeptCode, ed.name as execDeptName,

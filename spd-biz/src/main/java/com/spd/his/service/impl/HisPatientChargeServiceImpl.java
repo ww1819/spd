@@ -1915,6 +1915,8 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         }
         Date procTime = DateUtils.getNowDate();
         String procBy = SecurityUtils.getUserIdStr();
+        // 追溯单已删但关联行未软删时一并清理，避免扫码仍按孤儿关联判「已全部核销」
+        hisMirrorConsumeLinkMapper.softDeleteOrphanHighLinksForMirrorRow(tenantId, visitKind, mirrorRowId, procBy);
         List<String> ids = Collections.singletonList(mirrorRowId);
         if (KIND_IN.equals(visitKind))
         {

@@ -285,6 +285,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         String tenantId = requireTenant();
         MirrorLine line = loadMirrorLine(tenantId, visitKind, mirrorRowId);
+        healOrphanHighConsumeLinks(tenantId, visitKind, mirrorRowId);
         BigDecimal billQty = line.quantity == null ? BigDecimal.ZERO : line.quantity;
         BigDecimal netAllocated = netAllocatedQty(tenantId, visitKind, mirrorRowId);
         BigDecimal remaining = billQty.subtract(netAllocated);
@@ -354,6 +355,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         }
         String tenantId = requireTenant();
         MirrorLine line = loadMirrorLine(tenantId, visitKind, mirrorRowId);
+        healOrphanHighConsumeLinks(tenantId, visitKind, mirrorRowId);
         BigDecimal billQty = line.quantity == null ? BigDecimal.ZERO : line.quantity;
         BigDecimal netAllocatedBefore = netAllocatedQty(tenantId, visitKind, mirrorRowId);
         BigDecimal remaining = billQty.subtract(netAllocatedBefore);
@@ -484,9 +486,20 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         return v == null ? BigDecimal.ZERO : v;
     }
 
+    /**
+     * 净已核销量：只统计关联单据仍有效的消耗关联（高值追溯单/低值消耗单未删）。
+     * 追溯单已删但关联行未软删时，不得再挡住重新核销。
+     */
     private BigDecimal netAllocatedQty(String tenantId, String visitKind, String mirrorRowId)
     {
-        return nz(hisMirrorConsumeLinkMapper.sumNetAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId));
+        return nz(hisMirrorConsumeLinkMapper.sumActiveNetAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId));
+    }
+
+    /** 软删「追溯单已删、关联仍有效」的孤儿高值消耗关联 */
+    private void healOrphanHighConsumeLinks(String tenantId, String visitKind, String mirrorRowId)
+    {
+        hisMirrorConsumeLinkMapper.softDeleteOrphanHighLinksForMirrorRow(tenantId, visitKind, mirrorRowId,
+            SecurityUtils.getUserIdStr());
     }
 
     /** 高值核销：须一次性消耗全部待核销数量；退费返还后可再次核销 */

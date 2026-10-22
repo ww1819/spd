@@ -76,6 +76,14 @@ public interface IGzTraceabilityService
     public int deleteGzTraceabilityById(Long id);
 
     /**
+     * 高值冲销已回补库存并软删关联后：仅软删追溯单/明细，禁止再回补库存或二次处理关联。
+     *
+     * @param id 追溯单主键
+     * @return 影响行数
+     */
+    int softVoidAfterWriteOff(Long id);
+
+    /**
      * 审核高值追溯单
      *
      * @param id 高值追溯单主键

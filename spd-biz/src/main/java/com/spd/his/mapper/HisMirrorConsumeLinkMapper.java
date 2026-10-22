@@ -78,7 +78,24 @@ public interface HisMirrorConsumeLinkMapper
     int softDeleteLinksByTraceabilityId(@Param("tenantId") String tenantId, @Param("traceabilityId") Long traceabilityId,
         @Param("deleteBy") String deleteBy);
 
+    /** 追溯单已删但关联未软删：按计费行清理孤儿高值关联 */
+    int softDeleteOrphanHighLinksForMirrorRow(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
+        @Param("mirrorRowId") String mirrorRowId, @Param("deleteBy") String deleteBy);
+
     /** 确认批次下仍有效且尚有净核销量的关联行（反向后同批一并冲销回补） */
     List<String> selectActiveLinkIdsByConfirmIds(@Param("tenantId") String tenantId,
         @Param("confirmIds") List<String> confirmIds);
+
+    /**
+     * 追溯单是否已进入临床确认或即入即出（仍有效关联且 confirm=1 或 instant_io∈{1,2}）。
+     * 用于禁止在住院高值扫码页反审核/删除，避免与冲销链路冲突。
+     */
+    int countDownstreamLockedLinksByTraceabilityId(@Param("traceabilityId") Long traceabilityId);
+
+    /**
+     * 同一高值科室库存行上，除指定关联外仍有效且净核销量&gt;0 的高值关联数。
+     * 冲销回补前用于判断院内码是否已被其他计费占用，避免库存虚增。
+     */
+    int countOtherActiveHighLinksOnGzInventory(@Param("tenantId") String tenantId,
+        @Param("gzDepInventoryId") Long gzDepInventoryId, @Param("excludeLinkId") String excludeLinkId);
 }

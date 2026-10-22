@@ -483,6 +483,27 @@
           and ifnull(del_flag, 0) = 0
     </update>
 
+    <!-- 高值追溯单已删但关联行未软删：清理孤儿关联，避免误判「已全部核销」 -->
+    <update id="softDeleteOrphanHighLinksForMirrorRow">
+        update his_mirror_consume_link l
+        set l.del_flag = 1,
+            l.delete_by = #{deleteBy},
+            l.delete_time = now(),
+            l.update_by = #{deleteBy},
+            l.update_time = now()
+        where l.tenant_id = #{tenantId}
+          and l.visit_kind = #{visitKind}
+          and l.mirror_row_id = #{mirrorRowId}
+          and ifnull(l.del_flag, 0) = 0
+          and l.traceability_id is not null
+          and not exists (
+            select 1 from gz_traceability t
+            where t.id = l.traceability_id
+              and t.tenant_id = l.tenant_id
+              and ifnull(t.del_flag, 0) = 0
+          )
+    </update>
+
     <select id="selectActiveLinkIdsByConfirmIds" resultType="java.lang.String">
         select l.id
         from his_mirror_consume_link l
@@ -494,5 +515,35 @@
         <foreach collection="confirmIds" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
+    </select>
+
+    <select id="countDownstreamLockedLinksByTraceabilityId" resultType="int">
+        select count(1)
+        from his_mirror_consume_link l
+        where l.traceability_id = #{traceabilityId}
+          and ifnull(l.del_flag, 0) = 0
+          and (
+            ifnull(l.confirm_status, 0) = 1
+            or ifnull(l.instant_io_audit_status, 0) in (1, 2)
+          )
+    </select>
+
+    <select id="countOtherActiveHighLinksOnGzInventory" resultType="int">
+        select count(1)
+        from his_mirror_consume_link l
+        where l.tenant_id = #{tenantId}
+          and l.gz_dep_inventory_id = #{gzDepInventoryId}
+          and ifnull(l.del_flag, 0) = 0
+          and (<include refid="linkNetAllocQtyExpr"/>) &gt; 0
+          and l.id &lt;&gt; #{excludeLinkId}
+          and (
+            l.traceability_id is not null
+            and exists (
+              select 1 from gz_traceability t
+              where t.id = l.traceability_id
+                and t.tenant_id = l.tenant_id
+                and ifnull(t.del_flag, 0) = 0
+            )
+          )
     </select>
 </mapper>

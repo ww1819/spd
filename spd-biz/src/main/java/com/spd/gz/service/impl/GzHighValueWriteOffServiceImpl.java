@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,7 @@ import com.spd.his.mapper.HisMirrorConsumeLinkMapper;
 import com.spd.his.mapper.HisOutpatientChargeMirrorMapper;
 import com.spd.his.mapper.HisPatientChargeMirrorUnifiedMapper;
 import com.spd.gz.mapper.GzHighConsumeConfirmMapper;
+import com.spd.gz.support.GzTraceSourceConstants;
 
 /**
  * 高值冲销：档 A/B 回补科室库存；档 C 反向单据 + 回补。
@@ -42,6 +45,8 @@ import com.spd.gz.mapper.GzHighConsumeConfirmMapper;
 @Service
 public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffService
 {
+    private static final Logger log = LoggerFactory.getLogger(GzHighValueWriteOffServiceImpl.class);
+
     private static final String KIND_IN = "INPATIENT";
     private static final String STATUS_PENDING = "PENDING_CONSUME";
     private static final String PROC_TYPE_EMPTY = "";
@@ -157,6 +162,8 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
         Set<String> mirrorKeys = new LinkedHashSet<>();
         Set<String> clearConfirmLinkIds = new LinkedHashSet<>();
         Set<Long> tracesToVoid = new LinkedHashSet<>();
+        int inventoryRestored = 0;
+        int inventorySkipped = 0;
 
         for (HisMirrorConsumeLink lk : links)
         {
@@ -168,7 +175,18 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
             }
             // status=2 表示已有反向单，继续回补；status=0 为 A/B
             BigDecimal rem = refundableOnLink(lk);
-            restoreInventory(lk, rem, remark);
+            if (shouldSkipInventoryRestore(tenantId, lk))
+            {
+                inventorySkipped++;
+                vo.getMessages().add("关联 " + lk.getId() + "：院内码仍被其他有效核销占用，本次跳过库存回补以免虚增");
+                log.warn("高值冲销跳过库存回补 linkId={} gzDepInventoryId={} inHospitalCode={}",
+                    lk.getId(), lk.getGzDepInventoryId(), lk.getInHospitalCode());
+            }
+            else
+            {
+                restoreInventory(lk, rem, remark);
+                inventoryRestored++;
+            }
             hisMirrorConsumeLinkMapper.markLinkFullyReturnedById(tenantId, lk.getId(), operator);
             if (confirmStatus == 1 || Integer.valueOf(2).equals(ioStatus))
             {
@@ -212,8 +230,31 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
                 vo.setMirrorResetCount(vo.getMirrorResetCount() + 1);
             }
         }
-        vo.getMessages().add("冲销完成：已回补科室库存，计费行可重新核销");
+        if (inventorySkipped > 0)
+        {
+            vo.getMessages().add(String.format(
+                "冲销完成：计费行可重新核销；库存回补 %d 条，因院内码被其他核销占用跳过 %d 条",
+                inventoryRestored, inventorySkipped));
+        }
+        else
+        {
+            vo.getMessages().add("冲销完成：已回补科室库存，计费行可重新核销");
+        }
         return vo;
+    }
+
+    /**
+     * 同库存行上仍有其他有效高值核销时，不再回补（常见于追溯单误删回补后码被再次核销）。
+     */
+    private boolean shouldSkipInventoryRestore(String tenantId, HisMirrorConsumeLink lk)
+    {
+        if (lk == null || lk.getGzDepInventoryId() == null || StringUtils.isBlank(lk.getId()))
+        {
+            return false;
+        }
+        int others = hisMirrorConsumeLinkMapper.countOtherActiveHighLinksOnGzInventory(
+            tenantId, lk.getGzDepInventoryId(), lk.getId());
+        return others > 0;
     }
 
     private List<HisMirrorConsumeLink> reloadLinks(String tenantId, List<String> linkIds)
@@ -302,6 +343,10 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
         }
     }
 
+    /**
+     * HIS 镜像高值计费单在冲销释放完毕后仅软删单据。
+     * 禁止调用 {@link IGzTraceabilityService#deleteGzTraceabilityById}：其会再次回补库存，造成虚增。
+     */
     private void tryVoidTraceIfFullyReleased(String tenantId, Long traceId)
     {
         if (traceId == null)
@@ -311,7 +356,7 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
         try
         {
             GzTraceability t = gzTraceabilityService.selectGzTraceabilityById(traceId);
-            if (t == null || !"HIS_MIRROR_HIGH".equals(StringUtils.trimToEmpty(t.getTraceSource())))
+            if (t == null || !GzTraceSourceConstants.HIS_MIRROR_HIGH.equals(StringUtils.trimToEmpty(t.getTraceSource())))
             {
                 return;
             }
@@ -323,12 +368,12 @@ public class GzHighValueWriteOffServiceImpl implements IGzHighValueWriteOffServi
                 tenantId, t.getVisitKind().trim().toUpperCase(), t.getMirrorRowId().trim()));
             if (net.compareTo(BigDecimal.ZERO) <= 0)
             {
-                gzTraceabilityService.deleteGzTraceabilityById(traceId);
+                gzTraceabilityService.softVoidAfterWriteOff(traceId);
             }
         }
-        catch (Exception ignored)
+        catch (Exception e)
         {
-            // 软删计费单失败不影响冲销主流程
+            log.warn("冲销后软删高值计费单失败 traceId={}，主流程已完成回补/清关联", traceId, e);
         }
     }
 
