@@ -976,7 +976,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                m.package_speci materialPackageSpeci,
                m.is_way materialIsWay,
                m.is_billing materialIsBilling,
+               m.is_procure materialIsProcure,
                m.is_gz materialIsGz,
+               m.storeroom_id storeroomId,
+               case
+                   when m.storeroom_id in (11, 12) then '材料'
+                   when m.storeroom_id = 13 then '试剂'
+                   else '未识别分类'
+               end materialKind,
+               wc.warehouse_category_code materialWarehouseCategoryCode,
                wc.warehouse_category_name materialWarehouseCategoryName,
                <include refid="ctkSummaryLineUnitPriceExpr"/> as lineUnitPrice,
                (case when stk.bill_type = 401 then -ABS(IFNULL(b.qty, 0)) else ABS(IFNULL(b.qty, 0)) end) signedQty,
@@ -1013,6 +1021,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseCategoryKeyword != null and warehouseCategoryKeyword != ''"> and (wc.warehouse_category_code like concat('%', #{warehouseCategoryKeyword}, '%') or wc.warehouse_category_name like concat('%', #{warehouseCategoryKeyword}, '%') or wc.referred_name like concat('%', #{warehouseCategoryKeyword}, '%'))</if>
         <if test="isGz != null and isGz != ''"> and m.is_gz = #{isGz}</if>
         <if test="billType != null"> and stk.bill_type = #{billType}</if>
+        <if test="materialIsProcure != null and materialIsProcure != ''"> and m.is_procure = #{materialIsProcure}</if>
         <if test="isBilling != null and isBilling != ''">
             <choose>
                 <when test="isBilling == 1 or isBilling == '1'"> and m.is_billing = '1' </when>
@@ -1063,7 +1072,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                MAX(t.materialPackageSpeci) materialPackageSpeci,
                MAX(t.materialIsWay) materialIsWay,
                MAX(t.materialIsBilling) materialIsBilling,
+               MAX(t.materialIsProcure) materialIsProcure,
                MAX(t.materialIsGz) materialIsGz,
+               MAX(t.storeroomId) storeroomId,
+               MAX(t.materialKind) materialKind,
+               MAX(t.materialWarehouseCategoryCode) materialWarehouseCategoryCode,
                MAX(t.materialWarehouseCategoryName) materialWarehouseCategoryName
         from (
             <include refid="ctkSummaryRawLineSelect"/>

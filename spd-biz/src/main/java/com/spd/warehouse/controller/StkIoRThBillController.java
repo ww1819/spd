@@ -232,12 +232,17 @@ public class StkIoRThBillController extends BaseController
         if (map.get("materialIsBilling") != null) m.setIsBilling(map.get("materialIsBilling").toString());
         if (map.get("materialIsProcure") != null) m.setIsProcure(map.get("materialIsProcure").toString());
         if (map.get("materialIsGz") != null) m.setIsGz(map.get("materialIsGz").toString());
-        if (map.get("materialWarehouseCategoryName") != null) {
+        if (map.get("materialWarehouseCategoryName") != null || map.get("materialWarehouseCategoryCode") != null) {
             FdWarehouseCategory wc = new FdWarehouseCategory();
             if (m.getStoreroomId() != null) {
                 wc.setWarehouseCategoryId(m.getStoreroomId());
             }
-            wc.setWarehouseCategoryName(map.get("materialWarehouseCategoryName").toString());
+            if (map.get("materialWarehouseCategoryCode") != null) {
+                wc.setWarehouseCategoryCode(map.get("materialWarehouseCategoryCode").toString());
+            }
+            if (map.get("materialWarehouseCategoryName") != null) {
+                wc.setWarehouseCategoryName(map.get("materialWarehouseCategoryName").toString());
+            }
             m.setFdWarehouseCategory(wc);
         }
         if (map.get("financeCategoryName") != null) {
