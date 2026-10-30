@@ -23,7 +23,7 @@
 | 生产厂家 | 新增/导入须填 **HIS 生产厂家 ID** | `factoryImportRequiresHisId`；`FdFactory*` |
 | 财务分类 | 新增须填 HIS ID | `FdFinanceCategory*` |
 | 库房分类 | 新增须填 HIS ID | `FdWarehouseCategory*` |
-| 耗材档案 | 编码由系统按分类前缀生成：**GZ / DZ / SJ + 5 位**，前端禁用手改；产品档案 is_gz 变更可同步 HIS 收费镜像；**高低值仅两档**（is_gz=1 高值，其余低值） | `FdMaterialServiceImpl`；`HisMirrorValueLevelSupport`；`material/index.vue` |
+| 耗材档案 | 编码由系统按分类前缀生成：**GZ / DZ / SJ + 5 位**（SQL 取 max 后缀，含停用；禁止列表扫码以免 PageHelper 污染），前端禁用手改；产品档案 is_gz 变更可同步 HIS 收费镜像；**高低值仅两档**（is_gz=1 高值，其余低值） | `FdMaterialServiceImpl.generateHsCodeByPrefix`；`selectMaxHsPrefixCodeNum`；`HisMirrorValueLevelSupport`；`material/index.vue` |
 | 耗材对照 / HIS对照 | **公共共享页样式**（与枣强同一 `materialCompare/index`）；绑定只写对照字段，**异步**按档案 is_gz 刷收费项+统一计费镜像 `value_level` | `foundation/materialCompare/index.vue`；`bindMaterialHisChargeItem`；`scheduleRefreshUnifiedValueLevels` |
 
 ### 2. 仓储业务

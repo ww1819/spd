@@ -61,6 +61,13 @@ public interface FdMaterialMapper
     FdMaterial selectFdMaterialByTenantAndCode(@Param("tenantId") String tenantId, @Param("code") String code);
 
     /**
+     * 衡水三院前缀编码：取租户下「前缀+5位数字」未删除档案的最大序号（含停用）。
+     *
+     * @return 最大序号；无匹配时 null
+     */
+    Integer selectMaxHsPrefixCodeNum(@Param("tenantId") String tenantId, @Param("prefix") String prefix);
+
+    /**
      * 根据主条码或耗材编码查询耗材产品（用于扫码匹配产品档案）
      *
      * @param mainBarcode 主条码或耗材编码

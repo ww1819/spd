@@ -526,40 +526,18 @@ public class FdMaterialServiceImpl implements IFdMaterialService
 
     private String generateHsCodeByPrefix(String prefix, String tenantId)
     {
-        FdMaterial q = new FdMaterial();
-        q.setTenantId(tenantId);
-        List<FdMaterial> list = fdMaterialMapper.selectFdMaterialList(q);
-        int max = 0;
-        String regex = "^" + prefix + "(\\d{5})$";
-        for (FdMaterial item : list)
-        {
-            if (item == null || StringUtils.isEmpty(item.getCode()))
-            {
-                continue;
-            }
-            String c = item.getCode().trim().toUpperCase();
-            if (c.matches(regex))
-            {
-                try
-                {
-                    int n = Integer.parseInt(c.substring(2));
-                    if (n > max)
-                    {
-                        max = n;
-                    }
-                }
-                catch (NumberFormatException ignored)
-                {
-                }
-            }
-        }
+        // 禁止走列表查询：易受 PageHelper 分页污染，且默认排除停用，会导致 max 偏小后从 00001 起连续撞号
+        com.github.pagehelper.PageHelper.clearPage();
+        Integer maxObj = fdMaterialMapper.selectMaxHsPrefixCodeNum(tenantId, prefix);
+        int max = maxObj == null ? 0 : maxObj.intValue();
         int next = max + 1;
         if (next > 99999)
         {
             throw new ServiceException("编码已达上限，无法继续生成：" + prefix);
         }
         String candidate = prefix + String.format("%05d", next);
-        for (int i = 0; i < 30; i++)
+        // 并发/空洞时少量避让；正常路径 max+1 即空闲
+        for (int i = 0; i < 50; i++)
         {
             if (fdMaterialMapper.selectFdMaterialByTenantAndCode(tenantId, candidate) == null)
             {
