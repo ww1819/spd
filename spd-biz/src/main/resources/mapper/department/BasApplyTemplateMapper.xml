@@ -174,7 +174,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         insert into bas_apply_template_entry(paren_id, material_id, qty, sort_order, tenant_id) values
         <foreach item="item" collection="list" separator=",">
-            (#{item.parenId}, #{item.materialId}, #{item.qty}, #{item.sortOrder}, #{tenantId})
+            (#{item.parenId}, #{item.materialId}, #{item.qty}, #{item.sortOrder}, #{scopedTenantId})
         </foreach>
     </insert>
 </mapper>

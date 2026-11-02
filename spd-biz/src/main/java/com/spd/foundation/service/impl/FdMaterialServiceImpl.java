@@ -492,13 +492,23 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             throw new ServiceException("库房分类不存在或无权限访问");
         }
         String prefix = resolveHsCodePrefix(wc.getWarehouseCategoryName());
+        String manualCode = StringUtils.trim(m.getCode());
+        // 手工维护了编码：校验分类前缀规则后保留，唯一性由 insert 统一校验
+        if (StringUtils.isNotEmpty(manualCode))
+        {
+            if (StringUtils.isNotEmpty(prefix) && !manualCode.toUpperCase().matches("^" + prefix + "\\d{5}$"))
+            {
+                throw new ServiceException("当前库房分类编码规则为：" + prefix + "+5位数字（如 " + prefix + "00001）");
+            }
+            m.setCode(manualCode);
+            return;
+        }
+        // 未手工维护：按分类前缀自动生成；未命中特殊分类时回退通用6位编码
         if (StringUtils.isEmpty(prefix))
         {
-            // 衡水三院：耗材编码一律系统生成；未命中特殊分类时回退通用6位编码规则
             m.setCode(generateMaterialCode());
             return;
         }
-        // 衡水三院：耗材编码不允许手工编辑，始终由系统按分类自动生成
         m.setCode(generateHsCodeByPrefix(prefix, m.getTenantId()));
     }
 
