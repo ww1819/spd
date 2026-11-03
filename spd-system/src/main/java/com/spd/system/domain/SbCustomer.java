@@ -28,9 +28,21 @@ public class SbCustomer extends BaseEntity {
   @Excel(name = "客户名称")
   private String customerName;
 
-  /** 客户编码 */
+  /** 客户编码（简码） */
   @Excel(name = "客户编码")
   private String customerCode;
+
+  /** 社会统一信用代码 */
+  private String socialCreditCode;
+
+  /** 地址 */
+  private String address;
+
+  /** 联系人 */
+  private String contactName;
+
+  /** 联系人电话 */
+  private String contactPhone;
 
   /** 状态（0正常 1停用） */
   @Excel(name = "状态", readConverterExp = "0=正常,1=停用")
@@ -94,6 +106,42 @@ public class SbCustomer extends BaseEntity {
 
   public void setCustomerCode(String customerCode) {
     this.customerCode = customerCode;
+  }
+
+  @Size(min = 0, max = 32, message = "社会统一信用代码长度不能超过32个字符")
+  public String getSocialCreditCode() {
+    return socialCreditCode;
+  }
+
+  public void setSocialCreditCode(String socialCreditCode) {
+    this.socialCreditCode = socialCreditCode;
+  }
+
+  @Size(min = 0, max = 255, message = "地址长度不能超过255个字符")
+  public String getAddress() {
+    return address;
+  }
+
+  public void setAddress(String address) {
+    this.address = address;
+  }
+
+  @Size(min = 0, max = 64, message = "联系人长度不能超过64个字符")
+  public String getContactName() {
+    return contactName;
+  }
+
+  public void setContactName(String contactName) {
+    this.contactName = contactName;
+  }
+
+  @Size(min = 0, max = 32, message = "联系人电话长度不能超过32个字符")
+  public String getContactPhone() {
+    return contactPhone;
+  }
+
+  public void setContactPhone(String contactPhone) {
+    this.contactPhone = contactPhone;
   }
 
   public String getStatus() {
@@ -190,6 +238,10 @@ public class SbCustomer extends BaseEntity {
         .append("customerId", getCustomerId())
         .append("customerName", getCustomerName())
         .append("customerCode", getCustomerCode())
+        .append("socialCreditCode", getSocialCreditCode())
+        .append("address", getAddress())
+        .append("contactName", getContactName())
+        .append("contactPhone", getContactPhone())
         .append("status", getStatus())
         .append("tenantKey", getTenantKey())
         .append("createBy", getCreateBy())

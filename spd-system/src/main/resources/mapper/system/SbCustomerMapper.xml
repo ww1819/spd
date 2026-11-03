@@ -6,6 +6,10 @@
     <id     property="customerId"       column="customer_id"/>
     <result property="customerName"     column="customer_name"/>
     <result property="customerCode"     column="customer_code"/>
+    <result property="socialCreditCode" column="social_credit_code"/>
+    <result property="address"          column="address"/>
+    <result property="contactName"      column="contact_name"/>
+    <result property="contactPhone"     column="contact_phone"/>
     <result property="tenantKey"        column="tenant_key"/>
     <result property="priceDecimalPlaces" column="price_decimal_places"/>
     <result property="amountDecimalPlaces" column="amount_decimal_places"/>
@@ -25,6 +29,7 @@
 
   <sql id="selectSbCustomerVo">
     select customer_id, customer_name, customer_code, tenant_key,
+           social_credit_code, address, contact_name, contact_phone,
            ifnull(price_decimal_places, 3) as price_decimal_places,
            ifnull(amount_decimal_places, 3) as amount_decimal_places,
            ifnull(nullif(trim(money_round_mode), ''), 'HALF_UP') as money_round_mode,
@@ -84,12 +89,14 @@
   <insert id="insertSbCustomer" parameterType="com.spd.system.domain.SbCustomer">
     insert into sb_customer (
       customer_id, customer_name, customer_code, tenant_key,
+      social_credit_code, address, contact_name, contact_phone,
       price_decimal_places, amount_decimal_places, money_round_mode,
       status, planned_disable_time, hc_status, hc_planned_disable_time,
       remark, create_by, create_time
     )
     values (
       #{customerId}, #{customerName}, #{customerCode}, #{tenantKey},
+      #{socialCreditCode}, #{address}, #{contactName}, #{contactPhone},
       ifnull(#{priceDecimalPlaces}, 3), ifnull(#{amountDecimalPlaces}, 3),
       ifnull(nullif(#{moneyRoundMode}, ''), 'HALF_UP'),
       #{status}, #{plannedDisableTime}, ifnull(#{hcStatus}, '0'), #{hcPlannedDisableTime},
@@ -102,6 +109,10 @@
     <set>
       <if test="customerName != null and customerName != ''">customer_name = #{customerName},</if>
       <if test="customerCode != null">customer_code = #{customerCode},</if>
+      <if test="socialCreditCode != null">social_credit_code = #{socialCreditCode},</if>
+      <if test="address != null">address = #{address},</if>
+      <if test="contactName != null">contact_name = #{contactName},</if>
+      <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
       <if test="tenantKey != null">tenant_key = #{tenantKey},</if>
       <if test="status != null">status = #{status},</if>
       <if test="plannedDisableTime != null">planned_disable_time = #{plannedDisableTime},</if>

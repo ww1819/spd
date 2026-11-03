@@ -125,7 +125,7 @@ public class StkInventory extends BaseEntity
     /** 查询参数：仓库名称 */
     private String warehouseName;
 
-    /** 查询参数：耗材名称/编码/拼音简码（模糊：品名、编码、referred_name） */
+    /** 查询参数：产品编码/名称/拼音简码（模糊，编码与简码大小写不敏感） */
     private String materialName;
 
     /** 查询参数：规格（模糊） */

@@ -65,6 +65,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id     property="id"    column="mId"     />
         <result property="code"  column="materialCode"   />
         <result property="name"  column="materialName"   />
+        <result property="referredName" column="m_referred_name" />
         <result property="speci"    column="m_speci"    />
         <result property="model"    column="m_model"    />
         <result property="registerNo"    column="m_registerNo"    />
@@ -119,6 +120,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				stk.main_barcode, stk.sub_barcode, stk.lv_inhospital_package_code,
 				w.id wId,w.code warehouseCode,w.name warehouseName,
 				m.id mId,m.code materialCode,m.name materialName,
+				m.referred_name m_referred_name,
 				m.speci m_speci, m.model m_model, m.register_no m_registerNo,
 				m.unit_id m_unitId, m.factory_id m_factoryId, m.supplier_id m_supplierId,
 				m.is_use m_is_use,
@@ -179,6 +181,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="stkInventoryMaterialIsUseQuery">
         <if test="materialIsUse != null and materialIsUse != ''">
             and (m.id is null or m.is_use = #{materialIsUse})
+        </if>
+    </sql>
+
+    <!-- 产品关键字：名称模糊 + 编码模糊 + 拼音简码（大小写不敏感） -->
+    <sql id="stkInventoryMaterialKeywordWhere">
+        <if test="materialName != null and materialName != ''">
+            and (
+                ifnull(m.name, '') like concat('%', #{materialName}, '%')
+                or upper(ifnull(m.code, '')) like concat('%', upper(#{materialName}), '%')
+                or upper(ifnull(m.referred_name, '')) like concat('%', upper(#{materialName}), '%')
+                or ifnull(m.use_name, '') like concat('%', #{materialName}, '%')
+            )
         </if>
     </sql>
 
@@ -330,7 +344,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(stk.warehouse_date) >= #{beginDate} ]]></if>
         <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(stk.warehouse_date) <= #{endDate} ]]></if>
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
-        <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))</if>
+        <include refid="stkInventoryMaterialKeywordWhere"/>
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
@@ -377,7 +391,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(stk.warehouse_date) >= #{beginDate} ]]></if>
         <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(stk.warehouse_date) <= #{endDate} ]]></if>
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
-        <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))</if>
+        <include refid="stkInventoryMaterialKeywordWhere"/>
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
@@ -451,7 +465,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(stk.warehouse_date) >= #{beginDate} ]]></if>
         <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(stk.warehouse_date) <= #{endDate} ]]></if>
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
-        <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))</if>
+        <include refid="stkInventoryMaterialKeywordWhere"/>
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
@@ -511,7 +525,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(stk.warehouse_date) >= #{beginDate} ]]></if>
         <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(stk.warehouse_date) <= #{endDate} ]]></if>
         <if test="warehouseName != null and warehouseName != ''"> and w.name like concat('%', #{warehouseName}, '%')</if>
-        <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))</if>
+        <include refid="stkInventoryMaterialKeywordWhere"/>
         <if test="materialSpeci != null and materialSpeci != ''"> and m.speci like concat('%', #{materialSpeci}, '%')</if>
         <if test="materialModel != null and materialModel != ''"> and m.model like concat('%', #{materialModel}, '%')</if>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
@@ -565,7 +579,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
         <if test="beginDate != null and beginDate != ''"><![CDATA[ and DATE(stk.warehouse_date) >= #{beginDate} ]]></if>
         <if test="endDate != null and endDate != ''"><![CDATA[ and DATE(stk.warehouse_date) <= #{endDate} ]]></if>
-        <if test="materialName != null and materialName != ''"> and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))</if>
+        <include refid="stkInventoryMaterialKeywordWhere"/>
         <if test="supplierId != null "> and stk.supplier_id = #{supplierId} </if>
         <if test="warehouseCategoryId != null"> and m.storeroom_id = #{warehouseCategoryId}</if>
         <if test="financeCategoryIds != null and financeCategoryIds.length > 0">
@@ -921,9 +935,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and fn.monitoring = '1'
         <include refid="stkInventoryMaterialActive"/>
         <if test="warehouseId != null"> and fn.warehouse_id = #{warehouseId} </if>
-        <if test="materialName != null and materialName != ''">
-            and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))
-        </if>
+        <include refid="stkInventoryMaterialKeywordWhere"/>
         <if test="materialIsUse != null and materialIsUse != ''"> and m.is_use = #{materialIsUse} </if>
         <if test="supplierId != null">
             and exists (
@@ -974,9 +986,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
           and fn.monitoring = '1'
         <include refid="stkInventoryMaterialActive"/>
         <if test="warehouseId != null"> and fn.warehouse_id = #{warehouseId} </if>
-        <if test="materialName != null and materialName != ''">
-            and (m.name like concat('%', #{materialName}, '%') or m.code like concat('%', #{materialName}, '%') or m.referred_name like concat('%', #{materialName}, '%'))
-        </if>
+        <include refid="stkInventoryMaterialKeywordWhere"/>
         <if test="materialIsUse != null and materialIsUse != ''"> and m.is_use = #{materialIsUse} </if>
         <if test="supplierId != null">
             and exists (
@@ -1044,9 +1054,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ]]>
         </if>
         <if test="warehouseId != null "> and stk.warehouse_id = #{warehouseId} </if>
-        <if test="materialName != null and materialName != ''"> 
-            and (IFNULL(m.name, '') like concat('%', #{materialName}, '%') or IFNULL(m.code, '') like concat('%', #{materialName}, '%'))
-        </if>
+        <include refid="stkInventoryMaterialKeywordWhere"/>
         <if test="supplierId != null"> 
             and stk.supplier_id = #{supplierId} 
         </if>
@@ -1239,9 +1247,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <if test="warehouseId != null"> AND vsadj.warehouse_id = #{warehouseId}</if>
         <if test="materialName != null and materialName != ''">
             AND (
-                COALESCE(vsadj.material_code, '') LIKE CONCAT('%', #{materialName}, '%')
-                OR COALESCE(vsadj.material_name, '') LIKE CONCAT('%', #{materialName}, '%')
-                OR COALESCE(fm.referred_name, '') LIKE CONCAT('%', #{materialName}, '%')
+                COALESCE(vsadj.material_name, '') LIKE CONCAT('%', #{materialName}, '%')
+                OR UPPER(COALESCE(vsadj.material_code, '')) LIKE CONCAT('%', UPPER(#{materialName}), '%')
+                OR UPPER(COALESCE(fm.referred_name, '')) LIKE CONCAT('%', UPPER(#{materialName}), '%')
             )
         </if>
         <if test="materialSpeci != null and materialSpeci != ''">

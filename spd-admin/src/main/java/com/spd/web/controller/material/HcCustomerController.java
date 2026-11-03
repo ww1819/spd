@@ -104,7 +104,10 @@ public class HcCustomerController extends BaseController {
     existing.setRemark(body.getRemark());
     existing.setHcStatus(body.getHcStatus());
     existing.setHcPlannedDisableTime(body.getHcPlannedDisableTime());
-    existing.setHcPlannedDisableTime(body.getHcPlannedDisableTime());
+    existing.setSocialCreditCode(body.getSocialCreditCode());
+    existing.setAddress(body.getAddress());
+    existing.setContactName(body.getContactName());
+    existing.setContactPhone(body.getContactPhone());
     existing.setUpdateBy(SecurityUtils.getUserIdStr());
     return toAjax(sbCustomerService.updateSbCustomer(existing));
   }

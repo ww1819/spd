@@ -220,7 +220,7 @@ ON DUPLICATE KEY UPDATE
   default_open_to_customer = VALUES(default_open_to_customer);
 /
 
--- ---------- 2) 客户管理、客户菜单功能管理（系统管理下；is_platform=1 租户不展示）----------
+-- ---------- 2) 组织机构维护、客户菜单功能管理（系统管理下；is_platform=1 租户不展示）----------
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,
   is_frame, is_cache, menu_type, visible, status, perms, icon,
@@ -228,9 +228,9 @@ INSERT INTO sys_menu (
   is_platform, default_open_to_customer
 )
 SELECT
-  2100, '客户管理', 1, 20, 'customer', 'material/system/customer/index', NULL,
+  2100, '组织机构维护', 1, 20, 'customer', 'material/system/customer/index', NULL,
   1, 0, 'C', '0', '0', 'hc:system:customer:list', 'peoples',
-  'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '耗材系统客户（租户）管理',
+  'admin', '2026-03-07 22:20:51', '1', '2026-03-20 11:00:13', '耗材系统客户（租户）/组织机构维护',
   '1', '0'
 FROM DUAL
 WHERE
@@ -3290,7 +3290,7 @@ WHERE c.hc_status = '0'
   );
 /
 
--- ========== 耗材 sys_menu（父：2100 客户管理）==========
+-- ========== 耗材 sys_menu（父：2100 组织机构维护）==========
 -- 注意：menu_id 勿与基础资料冲突（如 2280 库房分类、2297 财务分类导入等），此处使用 3100+ 段
 INSERT INTO sys_menu (
   menu_id, menu_name, parent_id, order_num, path, component, `query`,

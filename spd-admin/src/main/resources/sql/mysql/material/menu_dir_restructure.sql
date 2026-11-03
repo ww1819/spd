@@ -5,7 +5,7 @@
 --   采购：采购管理(3949) / 订单管理(3947) / 采购报表(3948) + 平台供应商迁入
 --   科室：科室领用(3946) / 科室采购(3950)；转科申请挂科室一级；患者收费进科室消耗
 --   库房：库存管理(3951)；盈亏处理纠正为页面；条码/即入即出挂库存管理
---   基础：基础资料(3953) / 监测维护(3952) / 分类维护(3957)
+--   基础：基础资料(3953) / 监测维护(3952) / 分类维护(3957) / 集采维护(3987)
 --   系统：人员权限(3958)
 -- =============================================================================
 
@@ -57,6 +57,8 @@ SET @monitor_maint := 3952;
 SET @foundation_biz := 3953;
 /
 SET @category_maint := 3957;
+/
+SET @jc_maint := 3987;
 /
 SET @person_perm := 3958;
 /
@@ -260,6 +262,18 @@ SELECT @category_maint, '分类维护', @foundation_root, 3, 'categoryMaint', NU
 FROM DUAL WHERE @foundation_root IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = @category_maint);
 /
+INSERT INTO sys_menu (
+  menu_id, menu_name, parent_id, order_num, path, component, query,
+  is_frame, is_cache, menu_type, visible, status, perms, icon,
+  create_by, create_time, update_by, update_time, remark,
+  is_platform, default_open_to_customer
+)
+SELECT @jc_maint, '集采维护', @foundation_root, 4, 'jcMaint', NULL, NULL,
+  1, 0, 'M', '0', '0', '', 'list', 'admin', NOW(), '1', NOW(),
+  '集采类型/周期/报量/模式配置', '0', '1'
+FROM DUAL WHERE @foundation_root IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE menu_id = @jc_maint);
+/
 UPDATE sys_menu SET parent_id=@foundation_root, order_num=1, menu_name='基础资料', path='foundationBiz', menu_type='M',
   component=NULL, is_platform='0', default_open_to_customer='1', visible='0', status='0', update_by='1', update_time=NOW()
 WHERE menu_id=@foundation_biz;
@@ -272,10 +286,14 @@ UPDATE sys_menu SET parent_id=@foundation_root, order_num=3, menu_name='分类�
   component=NULL, is_platform='0', default_open_to_customer='1', visible='0', status='0', update_by='1', update_time=NOW()
 WHERE menu_id=@category_maint;
 /
--- 一级下叶子先归入「基础资料」（监测/分类项稍后迁走）
+UPDATE sys_menu SET parent_id=@foundation_root, order_num=4, menu_name='集采维护', path='jcMaint', menu_type='M',
+  component=NULL, is_platform='0', default_open_to_customer='1', visible='0', status='0', update_by='1', update_time=NOW()
+WHERE menu_id=@jc_maint;
+/
+-- 一级下叶子先归入「基础资料」（监测/分类/集采项稍后迁走）
 UPDATE sys_menu SET parent_id=@foundation_biz, update_by='1', update_time=NOW()
 WHERE parent_id=@foundation_root AND menu_type='C'
-  AND menu_id NOT IN (1553, 1549, 1104, 1103, 2280, 2270, 2290, 3490);
+  AND menu_id NOT IN (1553, 1549, 1104, 1103, 2280, 2270, 2290, 3490, 3901, 3911, 3921, 3931);
 /
 UPDATE sys_menu SET parent_id=@monitor_maint, order_num=1, update_by='1', update_time=NOW() WHERE menu_id=1553;
 /
@@ -292,6 +310,14 @@ UPDATE sys_menu SET parent_id=@category_maint, order_num=4, update_by='1', updat
 UPDATE sys_menu SET parent_id=@category_maint, order_num=5, update_by='1', update_time=NOW() WHERE menu_id=2290;
 /
 UPDATE sys_menu SET parent_id=@category_maint, order_num=6, update_by='1', update_time=NOW() WHERE menu_id=3490;
+/
+UPDATE sys_menu SET parent_id=@jc_maint, order_num=1, update_by='1', update_time=NOW() WHERE menu_id=3901;
+/
+UPDATE sys_menu SET parent_id=@jc_maint, order_num=2, update_by='1', update_time=NOW() WHERE menu_id=3911;
+/
+UPDATE sys_menu SET parent_id=@jc_maint, order_num=3, update_by='1', update_time=NOW() WHERE menu_id=3921;
+/
+UPDATE sys_menu SET parent_id=@jc_maint, order_num=4, update_by='1', update_time=NOW() WHERE menu_id=3931;
 /
 
 -- ---------- 5) 系统：人员权限 ----------
@@ -325,14 +351,14 @@ UPDATE sys_menu SET parent_id=@person_perm, order_num=4, is_platform='0', defaul
 
 -- ---------- 6) 公共标记 ----------
 UPDATE sys_menu SET is_platform='0', default_open_to_customer='1', update_by='1', update_time=NOW()
-WHERE menu_id IN (3946, 3947, 3948, 3949, 3950, 3951, 3952, 3953, 3957, 3958, 1070, 3877);
+WHERE menu_id IN (3946, 3947, 3948, 3949, 3950, 3951, 3952, 3953, 3957, 3987, 3958, 1070, 3877);
 /
 
 -- ---------- 7) 客户菜单回填 ----------
 INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
 SELECT c.customer_id, m.menu_id, '0', '1', 'admin', NOW()
 FROM sb_customer c
-JOIN sys_menu m ON m.menu_id IN (3946, 3947, 3948, 3949, 3950, 3951, 3952, 3953, 3957, 3958, 1070, 3877)
+JOIN sys_menu m ON m.menu_id IN (3946, 3947, 3948, 3949, 3950, 3951, 3952, 3953, 3957, 3987, 3958, 1070, 3877)
 WHERE IFNULL(c.hc_status, '0') = '0'
   AND c.delete_time IS NULL
   AND NOT EXISTS (
@@ -343,7 +369,7 @@ WHERE IFNULL(c.hc_status, '0') = '0'
 INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
 SELECT t.tenant_id, m.menu_id, '0', '1', 'admin', NOW()
 FROM (SELECT 'hengsui-third-001' tenant_id UNION ALL SELECT 'zaoqiang-tcm-001') t
-JOIN sys_menu m ON m.menu_id IN (3946, 3947, 3948, 3949, 3950, 3951, 3952, 3953, 3957, 3958, 1070, 3877)
+JOIN sys_menu m ON m.menu_id IN (3946, 3947, 3948, 3949, 3950, 3951, 3952, 3953, 3957, 3987, 3958, 1070, 3877)
 WHERE EXISTS (SELECT 1 FROM sb_customer c WHERE c.customer_id = t.tenant_id AND c.delete_time IS NULL)
   AND NOT EXISTS (
     SELECT 1 FROM hc_customer_menu h
@@ -398,6 +424,11 @@ FROM sys_user_menu um JOIN sys_user u ON u.user_id = um.user_id
 WHERE um.menu_id IN (1104, 1103, 2280, 2270, 2290, 3490);
 /
 INSERT IGNORE INTO sys_user_menu (user_id, menu_id, tenant_id)
+SELECT DISTINCT um.user_id, 3987, COALESCE(NULLIF(um.tenant_id,''), u.customer_id)
+FROM sys_user_menu um JOIN sys_user u ON u.user_id = um.user_id
+WHERE um.menu_id IN (3901, 3911, 3921, 3931);
+/
+INSERT IGNORE INTO sys_user_menu (user_id, menu_id, tenant_id)
 SELECT DISTINCT um.user_id, 3958, COALESCE(NULLIF(um.tenant_id,''), u.customer_id)
 FROM sys_user_menu um JOIN sys_user u ON u.user_id = um.user_id
 WHERE um.menu_id IN (100, 101, 102, 104);
@@ -435,6 +466,9 @@ INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
 SELECT DISTINCT rm.role_id, 3957 FROM sys_role_menu rm WHERE rm.menu_id IN (1104,1103,2280,2270,2290,3490);
 /
 INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
+SELECT DISTINCT rm.role_id, 3987 FROM sys_role_menu rm WHERE rm.menu_id IN (3901,3911,3921,3931);
+/
+INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
 SELECT DISTINCT rm.role_id, 3958 FROM sys_role_menu rm WHERE rm.menu_id IN (100,101,102,104);
 /
 INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
@@ -443,7 +477,7 @@ SELECT DISTINCT rm.role_id, 1559 FROM sys_role_menu rm WHERE rm.menu_id = 3601;
 INSERT INTO sys_post_menu (post_id, menu_id, tenant_id)
 SELECT p.post_id, m.menu_id, p.tenant_id
 FROM sys_post p
-JOIN sys_menu m ON m.menu_id IN (3946,3947,3948,3949,3950,3951,3952,3953,3957,3958,1070)
+JOIN sys_menu m ON m.menu_id IN (3946,3947,3948,3949,3950,3951,3952,3953,3957,3987,3958,1070)
 WHERE IFNULL(p.status,'0')='0'
   AND p.post_code='super'
   AND p.tenant_id IS NOT NULL AND TRIM(p.tenant_id)!=''
@@ -454,12 +488,13 @@ INSERT INTO sys_post_menu (post_id, menu_id, tenant_id)
 SELECT DISTINCT pm.post_id, d.menu_id, pm.tenant_id
 FROM sys_post_menu pm
 JOIN (
-  SELECT 3958 AS menu_id UNION ALL SELECT 3957 UNION ALL SELECT 3952 UNION ALL SELECT 3953
+  SELECT 3958 AS menu_id UNION ALL SELECT 3957 UNION ALL SELECT 3987 UNION ALL SELECT 3952 UNION ALL SELECT 3953
   UNION ALL SELECT 3951 UNION ALL SELECT 3948
 ) d
 WHERE (
   (d.menu_id=3958 AND pm.menu_id IN (100,101,102,104))
   OR (d.menu_id=3957 AND pm.menu_id IN (1104,1103,2280,2270,2290,3490))
+  OR (d.menu_id=3987 AND pm.menu_id IN (3901,3911,3921,3931))
   OR (d.menu_id=3952 AND pm.menu_id IN (1553,1549))
   OR (d.menu_id=3953 AND pm.menu_id IN (SELECT menu_id FROM sys_menu WHERE parent_id=3953))
   OR (d.menu_id=3951 AND pm.menu_id IN (1069,3708,3711,3720))

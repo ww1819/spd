@@ -161,29 +161,31 @@ SET parent_id = @scrap_dir,
     update_time = NOW()
 WHERE menu_id = @scrap_query;
 
--- 4) 角色：有盘点管理或其子菜单权限的，补报废目录与三页
+-- 4) 角色：有库房根/盘点/报损权限的，补报损目录与三页（公共）
 INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
-SELECT DISTINCT rm.role_id, @scrap_dir
-FROM sys_role_menu rm
-WHERE rm.menu_id = @stocktaking_dir
-   OR rm.menu_id IN (SELECT menu_id FROM sys_menu WHERE parent_id = @stocktaking_dir);
-
-INSERT IGNORE INTO sys_role_menu (role_id, menu_id)
-SELECT DISTINCT rm.role_id, m.menu_id
+SELECT DISTINCT rm.role_id, t.menu_id
 FROM sys_role_menu rm
 CROSS JOIN (
-  SELECT @scrap_apply AS menu_id
+  SELECT @scrap_dir AS menu_id
+  UNION ALL SELECT @scrap_apply
   UNION ALL SELECT @scrap_audit
   UNION ALL SELECT @scrap_query
-) m
-WHERE rm.menu_id = @stocktaking_dir
-   OR rm.menu_id = @scrap_dir
-   OR rm.menu_id IN (SELECT menu_id FROM sys_menu WHERE parent_id = @stocktaking_dir);
+) t
+WHERE rm.menu_id IN (@wh_root, @stocktaking_dir, @scrap_dir)
+   OR rm.menu_id IN (SELECT menu_id FROM (SELECT menu_id FROM sys_menu WHERE parent_id = @stocktaking_dir) x)
+   OR rm.menu_id IN (SELECT menu_id FROM (SELECT menu_id FROM sys_menu WHERE parent_id = @wh_root) y)
+   OR rm.role_id = 1;
 
--- 5) 客户开放（已开库房盘点的客户）
+-- 5) 客户开放（公共：全部已有客户菜单的租户 + 全部 sb_customer + 生产租户清单）
 INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time)
 SELECT c.tenant_id, t.menu_id, '0', '1', 'admin', NOW()
-FROM (SELECT DISTINCT tenant_id FROM hc_customer_menu WHERE menu_id IN (@stocktaking_dir, @scrap_dir)) c
+FROM (
+  SELECT DISTINCT tenant_id FROM hc_customer_menu WHERE tenant_id IS NOT NULL AND tenant_id <> ''
+  UNION
+  SELECT customer_id FROM sb_customer WHERE delete_time IS NULL AND customer_id IS NOT NULL AND customer_id <> ''
+  UNION SELECT 'hengsui-third-001'
+  UNION SELECT 'zaoqiang-tcm-001'
+) c
 CROSS JOIN (
   SELECT @scrap_dir AS menu_id
   UNION ALL SELECT @scrap_apply
@@ -195,21 +197,23 @@ WHERE NOT EXISTS (
   WHERE h.tenant_id = c.tenant_id AND h.menu_id = t.menu_id
 );
 
--- 6) 用户菜单
+-- 6) 用户菜单（有库房/盘点权限即补；tenant 优先 um，其次用户 customer_id）
 INSERT IGNORE INTO sys_user_menu (user_id, menu_id, tenant_id)
-SELECT DISTINCT um.user_id, t.menu_id, um.tenant_id
+SELECT DISTINCT um.user_id, t.menu_id,
+       COALESCE(NULLIF(um.tenant_id, ''), NULLIF(u.customer_id, ''), '')
 FROM sys_user_menu um
+JOIN sys_user u ON u.user_id = um.user_id
 CROSS JOIN (
   SELECT @scrap_dir AS menu_id
   UNION ALL SELECT @scrap_apply
   UNION ALL SELECT @scrap_audit
   UNION ALL SELECT @scrap_query
 ) t
-WHERE um.menu_id = @stocktaking_dir
-   OR um.menu_id = @scrap_dir
-   OR um.menu_id IN (SELECT menu_id FROM sys_menu WHERE parent_id = @stocktaking_dir);
+WHERE um.menu_id IN (@wh_root, @stocktaking_dir, @scrap_dir)
+   OR um.menu_id IN (SELECT menu_id FROM (SELECT menu_id FROM sys_menu WHERE parent_id = @stocktaking_dir) x)
+   OR um.menu_id IN (SELECT menu_id FROM (SELECT menu_id FROM sys_menu WHERE parent_id = @wh_root) y);
 
--- 7) 岗位菜单（若有盘点权限）
+-- 7) 岗位菜单（有库房/盘点权限即补）
 INSERT INTO sys_post_menu (post_id, menu_id, tenant_id)
 SELECT DISTINCT pm.post_id, t.menu_id, pm.tenant_id
 FROM sys_post_menu pm
@@ -220,9 +224,9 @@ CROSS JOIN (
   UNION ALL SELECT @scrap_query
 ) t
 WHERE (
-    pm.menu_id = @stocktaking_dir
-    OR pm.menu_id = @scrap_dir
-    OR pm.menu_id IN (SELECT menu_id FROM sys_menu WHERE parent_id = @stocktaking_dir)
+    pm.menu_id IN (@wh_root, @stocktaking_dir, @scrap_dir)
+    OR pm.menu_id IN (SELECT menu_id FROM (SELECT menu_id FROM sys_menu WHERE parent_id = @stocktaking_dir) x)
+    OR pm.menu_id IN (SELECT menu_id FROM (SELECT menu_id FROM sys_menu WHERE parent_id = @wh_root) y)
   )
   AND NOT EXISTS (
     SELECT 1 FROM sys_post_menu x
@@ -231,19 +235,24 @@ WHERE (
   );
 
 -- 8) 清理库房根下重复的空「报损管理」占位（如 3992 path=1），避免分栏底部再出现「库房管理/报损管理」
-UPDATE sys_menu
-SET visible = '1',
-    status = '1',
-    menu_name = '报损管理(废弃占位)',
-    remark = '重复占位已停用；正式分栏为 3983 scrapMgmt',
-    update_by = '1',
-    update_time = NOW()
-WHERE parent_id = @wh_root
-  AND menu_id <> @scrap_dir
-  AND menu_name IN ('报损管理', '报损管理(废弃占位)', '报废管理', '报废管理(废弃占位)')
-  AND (path IS NULL OR path IN ('', '1') OR component IS NULL OR component = '')
-  AND menu_type = 'M'
-  AND NOT EXISTS (SELECT 1 FROM sys_menu c WHERE c.parent_id = sys_menu.menu_id);
+-- 子查询包一层，避免 MySQL ER_UPDATE_TABLE_USED
+UPDATE sys_menu m
+JOIN (
+  SELECT x.menu_id
+  FROM sys_menu x
+  WHERE x.parent_id = @wh_root
+    AND x.menu_id <> @scrap_dir
+    AND x.menu_name IN ('报损管理', '报损管理(废弃占位)', '报废管理', '报废管理(废弃占位)')
+    AND (x.path IS NULL OR x.path IN ('', '1') OR x.component IS NULL OR x.component = '')
+    AND x.menu_type = 'M'
+    AND NOT EXISTS (SELECT 1 FROM sys_menu c WHERE c.parent_id = x.menu_id)
+) d ON m.menu_id = d.menu_id
+SET m.visible = '1',
+    m.status = '1',
+    m.menu_name = '报损管理(废弃占位)',
+    m.remark = '重复占位已停用；正式分栏为 3983 scrapMgmt',
+    m.update_by = '1',
+    m.update_time = NOW();
 
 DELETE FROM sys_role_menu
 WHERE menu_id IN (

@@ -245,10 +245,18 @@
             and coalesce(nullif(trim(cu.nick_name), ''), cu.user_name) like concat('%', #{createByName}, '%')
         </if>
         <if test="materialCode != null and materialCode != ''">
-            and e.material_code like concat('%', #{materialCode}, '%')
+            and upper(ifnull(e.material_code, '')) like concat('%', upper(#{materialCode}), '%')
         </if>
         <if test="materialName != null and materialName != ''">
-            and e.material_name like concat('%', #{materialName}, '%')
+            and (
+                ifnull(e.material_name, '') like concat('%', #{materialName}, '%')
+                or upper(ifnull(e.material_code, '')) like concat('%', upper(#{materialName}), '%')
+                or exists (
+                    select 1 from fd_material fm
+                    where fm.id = e.material_id
+                      and upper(ifnull(fm.referred_name, '')) like concat('%', upper(#{materialName}), '%')
+                )
+            )
         </if>
         <if test="speci != null and speci != ''">
             and e.speci like concat('%', #{speci}, '%')

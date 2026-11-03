@@ -422,7 +422,15 @@ CALL add_table_column('sb_customer', 'price_decimal_places', 'tinyint', '???????
 /
 CALL add_table_column('sb_customer', 'amount_decimal_places', 'tinyint', '???????(0-6????)', '3');
 /
-CALL add_table_column('sb_customer', 'money_round_mode', 'varchar(16)', '?????HALF_UP/HALF_EVEN/DOWN', 'HALF_UP');
+CALL add_table_column('sb_customer', 'money_round_mode', 'varchar(16)', '金额舍入HALF_UP/HALF_EVEN/DOWN', 'HALF_UP');
+/
+CALL add_table_column('sb_customer', 'social_credit_code', 'varchar(32)', '社会统一信用代码', NULL);
+/
+CALL add_table_column('sb_customer', 'address', 'varchar(255)', '地址', NULL);
+/
+CALL add_table_column('sb_customer', 'contact_name', 'varchar(64)', '联系人', NULL);
+/
+CALL add_table_column('sb_customer', 'contact_phone', 'varchar(32)', '联系人电话', NULL);
 /
 /* ========== ???????????????????????????????????? ========== */
 CALL add_table_column('stk_io_bill_entry', 'main_barcode', 'varchar(128)', '????????????', NULL);

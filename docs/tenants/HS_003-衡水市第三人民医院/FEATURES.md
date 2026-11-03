@@ -33,6 +33,7 @@
 | 出库审核通过后 | **自动收货确认**（与枣强相同集合） | `StkIoBillServiceImpl.AUTO_OUTBOUND_RECEIPT_TENANT_IDS` |
 | 入库/出库/退货/退库打印 | 默认 **Hs 版式**（非枣强走 Hs）；四类单据页码标题区内收，避免针式右不可打区裁掉 | `orderPrintHs` / `outOrderPrintHs` / `refundGoodsOrderPrintHs` / `refundDepotOrderPrintHs` / `lodopOutOrderHsText`；入口按 `isZqInboundPrintTenant` 反向选择 |
 | 科室盘点 | 缺省退库仓时有衡水特殊处理 | `DeptStocktakingServiceImpl` |
+| 报损管理 | **无租户特例**，走公共报损分栏（菜单 3983–3986，`default_open_to_customer=1`） | `add_scrap_mgmt_menu_public.sql` |
 
 ### 3. HIS 计费 / 患者收费（衡水特色）
 
