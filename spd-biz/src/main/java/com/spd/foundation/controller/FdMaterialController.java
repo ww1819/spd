@@ -151,6 +151,16 @@ public class FdMaterialController extends BaseController
     }
 
     /**
+     * 预览下一条产品编码（衡水三院按库房分类前缀取号，避免前端 listAll 解析错误导致 GZ00001 撞号）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:add') or @ss.hasPermi('foundation:material:edit') or @ss.hasPermi('foundation:material:list')")
+    @GetMapping("/nextCode")
+    public AjaxResult nextCode(@RequestParam(value = "storeroomId", required = false) Long storeroomId)
+    {
+        return success(fdMaterialService.previewNextMaterialCode(storeroomId));
+    }
+
+    /**
      * 科室/临床模块专用产品档案低敏列表（仅必要字段，避免返回完整产品档案）
      */
     @PreAuthorize("isAuthenticated()")
@@ -437,8 +447,8 @@ public class FdMaterialController extends BaseController
             return error("未找到有效的产品档案");
         }
 
-        // chargeItemId -> valueLevel（同一收费项多条档案时以后者为准）
-        Map<String, String> chargeItemToLevel = new LinkedHashMap<>();
+        // 先收集待同步收费编码，再按库内「任一对照档案 is_gz=1」汇总，避免选中低值档案覆盖其它高值档案
+        java.util.LinkedHashSet<String> chargeItemIds = new java.util.LinkedHashSet<>();
         int skippedNoBind = 0;
         for (FdMaterial m : materials)
         {
@@ -452,13 +462,17 @@ public class FdMaterialController extends BaseController
                 skippedNoBind++;
                 continue;
             }
-            // 仅两档：is_gz=1→高值，其余→低值（不再因空/0 跳过成「未识别」）
-            String valueLevel = com.spd.his.support.HisMirrorValueLevelSupport.fromIsGzFlag(m.getIsGz());
-            chargeItemToLevel.put(chargeItemId, valueLevel);
+            chargeItemIds.add(chargeItemId);
         }
-        if (chargeItemToLevel.isEmpty())
+        if (chargeItemIds.isEmpty())
         {
             return error("所选产品均未对照收费项目");
+        }
+        Map<String, String> chargeItemToLevel = new LinkedHashMap<>();
+        for (String chargeItemId : chargeItemIds)
+        {
+            chargeItemToLevel.put(chargeItemId,
+                com.spd.his.support.HisMirrorValueLevelSupport.resolveFromMaterial(fdMaterialMapper, tenantId, chargeItemId));
         }
 
         Map<String, List<String>> grouped = new LinkedHashMap<>();

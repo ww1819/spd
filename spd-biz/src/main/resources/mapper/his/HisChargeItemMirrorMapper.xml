@@ -80,8 +80,11 @@
         set value_level = #{valueLevel},
             update_time = now()
         where tenant_id = #{tenantId}
-          and charge_item_id = #{chargeItemId}
           and (deleted_flag is null or deleted_flag != 1)
+          and (
+                charge_item_id = #{chargeItemId}
+             or trim(charge_item_id) = #{chargeItemId}
+          )
     </update>
 
     <update id="updateValueLevelBatch">
@@ -90,8 +93,12 @@
             update_time = now()
         where tenant_id = #{tenantId}
           and (deleted_flag is null or deleted_flag != 1)
-          and charge_item_id in
-        <foreach collection="chargeItemIds" item="cid" open="(" separator="," close=")">#{cid}</foreach>
+          and (
+                charge_item_id in
+                <foreach collection="chargeItemIds" item="cid" open="(" separator="," close=")">#{cid}</foreach>
+             or trim(charge_item_id) in
+                <foreach collection="chargeItemIds" item="cid" open="(" separator="," close=")">#{cid}</foreach>
+          )
     </update>
 
     <update id="markAllDeletedByTenant">

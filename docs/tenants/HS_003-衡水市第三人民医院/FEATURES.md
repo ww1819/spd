@@ -23,8 +23,8 @@
 | 生产厂家 | 新增/导入须填 **HIS 生产厂家 ID** | `factoryImportRequiresHisId`；`FdFactory*` |
 | 财务分类 | 新增须填 HIS ID | `FdFinanceCategory*` |
 | 库房分类 | 新增须填 HIS ID | `FdWarehouseCategory*` |
-| 耗材档案 | 新增可**手工维护编码**（不可重复；命中 GZ/DZ/SJ 分类时须符合「前缀+5位」）；**留空则按分类前缀自动生成**（SQL 取 max 后缀，含停用）；产品档案 is_gz 变更可同步 HIS 收费镜像；**高低值仅两档**（is_gz=1 高值，其余低值） | `FdMaterialServiceImpl.applyHsThirdMaterialRulesOnInsert` / `generateHsCodeByPrefix`；`selectMaxHsPrefixCodeNum`；`HisMirrorValueLevelSupport`；`material/index.vue` |
-| 耗材对照 / HIS对照 | **公共共享页样式**（与枣强同一 `materialCompare/index`）；绑定只写对照字段，**异步**按档案 is_gz 刷收费项+统一计费镜像 `value_level` | `foundation/materialCompare/index.vue`；`bindMaterialHisChargeItem`；`scheduleRefreshUnifiedValueLevels` |
+| 耗材档案 | 新增可**手工维护编码**（不可重复；命中 GZ/DZ/SJ 分类时须符合「前缀+5位」）；**留空则仅在保存落库时按分类前缀自动生成**（未保存不取号；SQL 取 max 后缀，含停用）；产品档案 is_gz 变更可同步 HIS 收费镜像；**高低值仅两档**（is_gz=1 高值，其余低值） | `FdMaterialServiceImpl.applyHsThirdMaterialRulesOnInsert` / `generateHsCodeByPrefix`；`selectMaxHsPrefixCodeNum`；`HisMirrorValueLevelSupport`；`material/index.vue` |
+| 耗材对照 / HIS对照 | **公共共享页样式**（与枣强同一 `materialCompare/index`）；绑定/改 is_gz/解绑/同步高低值均按「同收费编码任一档案 is_gz=1」汇总后写收费项，**异步**刷统一计费镜像 `value_level`（trim 兼容） | `foundation/materialCompare/index.vue`；`bindMaterialHisChargeItem`；`resolveFromMaterial`；`scheduleRefreshUnifiedValueLevels` |
 
 ### 2. 仓储业务
 
@@ -62,7 +62,7 @@
 | 点 | 衡水 | 枣强 |
 |----|------|------|
 | 主数据来源 | 可手工，但强制 HIS ID | 禁止手工，HIS 同步 |
-| 耗材编码 | 可手工（查重）/ 留空按分类前缀自动生成 | 同步为主 |
+| 耗材编码 | 可手工（查重）/ 留空仅保存成功时按分类前缀生成 | 同步为主 |
 | 计费镜像 | 有 | 无 |
 | 众阳推送 | 无 | 有 |
 | 申请单弹窗审核 | 无 | 有 |

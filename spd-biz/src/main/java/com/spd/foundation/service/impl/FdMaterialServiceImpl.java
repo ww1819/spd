@@ -425,6 +425,11 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
         validateHsThirdHighValueRule(fdMaterial.getTenantId(), fdMaterial.getFinanceCategoryId(), fdMaterial.getIsGz());
         applyHsThirdMaterialRulesOnInsert(fdMaterial);
+        // 未手工维护编码：仅在落库前生成（校验失败/取消保存不会占号）
+        if (StringUtils.isEmpty(StringUtils.trim(fdMaterial.getCode())))
+        {
+            fdMaterial.setCode(generateMaterialCode());
+        }
         applyFocus18FromMedicalNo(fdMaterial);
         if (StringUtils.isNotEmpty(fdMaterial.getCode()))
         {
@@ -563,6 +568,30 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         throw new ServiceException("自动生成耗材编码失败，请稍后重试");
     }
 
+    @Override
+    public String previewNextMaterialCode(Long storeroomId)
+    {
+        String tenantId = SecurityUtils.requiredScopedTenantIdForSql();
+        if (HS_THIRD_CUSTOMER_ID.equals(tenantId))
+        {
+            if (storeroomId == null)
+            {
+                throw new ServiceException("请先选择库房分类后再生成产品编码");
+            }
+            FdWarehouseCategory wc = fdWarehouseCategoryMapper.selectFdWarehouseCategoryByWarehouseCategoryId(storeroomId);
+            if (wc == null)
+            {
+                throw new ServiceException("库房分类不存在或无权限访问");
+            }
+            String prefix = resolveHsCodePrefix(wc.getWarehouseCategoryName());
+            if (StringUtils.isNotEmpty(prefix))
+            {
+                return generateHsCodeByPrefix(prefix, tenantId);
+            }
+        }
+        return generateMaterialCode();
+    }
+
     /**
      * 修改耗材产品（含启用/停用原因写入状态记录、字段变更写入变更记录）
      *
@@ -615,7 +644,10 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         return rows;
     }
 
-    /** 衡水三院：产品档案 is_gz 变更时同步到已对照 HIS 收费项目镜像 value_level（仅 1 高值 / 2 低值） */
+    /**
+     * 衡水三院：按收费编码汇总档案高低值后写收费项/统一计费镜像。
+     * 规则与提取入库一致：同编码下任一未删档案 is_gz=1 → 高值，否则低值（避免单条低值覆盖其它高值档案）。
+     */
     private void syncHisChargeItemValueLevelFromMaterial(FdMaterial before, FdMaterial after)
     {
         if (after == null)
@@ -629,39 +661,49 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         {
             return;
         }
-        String chargeItemId = StringUtils.trimToNull(StringUtils.isNotEmpty(after.getHisChargeItemId())
-            ? after.getHisChargeItemId()
-            : (before != null ? before.getHisChargeItemId() : null));
-        if (chargeItemId == null)
+        String afterCid = StringUtils.trimToNull(after.getHisChargeItemId());
+        String beforeCid = before != null ? StringUtils.trimToNull(before.getHisChargeItemId()) : null;
+        // 对照变更时：新旧收费编码都要按库内档案重算，防止旧编码残留高值或新编码未刷上
+        if (StringUtils.isNotEmpty(afterCid))
+        {
+            refreshChargeItemValueLevelByMaterials(tenantId, afterCid, after.getId());
+        }
+        if (StringUtils.isNotEmpty(beforeCid) && !beforeCid.equals(afterCid))
+        {
+            refreshChargeItemValueLevelByMaterials(tenantId, beforeCid, after.getId());
+        }
+    }
+
+    /** 按收费编码查库汇总 is_gz 后写镜像（收费项同步 + 统一计费异步） */
+    private void refreshChargeItemValueLevelByMaterials(String tenantId, String chargeItemId, Long materialIdForLog)
+    {
+        String cid = StringUtils.trimToNull(chargeItemId);
+        if (StringUtils.isEmpty(tenantId) || cid == null)
         {
             return;
         }
-        String isGz = StringUtils.isNotEmpty(after.getIsGz())
-            ? after.getIsGz()
-            : (before != null ? before.getIsGz() : null);
-        // 未标高值一律低值，避免落成历史「未识别」(0/空)
-        String valueLevel = HisMirrorValueLevelSupport.fromIsGzFlag(isGz);
+        String valueLevel = HisMirrorValueLevelSupport.resolveFromMaterial(fdMaterialMapper, tenantId, cid);
         try
         {
-            hisChargeItemMirrorMapper.updateValueLevel(tenantId, chargeItemId, valueLevel);
-            // 统一计费镜像表生产数据量大；请求内不刷，异步按收费编码等值更新
-            scheduleRefreshUnifiedValueLevel(tenantId, chargeItemId, valueLevel);
+            hisChargeItemMirrorMapper.updateValueLevel(tenantId, cid, valueLevel);
+            scheduleRefreshUnifiedValueLevel(tenantId, cid, valueLevel);
         }
         catch (Exception e)
         {
             log.warn("同步收费项目高低值失败 materialId={} chargeItemId={} err={}",
-                after.getId(), chargeItemId, e.toString());
+                materialIdForLog, cid, e.toString());
         }
     }
 
     private void scheduleRefreshUnifiedValueLevel(String tenantId, String chargeItemId, String valueLevel)
     {
-        if (StringUtils.isEmpty(tenantId) || StringUtils.isEmpty(chargeItemId) || StringUtils.isEmpty(valueLevel))
+        String cid = StringUtils.trimToNull(chargeItemId);
+        if (StringUtils.isEmpty(tenantId) || cid == null || StringUtils.isEmpty(valueLevel))
         {
             return;
         }
         Map<String, String> one = new LinkedHashMap<>();
-        one.put(chargeItemId, valueLevel);
+        one.put(cid, valueLevel);
         scheduleRefreshUnifiedValueLevels(tenantId, one);
     }
 
@@ -675,18 +717,37 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         {
             return;
         }
-        final Map<String, String> snapshot = new LinkedHashMap<>(chargeItemToLevel);
+        final Map<String, String> snapshot = new LinkedHashMap<>();
+        for (Map.Entry<String, String> e : chargeItemToLevel.entrySet())
+        {
+            if (e == null)
+            {
+                continue;
+            }
+            String cid = StringUtils.trimToNull(e.getKey());
+            String level = StringUtils.trimToNull(e.getValue());
+            if (cid == null || level == null)
+            {
+                continue;
+            }
+            snapshot.put(cid, level);
+        }
+        if (snapshot.isEmpty())
+        {
+            return;
+        }
         Runnable task = () -> {
             for (Map.Entry<String, String> e : snapshot.entrySet())
             {
-                if (e == null || StringUtils.isEmpty(e.getKey()) || StringUtils.isEmpty(e.getValue()))
-                {
-                    continue;
-                }
                 try
                 {
-                    hisPatientChargeMirrorUnifiedMapper.refreshValueLevelByChargeItemId(
+                    int n = hisPatientChargeMirrorUnifiedMapper.refreshValueLevelByChargeItemId(
                         tenantId, e.getKey(), e.getValue());
+                    if (n <= 0)
+                    {
+                        log.info("异步刷新计费镜像高低值：无匹配行 tenantId={} chargeItemId={} valueLevel={}",
+                            tenantId, e.getKey(), e.getValue());
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -759,7 +820,14 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             throw new ServiceException("耗材产品不存在");
         }
         SecurityUtils.ensureTenantAccess(material.getTenantId());
-        return fdMaterialMapper.clearHisChargeItemIdByMaterialId(materialId, SecurityUtils.getUserIdStr());
+        String oldChargeItemId = StringUtils.trimToNull(material.getHisChargeItemId());
+        int rows = fdMaterialMapper.clearHisChargeItemIdByMaterialId(materialId, SecurityUtils.getUserIdStr());
+        // 解绑后按剩余对照档案重算该收费编码高低值，避免统一镜像仍停在高值/低值旧值
+        if (rows > 0 && HS_THIRD_CUSTOMER_ID.equals(material.getTenantId()) && oldChargeItemId != null)
+        {
+            refreshChargeItemValueLevelByMaterials(material.getTenantId(), oldChargeItemId, materialId);
+        }
+        return rows;
     }
 
     private static boolean isZqTcmTenant(String tenantId)

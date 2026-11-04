@@ -56,6 +56,15 @@ public interface IFdMaterialService
     public int insertFdMaterial(FdMaterial fdMaterial);
 
     /**
+     * 预览下一条可落库的产品编码（衡水三院按库房分类 GZ/DZ/SJ+5 位；其它为 6 位数字）。
+     * 仅预览，不落库；真正新增时仍由 insert 规则再次生成/校验。
+     *
+     * @param storeroomId 库房分类 ID（衡水三院前缀编码时必填）
+     * @return 建议编码
+     */
+    String previewNextMaterialCode(Long storeroomId);
+
+    /**
      * 修改耗材产品
      *
      * @param fdMaterial 耗材产品

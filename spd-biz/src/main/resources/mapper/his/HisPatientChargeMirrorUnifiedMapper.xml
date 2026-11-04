@@ -587,12 +587,16 @@
         </choose>
     </sql>
 
+    <!-- trim 两侧：兼容历史空格；Java 侧已 trim 入参。等值 OR trim 等值，尽量仍能命中 charge_item_id 索引 -->
     <update id="refreshValueLevelByChargeItemId">
         update his_patient_charge_mirror_unified
         set value_level = #{valueLevel},
             update_time = now()
         where tenant_id = #{tenantId}
-          and charge_item_id = #{chargeItemId}
+          and (
+                charge_item_id = #{chargeItemId}
+             or trim(charge_item_id) = #{chargeItemId}
+          )
     </update>
 
     <update id="refreshAllValueLevelsForTenant">
