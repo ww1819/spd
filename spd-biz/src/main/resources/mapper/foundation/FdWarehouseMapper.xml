@@ -27,6 +27,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="requireProduceDate" column="require_produce_date" />
         <result property="requireExpiryDate" column="require_expiry_date" />
         <result property="requireBatchNo" column="require_batch_no" />
+        <result property="inboundExpiryWarnDays" column="inbound_expiry_warn_days" />
     </resultMap>
 
     <resultMap type="FdWarehouse" id="FdUserWarehouseResult">
@@ -44,7 +45,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         COALESCE(is_settlement_warehouse, 0) as is_settlement_warehouse,
         COALESCE(require_produce_date, 1) as require_produce_date,
         COALESCE(require_expiry_date, 1) as require_expiry_date,
-        COALESCE(require_batch_no, 1) as require_batch_no
+        COALESCE(require_batch_no, 1) as require_batch_no,
+        COALESCE(inbound_expiry_warn_days, 60) as inbound_expiry_warn_days
         from fd_warehouse
     </sql>
 
@@ -169,6 +171,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="requireProduceDate != null">require_produce_date,</if>
             <if test="requireExpiryDate != null">require_expiry_date,</if>
             <if test="requireBatchNo != null">require_batch_no,</if>
+            <if test="inboundExpiryWarnDays != null">inbound_expiry_warn_days,</if>
             tenant_id,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -191,6 +194,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="requireProduceDate != null">#{requireProduceDate},</if>
             <if test="requireExpiryDate != null">#{requireExpiryDate},</if>
             <if test="requireBatchNo != null">#{requireBatchNo},</if>
+            <if test="inboundExpiryWarnDays != null">#{inboundExpiryWarnDays},</if>
             #{insertTenantId},
          </trim>
     </insert>
@@ -220,6 +224,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="requireProduceDate != null">require_produce_date = #{requireProduceDate},</if>
             <if test="requireExpiryDate != null">require_expiry_date = #{requireExpiryDate},</if>
             <if test="requireBatchNo != null">require_batch_no = #{requireBatchNo},</if>
+            <if test="inboundExpiryWarnDays != null">inbound_expiry_warn_days = #{inboundExpiryWarnDays},</if>
         </trim>
         where id = #{id} and <include refid="fdWarehouseTenantMatch"/>
     </update>

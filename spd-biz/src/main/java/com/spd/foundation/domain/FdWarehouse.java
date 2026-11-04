@@ -74,6 +74,9 @@ public class FdWarehouse extends BaseEntity
     /** 入库明细是否必填批号：0否 1是 */
     private Integer requireBatchNo;
 
+    /** 入库有效期临近提示天数（剩余有效期小于该值时弹窗确认，默认60） */
+    private Integer inboundExpiryWarnDays;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -214,6 +217,14 @@ public class FdWarehouse extends BaseEntity
         this.requireBatchNo = requireBatchNo;
     }
 
+    public Integer getInboundExpiryWarnDays() {
+        return inboundExpiryWarnDays;
+    }
+
+    public void setInboundExpiryWarnDays(Integer inboundExpiryWarnDays) {
+        this.inboundExpiryWarnDays = inboundExpiryWarnDays;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -237,6 +248,7 @@ public class FdWarehouse extends BaseEntity
             .append("requireProduceDate", getRequireProduceDate())
             .append("requireExpiryDate", getRequireExpiryDate())
             .append("requireBatchNo", getRequireBatchNo())
+            .append("inboundExpiryWarnDays", getInboundExpiryWarnDays())
             .toString();
     }
 }

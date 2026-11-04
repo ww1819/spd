@@ -152,7 +152,7 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
     {
         if (foundationArchiveDeleteGuardMapper.countWarehouseBusinessUsage(warehouseId) > 0)
         {
-            throw new ServiceException("该仓库已发生业务数据（申领、申购、出入库/退库、批量消耗、高值单据、库存等），不允许删除");
+            throw new ServiceException("该仓库存在业务不能删除");
         }
     }
 
