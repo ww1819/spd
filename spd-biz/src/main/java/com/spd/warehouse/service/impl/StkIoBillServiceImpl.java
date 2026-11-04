@@ -980,13 +980,40 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
     }
 
-    /** 低值入库：明细批号、有效期不能为空 */
+    /** 仓库入库必填开关：未配置默认开启 */
+    private boolean isInboundRequireOn(Integer flag) {
+        return flag == null || flag.intValue() == 1;
+    }
+
+    private String formatInboundChineseRowNo(int rowNo) {
+        String[] map = {"一", "二", "三", "四", "五", "六", "七", "八", "九", "十"};
+        if (rowNo >= 1 && rowNo <= 10) {
+            return "第" + map[rowNo - 1] + "行";
+        }
+        return "第" + rowNo + "行";
+    }
+
+    /** 低值入库：按仓库配置校验明细批号/生产日期/有效期必填 */
     private void assertInboundEntryBatchAndExpiry(StkIoBill bill, String actionLabel) {
         if (bill == null || bill.getBillType() == null || bill.getBillType() != 101) {
             return;
         }
         List<StkIoBillEntry> list = bill.getStkIoBillEntryList();
         if (list == null) {
+            return;
+        }
+        boolean requireBatchNo = true;
+        boolean requireProduceDate = true;
+        boolean requireExpiryDate = true;
+        if (bill.getWarehouseId() != null) {
+            FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(bill.getWarehouseId()));
+            if (wh != null) {
+                requireBatchNo = isInboundRequireOn(wh.getRequireBatchNo());
+                requireProduceDate = isInboundRequireOn(wh.getRequireProduceDate());
+                requireExpiryDate = isInboundRequireOn(wh.getRequireExpiryDate());
+            }
+        }
+        if (!requireBatchNo && !requireProduceDate && !requireExpiryDate) {
             return;
         }
         String action = StringUtils.isNotEmpty(actionLabel) ? actionLabel : "保存";
@@ -998,13 +1025,23 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             if (e.getMaterialId() == null) {
                 continue;
             }
-            String lineLabel = StringUtils.isNotEmpty(e.getMaterialName())
-                ? e.getMaterialName()
-                : ("第" + (i + 1) + "行");
-            if (StringUtils.isEmpty(StringUtils.trim(e.getBatchNumber())) || e.getEndTime() == null) {
-                throw new ServiceException(String.format(
-                    "明细【%s】批号或有效期为空，请维护批号和效期后再%s", lineLabel, action));
+            List<String> missing = new ArrayList<>();
+            if (requireBatchNo && StringUtils.isEmpty(StringUtils.trim(e.getBatchNumber()))) {
+                missing.add("批号");
             }
+            if (requireProduceDate && e.getBeginTime() == null) {
+                missing.add("生产日期");
+            }
+            if (requireExpiryDate && e.getEndTime() == null) {
+                missing.add("有效期");
+            }
+            if (missing.isEmpty()) {
+                continue;
+            }
+            String name = StringUtils.isNotEmpty(e.getMaterialName()) ? e.getMaterialName() : "--";
+            throw new ServiceException(String.format(
+                "入库明细%s【%s】%s为空，请维护后再%s！",
+                formatInboundChineseRowNo(i + 1), name, String.join("、", missing), action));
         }
     }
 

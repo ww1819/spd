@@ -65,6 +65,15 @@ public class FdWarehouse extends BaseEntity
     @Excel(name = "结算仓库", readConverterExp = "0=否,1=是")
     private Integer isSettlementWarehouse;
 
+    /** 入库明细是否必填生产日期：0否 1是 */
+    private Integer requireProduceDate;
+
+    /** 入库明细是否必填有效期：0否 1是 */
+    private Integer requireExpiryDate;
+
+    /** 入库明细是否必填批号：0否 1是 */
+    private Integer requireBatchNo;
+
     public void setId(Long id)
     {
         this.id = id;
@@ -181,6 +190,30 @@ public class FdWarehouse extends BaseEntity
         this.isSettlementWarehouse = isSettlementWarehouse;
     }
 
+    public Integer getRequireProduceDate() {
+        return requireProduceDate;
+    }
+
+    public void setRequireProduceDate(Integer requireProduceDate) {
+        this.requireProduceDate = requireProduceDate;
+    }
+
+    public Integer getRequireExpiryDate() {
+        return requireExpiryDate;
+    }
+
+    public void setRequireExpiryDate(Integer requireExpiryDate) {
+        this.requireExpiryDate = requireExpiryDate;
+    }
+
+    public Integer getRequireBatchNo() {
+        return requireBatchNo;
+    }
+
+    public void setRequireBatchNo(Integer requireBatchNo) {
+        this.requireBatchNo = requireBatchNo;
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this,ToStringStyle.MULTI_LINE_STYLE)
@@ -201,6 +234,9 @@ public class FdWarehouse extends BaseEntity
             .append("lvAuditGenInhospitalIn", getLvAuditGenInhospitalIn())
             .append("lvAuditGenInhospitalOut", getLvAuditGenInhospitalOut())
             .append("isSettlementWarehouse", getIsSettlementWarehouse())
+            .append("requireProduceDate", getRequireProduceDate())
+            .append("requireExpiryDate", getRequireExpiryDate())
+            .append("requireBatchNo", getRequireBatchNo())
             .toString();
     }
 }
