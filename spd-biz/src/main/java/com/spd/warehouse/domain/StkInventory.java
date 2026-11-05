@@ -200,6 +200,12 @@ public class StkInventory extends BaseEntity
     /** 查询参数：为 true 时仅保留数量等于 0 的库存（明细行级；汇总为分组合计为 0） */
     private Boolean onlyZeroQty;
 
+    /**
+     * 科室申领可用库存聚合：为 true 时包含本仓可用数量为 0 的「耗材+仓库」行
+     * （默认 false，与选品弹窗仅展示有库存一致）
+     */
+    private Boolean includeZeroQty;
+
     /** 库存分布分析分组维度：warehouse / supplier / factory / warehouseCategory */
     private String distributionGroupBy;
 
@@ -678,6 +684,14 @@ public class StkInventory extends BaseEntity
 
     public void setOnlyZeroQty(Boolean onlyZeroQty) {
         this.onlyZeroQty = onlyZeroQty;
+    }
+
+    public Boolean getIncludeZeroQty() {
+        return includeZeroQty;
+    }
+
+    public void setIncludeZeroQty(Boolean includeZeroQty) {
+        this.includeZeroQty = includeZeroQty;
     }
 
     public String getDistributionGroupBy() {
