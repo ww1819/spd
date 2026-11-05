@@ -236,6 +236,46 @@ public class FdMaterialController extends BaseController
             item.put("model", material.getModel());
             item.put("brand", material.getBrand());
             item.put("isGz", material.getIsGz());
+            item.put("price", material.getPrice());
+            item.put("registerNo", material.getRegisterNo());
+            item.put("periodDate", material.getPeriodDate());
+            item.put("isUse", material.getIsUse());
+            // 单位 / 厂家 / 供应商 / 库房分类 / 财务分类：供科室选耗材明细展示（耗材档案关联）
+            if (material.getFdUnit() != null)
+            {
+                Map<String, Object> unit = new LinkedHashMap<>();
+                unit.put("unitId", material.getFdUnit().getUnitId());
+                unit.put("unitName", material.getFdUnit().getUnitName());
+                item.put("fdUnit", unit);
+            }
+            if (material.getFdFactory() != null)
+            {
+                Map<String, Object> factory = new LinkedHashMap<>();
+                factory.put("factoryId", material.getFdFactory().getFactoryId());
+                factory.put("factoryName", material.getFdFactory().getFactoryName());
+                item.put("fdFactory", factory);
+            }
+            if (material.getSupplier() != null)
+            {
+                Map<String, Object> supplier = new LinkedHashMap<>();
+                supplier.put("id", material.getSupplier().getId());
+                supplier.put("name", material.getSupplier().getName());
+                item.put("supplier", supplier);
+            }
+            if (material.getFdWarehouseCategory() != null)
+            {
+                Map<String, Object> storeroom = new LinkedHashMap<>();
+                storeroom.put("warehouseCategoryId", material.getFdWarehouseCategory().getWarehouseCategoryId());
+                storeroom.put("warehouseCategoryName", material.getFdWarehouseCategory().getWarehouseCategoryName());
+                item.put("fdWarehouseCategory", storeroom);
+            }
+            if (material.getFdFinanceCategory() != null)
+            {
+                Map<String, Object> finance = new LinkedHashMap<>();
+                finance.put("financeCategoryId", material.getFdFinanceCategory().getFinanceCategoryId());
+                finance.put("financeCategoryName", material.getFdFinanceCategory().getFinanceCategoryName());
+                item.put("fdFinanceCategory", finance);
+            }
             safeList.add(item);
         }
         return safeList;
