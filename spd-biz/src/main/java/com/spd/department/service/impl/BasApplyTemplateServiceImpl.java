@@ -12,7 +12,8 @@ import com.spd.department.mapper.BasApplyTemplateMapper;
 import com.spd.department.service.IBasApplyTemplateService;
 
 /**
- * 科室申领制单模板Service业务层处理
+ * 科室申领/申购制单模板Service业务层处理
+ * （明细含 warehouseId，申购模板 SG 引用时带入申购单）
  *
  * @author spd
  */
@@ -24,8 +25,15 @@ public class BasApplyTemplateServiceImpl implements IBasApplyTemplateService {
 
     @Override
     public List<BasApplyTemplate> selectBasApplyTemplateList(BasApplyTemplate template) {
-        if (template != null && StringUtils.isEmpty(template.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
+        if (template == null) {
+            template = new BasApplyTemplate();
+        }
+        if (StringUtils.isEmpty(template.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             template.setTenantId(SecurityUtils.getCustomerId());
+        }
+        // 未传类型时默认只查申领，避免 SL/SG 混出
+        if (StringUtils.isEmpty(template.getTemplateType())) {
+            template.setTemplateType("SL");
         }
         return basApplyTemplateMapper.selectBasApplyTemplateList(template);
     }
@@ -39,6 +47,10 @@ public class BasApplyTemplateServiceImpl implements IBasApplyTemplateService {
     @Transactional(rollbackFor = Exception.class)
     public int insertBasApplyTemplate(BasApplyTemplate template) {
         template.setDelFlag(0);
+        // 未传类型时默认申领模板，避免与申购(SG)混库
+        if (StringUtils.isEmpty(template.getTemplateType())) {
+            template.setTemplateType("SL");
+        }
         int rows = basApplyTemplateMapper.insertBasApplyTemplate(template);
         List<BasApplyTemplateEntry> entryList = template.getEntryList();
         if (entryList != null && !entryList.isEmpty()) {

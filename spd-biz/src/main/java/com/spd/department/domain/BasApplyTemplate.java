@@ -23,6 +23,12 @@ public class BasApplyTemplate extends BaseEntity {
     @Excel(name = "模板名称")
     private String templateName;
 
+    /**
+     * 模板类型：SL=科室申领，SG=汇总申购
+     */
+    @Excel(name = "模板类型")
+    private String templateType;
+
     /** 仓库ID */
     @Excel(name = "仓库ID")
     private Long warehouseId;
@@ -58,6 +64,14 @@ public class BasApplyTemplate extends BaseEntity {
 
     public String getTemplateName() {
         return templateName;
+    }
+
+    public String getTemplateType() {
+        return templateType;
+    }
+
+    public void setTemplateType(String templateType) {
+        this.templateType = templateType;
     }
 
     public void setWarehouseId(Long warehouseId) {
@@ -105,6 +119,7 @@ public class BasApplyTemplate extends BaseEntity {
         return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
             .append("id", getId())
             .append("templateName", getTemplateName())
+            .append("templateType", getTemplateType())
             .append("warehouseId", getWarehouseId())
             .append("remark", getRemark())
             .append("delFlag", getDelFlag())

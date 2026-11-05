@@ -27,6 +27,12 @@ public class BasApplyTemplateEntry extends BaseEntity {
     @Excel(name = "耗材ID")
     private Long materialId;
 
+    /** 仓库ID（申购模板 SG 用；申领可空） */
+    private Long warehouseId;
+
+    /** 仓库名称（非表字段，详情联查展示） */
+    private String warehouseName;
+
     /** 数量 */
     @Excel(name = "数量")
     private BigDecimal qty;
@@ -61,6 +67,22 @@ public class BasApplyTemplateEntry extends BaseEntity {
         return materialId;
     }
 
+    public Long getWarehouseId() {
+        return warehouseId;
+    }
+
+    public void setWarehouseId(Long warehouseId) {
+        this.warehouseId = warehouseId;
+    }
+
+    public String getWarehouseName() {
+        return warehouseName;
+    }
+
+    public void setWarehouseName(String warehouseName) {
+        this.warehouseName = warehouseName;
+    }
+
     public void setQty(BigDecimal qty) {
         this.qty = qty;
     }
@@ -91,6 +113,7 @@ public class BasApplyTemplateEntry extends BaseEntity {
             .append("id", getId())
             .append("parenId", getParenId())
             .append("materialId", getMaterialId())
+            .append("warehouseId", getWarehouseId())
             .append("qty", getQty())
             .append("sortOrder", getSortOrder())
             .toString();

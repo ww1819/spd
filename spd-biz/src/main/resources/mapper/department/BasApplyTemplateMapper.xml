@@ -7,6 +7,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <resultMap type="com.spd.department.domain.BasApplyTemplate" id="BasApplyTemplateResult">
         <id property="id" column="id"/>
         <result property="templateName" column="template_name"/>
+        <result property="templateType" column="template_type"/>
         <result property="warehouseId" column="warehouse_id"/>
         <result property="tenantId" column="tenant_id"/>
         <result property="remark" column="remark"/>
@@ -29,6 +30,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <id property="id" column="entry_id"/>
         <result property="parenId" column="entry_paren_id"/>
         <result property="materialId" column="entry_material_id"/>
+        <result property="warehouseId" column="entry_warehouse_id"/>
+        <result property="warehouseName" column="entry_warehouse_name"/>
         <result property="qty" column="entry_qty"/>
         <result property="sortOrder" column="entry_sort_order"/>
         <association property="material" column="entry_material_id" javaType="com.spd.foundation.domain.FdMaterial" resultMap="templateMaterialResult"/>
@@ -41,6 +44,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="speci" column="material_speci"/>
         <result property="model" column="material_model"/>
         <result property="price" column="material_price"/>
+        <result property="isGz" column="material_is_gz"/>
+        <result property="brand" column="material_brand"/>
         <result property="registerNo" column="material_register_no"/>
         <result property="periodDate" column="material_period_date"/>
         <association property="fdUnit" javaType="com.spd.foundation.domain.FdUnit" resultMap="templateFdUnitResult"/>
@@ -75,13 +80,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectTemplateVo">
-        select id, template_name, warehouse_id, tenant_id, remark, del_flag, create_by, create_time, update_by, update_time, delete_by, delete_time
+        select id, template_name, template_type, warehouse_id, tenant_id, remark, del_flag, create_by, create_time, update_by, update_time, delete_by, delete_time
         from bas_apply_template
     </sql>
 
     <select id="selectBasApplyTemplateList" resultMap="BasApplyTemplateResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select t.id, t.template_name, t.warehouse_id, t.tenant_id, t.remark, t.del_flag, t.delete_by, t.delete_time, t.create_by, t.create_time, t.update_by, t.update_time,
+        select t.id, t.template_name, t.template_type, t.warehouse_id, t.tenant_id, t.remark, t.del_flag, t.delete_by, t.delete_time, t.create_by, t.create_time, t.update_by, t.update_time,
                w.id as wId, w.name as warehouseName
         from bas_apply_template t
         left join fd_warehouse w on t.warehouse_id = w.id
@@ -89,16 +94,33 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             and (t.del_flag = 0 or t.del_flag is null)
             and t.tenant_id = #{scopedTenantId}
             <if test="templateName != null and templateName != ''">and t.template_name like concat('%', #{templateName}, '%')</if>
+            <!-- SL / SG 严格隔离：申领含历史空类型；申购仅 SG -->
+            <choose>
+                <when test='templateType != null and templateType.equals("SG")'>
+                    and t.template_type = 'SG'
+                </when>
+                <when test='templateType != null and templateType.equals("SL")'>
+                    and (t.template_type = 'SL' or t.template_type is null or t.template_type = '')
+                </when>
+                <when test="templateType != null and templateType != ''">
+                    and t.template_type = #{templateType}
+                </when>
+                <otherwise>
+                    and (t.template_type = 'SL' or t.template_type is null or t.template_type = '')
+                </otherwise>
+            </choose>
         </where>
         order by t.create_time desc
     </select>
 
     <select id="selectBasApplyTemplateById" resultMap="BasApplyTemplateWithEntryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select t.id, t.template_name, t.warehouse_id, t.tenant_id, t.remark, t.del_flag, t.delete_by, t.delete_time, t.create_by, t.create_time, t.update_by, t.update_time,
+        select t.id, t.template_name, t.template_type, t.warehouse_id, t.tenant_id, t.remark, t.del_flag, t.delete_by, t.delete_time, t.create_by, t.create_time, t.update_by, t.update_time,
                w.id as wId, w.name as warehouseName,
-               e.id as entry_id, e.paren_id as entry_paren_id, e.material_id as entry_material_id, e.qty as entry_qty, e.sort_order as entry_sort_order,
+               e.id as entry_id, e.paren_id as entry_paren_id, e.material_id as entry_material_id, e.warehouse_id as entry_warehouse_id, e.qty as entry_qty, e.sort_order as entry_sort_order,
+               ew.name as entry_warehouse_name,
                m.code as material_code, m.name as material_name, m.speci as material_speci, m.model as material_model, m.price as material_price,
+               m.is_gz as material_is_gz, m.brand as material_brand,
                m.register_no as material_register_no, m.period_date as material_period_date,
                u.unit_id as mat_unit_id, u.unit_name as mat_unit_name,
                f.factory_id as mat_factory_id, f.factory_name as mat_factory_name,
@@ -108,6 +130,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from bas_apply_template t
         left join fd_warehouse w on t.warehouse_id = w.id
         left join bas_apply_template_entry e on e.paren_id = t.id and e.tenant_id = #{scopedTenantId} and (e.delete_time is null)
+        left join fd_warehouse ew on e.warehouse_id = ew.id
         left join fd_material m on e.material_id = m.id
         left join fd_unit u on m.unit_id = u.unit_id
         left join fd_factory f on m.factory_id = f.factory_id
@@ -122,6 +145,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into bas_apply_template
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">template_name,</if>
+            <if test="templateType != null and templateType != ''">template_type,</if>
             <if test="warehouseId != null">warehouse_id,</if>
             tenant_id,
             <if test="remark != null">remark,</if>
@@ -133,6 +157,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">#{templateName},</if>
+            <if test="templateType != null and templateType != ''">#{templateType},</if>
             <if test="warehouseId != null">#{warehouseId},</if>
             #{scopedTenantId},
             <if test="remark != null">#{remark},</if>
@@ -149,6 +174,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update bas_apply_template
         <trim prefix="SET" suffixOverrides=",">
             <if test="templateName != null and templateName != ''">template_name = #{templateName},</if>
+            <if test="templateType != null and templateType != ''">template_type = #{templateType},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="remark != null">remark = #{remark},</if>
@@ -172,9 +198,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="batchInsertEntry">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        insert into bas_apply_template_entry(paren_id, material_id, qty, sort_order, tenant_id) values
+        insert into bas_apply_template_entry(paren_id, material_id, warehouse_id, qty, sort_order, tenant_id) values
         <foreach item="item" collection="list" separator=",">
-            (#{item.parenId}, #{item.materialId}, #{item.qty}, #{item.sortOrder}, #{scopedTenantId})
+            (#{item.parenId}, #{item.materialId}, #{item.warehouseId}, #{item.qty}, #{item.sortOrder}, #{scopedTenantId})
         </foreach>
     </insert>
 </mapper>
