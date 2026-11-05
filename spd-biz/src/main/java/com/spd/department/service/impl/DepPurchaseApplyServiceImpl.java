@@ -692,4 +692,32 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         }
         refreshOutboundRefStatus(id);
     }
+
+    @Override
+    public List<Map<String, Object>> selectPurchaseDetailList(DepPurchaseApply query)
+    {
+        applyDepartmentScopeToQuery(query);
+        return depPurchaseApplyMapper.selectPurchaseDetailList(query);
+    }
+
+    @Override
+    public com.spd.common.core.page.TotalInfo selectPurchaseDetailListTotal(DepPurchaseApply query)
+    {
+        applyDepartmentScopeToQuery(query);
+        return depPurchaseApplyMapper.selectPurchaseDetailListTotal(query);
+    }
+
+    @Override
+    public List<Map<String, Object>> selectPurchaseSummaryList(DepPurchaseApply query)
+    {
+        applyDepartmentScopeToQuery(query);
+        return depPurchaseApplyMapper.selectPurchaseSummaryList(query);
+    }
+
+    @Override
+    public com.spd.common.core.page.TotalInfo selectPurchaseSummaryListTotal(DepPurchaseApply query)
+    {
+        applyDepartmentScopeToQuery(query);
+        return depPurchaseApplyMapper.selectPurchaseSummaryListTotal(query);
+    }
 }

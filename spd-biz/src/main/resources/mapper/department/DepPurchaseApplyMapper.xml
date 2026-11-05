@@ -956,4 +956,120 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         order by dpae.parent_id, dpae.id
     </select>
+
+    <!-- ========== 科室采购表：明细 / 汇总（对齐领用明细，仅保留两表） ========== -->
+    <sql id="purchaseDetailReportWhere">
+        (dpa.del_flag is null or dpa.del_flag != 1)
+          and dpa.tenant_id = #{scopedTenantId}
+          and dpa.purchase_bill_status = 2
+          and (dpa.void_whole_flag is null or dpa.void_whole_flag = 0)
+          and (e.del_flag is null or e.del_flag != 1)
+        <include refid="depPurchaseDepartmentScopeFilter"/>
+        <if test="purchaseBillNo != null and purchaseBillNo != ''"> and dpa.purchase_bill_no like concat('%', #{purchaseBillNo}, '%')</if>
+        <if test="warehouseId != null"> and dpa.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> and dpa.department_id = #{departmentId}</if>
+        <if test="materialName != null and materialName != ''">
+            and (m.name like concat('%', #{materialName}, '%')
+                 or m.code like concat('%', #{materialName}, '%')
+                 or ifnull(e.material_name, '') like concat('%', #{materialName}, '%'))
+        </if>
+        <if test="beginDate != null"> and date(coalesce(dpa.purchase_bill_date, dpa.create_time)) &gt;= #{beginDate}</if>
+        <if test="endDate != null"> and date(coalesce(dpa.purchase_bill_date, dpa.create_time)) &lt;= #{endDate}</if>
+    </sql>
+
+    <select id="selectPurchaseDetailList" parameterType="DepPurchaseApply" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            dpa.id,
+            dpa.purchase_bill_no as billNo,
+            dpa.purchase_bill_date as billDate,
+            dpa.warehouse_id as warehouseId,
+            dpa.department_id as departmentId,
+            coalesce(nullif(trim(m.code), ''), '') as materialCode,
+            coalesce(nullif(trim(m.name), ''), nullif(trim(e.material_name), ''), '') as materialName,
+            coalesce(nullif(trim(m.speci), ''), nullif(trim(e.material_spec), ''), '') as materialSpeci,
+            coalesce(nullif(trim(m.model), ''), nullif(trim(e.model), ''), '') as materialModel,
+            coalesce(nullif(trim(u.unit_name), ''), nullif(trim(e.unit), ''), '') as unitName,
+            e.qty as qty,
+            e.unit_price as unitPrice,
+            e.amt as amt,
+            w.name as warehouseName,
+            d.name as departmentName,
+            coalesce(nullif(trim(cu.nick_name), ''), cu.user_name) as createrName,
+            coalesce(nullif(trim(au.nick_name), ''), au.user_name) as auditPersonName,
+            case when dpa.purchase_bill_status = 2 then coalesce(dpa.audit_date, dpa.update_time) else dpa.audit_date end as auditDate,
+            f.factory_name as factoryName,
+            coalesce(nullif(trim(s.name), ''), nullif(trim(e.supplier_name), ''), '') as supplierName
+        from dep_purchase_apply dpa
+        inner join dep_purchase_apply_entry e on e.parent_id = dpa.id and e.tenant_id = dpa.tenant_id
+        left join fd_material m on e.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_warehouse w on dpa.warehouse_id = w.id
+        left join fd_department d on dpa.department_id = d.id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_supplier s on m.supplier_id = s.id
+        left join sys_user cu on cu.user_id = coalesce(
+            dpa.user_id,
+            case when dpa.create_by regexp '^[0-9]+$' then cast(dpa.create_by as unsigned) else null end
+        )
+        left join sys_user au on au.user_id = (
+            case
+                when coalesce(nullif(trim(dpa.audit_by), ''), nullif(trim(dpa.update_by), '')) regexp '^[0-9]+$'
+                    then cast(coalesce(nullif(trim(dpa.audit_by), ''), nullif(trim(dpa.update_by), '')) as unsigned)
+                else null
+            end
+        )
+        where <include refid="purchaseDetailReportWhere"/>
+        order by dpa.purchase_bill_date desc, dpa.id desc, e.id desc
+    </select>
+
+    <select id="selectPurchaseDetailListTotal" parameterType="DepPurchaseApply" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select coalesce(sum(e.qty), 0) as totalQty, coalesce(sum(e.amt), 0) as totalAmt
+        from dep_purchase_apply dpa
+        inner join dep_purchase_apply_entry e on e.parent_id = dpa.id and e.tenant_id = dpa.tenant_id
+        left join fd_material m on e.material_id = m.id
+        where <include refid="purchaseDetailReportWhere"/>
+    </select>
+
+    <select id="selectPurchaseSummaryList" parameterType="DepPurchaseApply" resultType="java.util.HashMap">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+            m.id as materialId,
+            coalesce(nullif(trim(m.code), ''), '') as materialCode,
+            coalesce(nullif(trim(m.name), ''), max(nullif(trim(e.material_name), '')), '') as materialName,
+            d.name as departmentName,
+            coalesce(nullif(trim(m.speci), ''), max(nullif(trim(e.material_spec), '')), '') as materialSpeci,
+            coalesce(nullif(trim(m.model), ''), max(nullif(trim(e.model), '')), '') as materialModel,
+            coalesce(nullif(trim(u.unit_name), ''), max(nullif(trim(e.unit), '')), '') as unitName,
+            avg(e.unit_price) as unitPrice,
+            sum(e.qty) as totalQty,
+            sum(e.amt) as totalAmt,
+            max(m.is_billing) as isBilling,
+            m.register_no as registerNo,
+            m.period_date as periodDate,
+            w.name as warehouseName,
+            f.factory_name as factoryName,
+            coalesce(nullif(trim(s.name), ''), max(nullif(trim(e.supplier_name), '')), '') as supplierName
+        from dep_purchase_apply dpa
+        inner join dep_purchase_apply_entry e on e.parent_id = dpa.id and e.tenant_id = dpa.tenant_id
+        left join fd_material m on e.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_warehouse w on dpa.warehouse_id = w.id
+        left join fd_department d on dpa.department_id = d.id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_supplier s on m.supplier_id = s.id
+        where <include refid="purchaseDetailReportWhere"/>
+        group by m.id, m.code, m.name, d.name, m.speci, m.model, u.unit_name, m.register_no, m.period_date, w.name, f.factory_name, s.name
+        order by materialName, departmentName
+    </select>
+
+    <select id="selectPurchaseSummaryListTotal" parameterType="DepPurchaseApply" resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select coalesce(sum(e.qty), 0) as totalQty, coalesce(sum(e.amt), 0) as totalAmt
+        from dep_purchase_apply dpa
+        inner join dep_purchase_apply_entry e on e.parent_id = dpa.id and e.tenant_id = dpa.tenant_id
+        left join fd_material m on e.material_id = m.id
+        where <include refid="purchaseDetailReportWhere"/>
+    </select>
 </mapper>

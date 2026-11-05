@@ -138,6 +138,9 @@ public class DepPurchaseApply extends BaseEntity
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date endDate;
 
+    /** 查询：耗材编码/名称模糊（科室采购表明细/汇总用，非表字段） */
+    private String materialName;
+
     /** 查询时排除的申购单号，逗号分隔（仅查询用，如当前计划明细已引用单号） */
     private String excludePurchaseBillNos;
 
@@ -483,6 +486,9 @@ public class DepPurchaseApply extends BaseEntity
 
     public Date getEndDate() { return endDate; }
     public void setEndDate(Date endDate) { this.endDate = endDate; }
+
+    public String getMaterialName() { return materialName; }
+    public void setMaterialName(String materialName) { this.materialName = materialName; }
 
     public String getExcludePurchaseBillNos() { return excludePurchaseBillNos; }
     public void setExcludePurchaseBillNos(String excludePurchaseBillNos) { this.excludePurchaseBillNos = excludePurchaseBillNos; }

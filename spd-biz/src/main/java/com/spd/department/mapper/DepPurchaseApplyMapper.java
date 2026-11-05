@@ -126,4 +126,14 @@ public interface DepPurchaseApplyMapper
     List<DepPurchaseApplyEntry> selectEntriesForPlanReferenceByApplyIds(
         @Param("applyIds") Long[] applyIds,
         @Param("excludeEntryIds") List<Long> excludeEntryIds);
+
+    /** 科室采购表明细（已审核申购分录） */
+    java.util.List<java.util.Map<String, Object>> selectPurchaseDetailList(DepPurchaseApply query);
+
+    com.spd.common.core.page.TotalInfo selectPurchaseDetailListTotal(DepPurchaseApply query);
+
+    /** 科室采购表汇总（按科室+耗材+仓库） */
+    java.util.List<java.util.Map<String, Object>> selectPurchaseSummaryList(DepPurchaseApply query);
+
+    com.spd.common.core.page.TotalInfo selectPurchaseSummaryListTotal(DepPurchaseApply query);
 }

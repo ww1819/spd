@@ -134,4 +134,14 @@ public interface IDepPurchaseApplyService
 
     /** 整单作废：无已审核出库关联时允许；若仅有未审核出库关联则先解除关联再作废 */
     void voidWholeDepPurchaseApply(Long id, String reason);
+
+    /** 科室采购表明细 */
+    java.util.List<java.util.Map<String, Object>> selectPurchaseDetailList(DepPurchaseApply query);
+
+    com.spd.common.core.page.TotalInfo selectPurchaseDetailListTotal(DepPurchaseApply query);
+
+    /** 科室采购表汇总 */
+    java.util.List<java.util.Map<String, Object>> selectPurchaseSummaryList(DepPurchaseApply query);
+
+    com.spd.common.core.page.TotalInfo selectPurchaseSummaryListTotal(DepPurchaseApply query);
 }
