@@ -116,7 +116,7 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         if (query != null && StringUtils.isEmpty(query.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             query.setTenantId(SecurityUtils.getCustomerId());
         }
-        applyDepartmentScopeToQuery(query);
+        // 科室范围须由 Controller 在 startPage() 之前写入；此处再查权限库会提前消耗 PageHelper，导致列表一次返回全部
         return depPurchaseApplyAggMapper.selectDepPurchaseApplyAggList(query);
     }
 
