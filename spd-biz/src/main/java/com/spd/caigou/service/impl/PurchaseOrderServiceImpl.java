@@ -199,6 +199,12 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
     @Override
     public int updatePurchaseOrder(PurchaseOrder purchaseOrder)
     {
+        if (purchaseOrder.getId() != null) {
+            PurchaseOrder existing = purchaseOrderMapper.selectPurchaseOrderById(purchaseOrder.getId());
+            if (existing != null && "2".equals(String.valueOf(existing.getOrderStatus()))) {
+                throw new ServiceException("已审核的采购订单不可修改；请刷新后查看");
+            }
+        }
         MasterDetailValidateUtil.assertHasMaterialLine(
             purchaseOrder.getPurchaseOrderEntryList(), PurchaseOrderEntry::getMaterialId, "采购订单");
         if (StringUtils.isEmpty(purchaseOrder.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
@@ -217,6 +223,16 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
                 purchaseOrder.setPaidAmount(BigDecimal.ZERO);
             }
             purchaseOrder.setUnpaidAmount(totalAmount.subtract(purchaseOrder.getPaidAmount()));
+        }
+        // 禁止客户端回写审核态
+        purchaseOrder.setOrderStatus(null);
+        purchaseOrder.setAuditBy(null);
+        purchaseOrder.setAuditDate(null);
+        if (purchaseOrder.getId() != null) {
+            PurchaseOrder latest = purchaseOrderMapper.selectPurchaseOrderById(purchaseOrder.getId());
+            if (latest != null && "2".equals(String.valueOf(latest.getOrderStatus()))) {
+                throw new ServiceException("已审核的采购订单不可修改；请刷新后查看");
+            }
         }
         
         // 删除原有明细（逻辑删除，写 delete_by/delete_time）

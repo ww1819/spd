@@ -149,6 +149,14 @@ public class StkScrapBillServiceImpl implements IStkScrapBillService {
         Date now = DateUtils.getNowDate();
         bill.setUpdateBy(uid);
         bill.setUpdateTime(now);
+        // 禁止客户端回写审核/提交态
+        bill.setBillStatus(null);
+        bill.setAuditBy(null);
+        bill.setAuditDate(null);
+        StkScrapBill latest = stkScrapBillMapper.selectStkScrapBillById(bill.getId());
+        if (latest == null || !"0".equals(latest.getBillStatus())) {
+            throw new ServiceException("仅未提交的报废单可修改");
+        }
         recalcTotalAmount(bill);
         int rows = stkScrapBillMapper.updateStkScrapBill(bill);
 
@@ -181,7 +189,11 @@ public class StkScrapBillServiceImpl implements IStkScrapBillService {
             upd.setBillStatus("1");
             upd.setUpdateBy(uid);
             upd.setUpdateTime(now);
-            count += stkScrapBillMapper.updateBillStatus(upd);
+            int rows = stkScrapBillMapper.updateBillStatus(upd);
+            if (rows <= 0) {
+                throw new ServiceException("提交失败，单据状态已变更：" + existing.getBillNo());
+            }
+            count += rows;
         }
         return count;
     }
@@ -218,13 +230,18 @@ public class StkScrapBillServiceImpl implements IStkScrapBillService {
             upd.setAuditDate(now);
             upd.setUpdateBy(uid);
             upd.setUpdateTime(now);
-            count += stkScrapBillMapper.updateBillStatus(upd);
+            int rows = stkScrapBillMapper.updateBillStatus(upd);
+            if (rows <= 0) {
+                throw new ServiceException("审核失败，单据状态已变更：" + existing.getBillNo());
+            }
+            count += rows;
         }
         return count;
     }
 
     /**
      * 审核扣减仓库库存并记流水；明细须关联库存行 inventoryId。
+     * 幂等：同 bill_id + lx=BS + entry_id 已有流水则跳过（bill_id 可能与盘点撞号，不能仅按 bill_id）。
      */
     private void deductInventoryOnAudit(StkScrapBill bill, StkScrapBillEntry entry, String uid, Date now) {
         if (entry == null || entry.getMaterialId() == null) {
@@ -238,6 +255,10 @@ public class StkScrapBillServiceImpl implements IStkScrapBillService {
             throw new ServiceException("报损明细未关联库存行，无法扣减。物料："
                 + (StringUtils.isNotEmpty(entry.getMaterialCode()) ? entry.getMaterialCode() : entry.getMaterialId()));
         }
+        if (entry.getId() != null
+            && hcCkFlowMapper.countAliveByBillIdLxEntryId(bill.getId(), FLOW_LX_SCRAP, entry.getId()) > 0) {
+            return;
+        }
         StkInventory inventory = stkInventoryMapper.selectStkInventoryById(entry.getInventoryId());
         if (inventory == null) {
             throw new ServiceException("库存行不存在或已删除，无法报损。inventoryId=" + entry.getInventoryId());
@@ -249,6 +270,12 @@ public class StkScrapBillServiceImpl implements IStkScrapBillService {
         if (inventory.getMaterialId() != null && !inventory.getMaterialId().equals(entry.getMaterialId())) {
             throw new ServiceException("报损明细耗材与库存行不一致：" + entry.getMaterialCode());
         }
+        fillEntrySnapshotFromInventory(entry, inventory);
+        entry.setUpdateBy(uid);
+        if (entry.getId() != null) {
+            stkScrapBillMapper.updateEntrySnapshot(entry);
+        }
+
         BigDecimal currentQty = inventory.getQty() == null ? BigDecimal.ZERO : inventory.getQty();
         if (currentQty.compareTo(scrapQty) < 0) {
             throw new ServiceException(String.format(
@@ -274,7 +301,8 @@ public class StkScrapBillServiceImpl implements IStkScrapBillService {
         flow.setWarehouseId(bill.getWarehouseId() != null ? bill.getWarehouseId() : inventory.getWarehouseId());
         flow.setMaterialId(entry.getMaterialId());
         flow.setBatchNo(StringUtils.isNotEmpty(entry.getBatchNo()) ? entry.getBatchNo() : inventory.getBatchNo());
-        flow.setBatchNumber(inventory.getBatchNumber());
+        flow.setBatchNumber(StringUtils.isNotEmpty(entry.getBatchNumber())
+            ? entry.getBatchNumber() : inventory.getBatchNumber());
         flow.setQty(scrapQty);
         flow.setUnitPrice(unitPrice);
         flow.setAmt(amt);
@@ -300,6 +328,27 @@ public class StkScrapBillServiceImpl implements IStkScrapBillService {
             flow, flow.getWarehouseId(), flow.getSupplierId(), null);
         InventoryMaterialSnapshotHelper.applyHcCkFlowNumericStrMirrors(flow);
         hcCkFlowMapper.insertHcCkFlow(flow);
+    }
+
+    /**
+     * 从库存行补齐明细快照：批次号/批号/生产日期/有效期（前端漏传时仍保证单据完整）。
+     */
+    private void fillEntrySnapshotFromInventory(StkScrapBillEntry entry, StkInventory inventory) {
+        if (entry == null || inventory == null) {
+            return;
+        }
+        if (StringUtils.isEmpty(entry.getBatchNo())) {
+            entry.setBatchNo(inventory.getBatchNo());
+        }
+        if (StringUtils.isEmpty(entry.getBatchNumber())) {
+            entry.setBatchNumber(inventory.getBatchNumber());
+        }
+        if (entry.getProduceDate() == null) {
+            entry.setProduceDate(inventory.getBeginTime());
+        }
+        if (entry.getExpiryDate() == null) {
+            entry.setExpiryDate(inventory.getEndTime());
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -385,6 +434,16 @@ public class StkScrapBillServiceImpl implements IStkScrapBillService {
             if (e == null || e.getMaterialId() == null) {
                 continue;
             }
+            StkInventory inventory = stkInventoryMapper.selectStkInventoryById(e.getInventoryId());
+            if (inventory == null) {
+                throw new ServiceException("库存行不存在或已删除，无法报损。inventoryId=" + e.getInventoryId());
+            }
+            if (bill.getWarehouseId() != null && inventory.getWarehouseId() != null
+                && !bill.getWarehouseId().equals(inventory.getWarehouseId())) {
+                throw new ServiceException("报损明细库存仓库与单据仓库不一致："
+                    + (StringUtils.isNotEmpty(e.getMaterialCode()) ? e.getMaterialCode() : e.getMaterialId()));
+            }
+            fillEntrySnapshotFromInventory(e, inventory);
             e.setId(null);
             e.setParentId(bill.getId());
             e.setBillNo(bill.getBillNo());

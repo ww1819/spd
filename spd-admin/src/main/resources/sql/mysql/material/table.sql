@@ -271,6 +271,10 @@ CREATE TABLE IF NOT EXISTS `fd_warehouse` (
   `lv_audit_gen_inhospital_in` tinyint DEFAULT 0 COMMENT '低值入库审核是否生成院内码定数包 0否1是',
   `lv_audit_gen_inhospital_out` tinyint DEFAULT 0 COMMENT '低值出库审核是否生成院内码定数包 0否1是',
   `is_settlement_warehouse` tinyint NOT NULL DEFAULT 0 COMMENT '结算仓库标识 0否1是（高值核销确认可选）',
+  `require_produce_date` tinyint DEFAULT 1 COMMENT '入库明细是否必填生产日期 0否1是',
+  `require_expiry_date` tinyint DEFAULT 1 COMMENT '入库明细是否必填有效期 0否1是',
+  `require_batch_no` tinyint DEFAULT 1 COMMENT '入库明细是否必填批号 0否1是',
+  `inbound_expiry_warn_days` int DEFAULT 60 COMMENT '入库有效期临近提示天数',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='仓库';
 /
@@ -442,6 +446,7 @@ CREATE TABLE IF NOT EXISTS `stk_initial_import_entry` (
 CREATE TABLE IF NOT EXISTS `bas_apply_template` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
   `template_name` varchar(128) NOT NULL COMMENT '模板名称',
+  `template_type` varchar(10) DEFAULT 'SL' COMMENT '模板类型 SL申领 SG申购',
   `warehouse_id` bigint(20) DEFAULT NULL COMMENT '仓库ID',
   `remark` varchar(512) DEFAULT NULL COMMENT '备注',
   `del_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '删除标志（0正常 1删除）',
@@ -464,6 +469,7 @@ CREATE TABLE IF NOT EXISTS `bas_apply_template_entry` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
   `paren_id` bigint(20) NOT NULL COMMENT '模板主表ID',
   `material_id` bigint(20) NOT NULL COMMENT '耗材ID',
+  `warehouse_id` bigint(20) DEFAULT NULL COMMENT '仓库ID(申购模板用)',
   `qty` decimal(18,6) NOT NULL DEFAULT 1.00 COMMENT '数量',
   `sort_order` int(11) DEFAULT 0 COMMENT '排序',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -3959,4 +3965,122 @@ CREATE TABLE IF NOT EXISTS `sys_user_menu_hit` (
   UNIQUE KEY `uk_user_menu_hit` (`user_id`, `tenant_id`, `path`),
   KEY `idx_user_menu_hit_rank` (`user_id`, `tenant_id`, `hit_count`, `last_hit_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户菜单点击统计';
+/
+-- ========== SCHEMA-GAP 2026-11-07: purchase price adjust / scrap bill (from *_public.sql) ==========
+CREATE TABLE IF NOT EXISTS `purchase_price_adjust` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'pk',
+  `bill_no` varchar(64) NOT NULL COMMENT 'bill no TJ-yyyyMMdd#####',
+  `adjust_type` varchar(32) NOT NULL COMMENT 'archive/warehouse/department',
+  `supplier_id` bigint(20) DEFAULT NULL COMMENT 'supplier id',
+  `bill_date` date DEFAULT NULL COMMENT 'bill date',
+  `contact_name` varchar(64) DEFAULT NULL COMMENT 'contact',
+  `contact_phone` varchar(32) DEFAULT NULL COMMENT 'phone',
+  `bill_status` char(1) DEFAULT '0' COMMENT '0 draft 1 submitted 2 audited',
+  `audit_by` varchar(64) DEFAULT NULL COMMENT 'auditor',
+  `audit_date` datetime DEFAULT NULL COMMENT 'audit time',
+  `print_by` varchar(64) DEFAULT NULL COMMENT 'printer',
+  `print_date` datetime DEFAULT NULL COMMENT 'print time',
+  `adjust_reason` varchar(500) DEFAULT NULL COMMENT 'adjust reason',
+  `remark` varchar(500) DEFAULT NULL COMMENT 'remark',
+  `del_flag` char(1) DEFAULT '0' COMMENT '0 normal 1 deleted',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT 'tenant',
+  `create_by` varchar(64) DEFAULT NULL COMMENT 'create by',
+  `create_time` datetime DEFAULT NULL COMMENT 'create time',
+  `update_by` varchar(64) DEFAULT NULL COMMENT 'update by',
+  `update_time` datetime DEFAULT NULL COMMENT 'update time',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_price_adjust_tenant_bill_no` (`tenant_id`, `bill_no`),
+  KEY `idx_price_adjust_bill_date` (`bill_date`),
+  KEY `idx_price_adjust_supplier` (`supplier_id`),
+  KEY `idx_price_adjust_status` (`bill_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='purchase price adjust bill';
+/
+
+CREATE TABLE IF NOT EXISTS `purchase_price_adjust_entry` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'pk',
+  `parent_id` bigint(20) NOT NULL COMMENT 'parent id',
+  `bill_no` varchar(64) DEFAULT NULL COMMENT 'bill no',
+  `line_no` int DEFAULT NULL COMMENT 'line no',
+  `material_id` bigint(20) NOT NULL COMMENT 'material id',
+  `material_code` varchar(64) DEFAULT NULL COMMENT 'material code',
+  `material_name` varchar(200) DEFAULT NULL COMMENT 'material name',
+  `speci` varchar(200) DEFAULT NULL COMMENT 'spec',
+  `model` varchar(200) DEFAULT NULL COMMENT 'model',
+  `unit_name` varchar(64) DEFAULT NULL COMMENT 'unit',
+  `old_price` decimal(18,6) DEFAULT NULL COMMENT 'old price',
+  `new_price` decimal(18,6) DEFAULT NULL COMMENT 'new price',
+  `finance_class` varchar(100) DEFAULT NULL COMMENT 'finance class',
+  `manufacturer` varchar(200) DEFAULT NULL COMMENT 'manufacturer',
+  `reg_no` varchar(100) DEFAULT NULL COMMENT 'reg no',
+  `reg_valid_date` varchar(64) DEFAULT NULL COMMENT 'reg valid date',
+  `pack_speci` varchar(200) DEFAULT NULL COMMENT 'pack speci',
+  `remark` varchar(500) DEFAULT NULL COMMENT 'remark',
+  `del_flag` char(1) DEFAULT '0' COMMENT 'del flag',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT 'tenant',
+  `create_by` varchar(64) DEFAULT NULL COMMENT 'create by',
+  `create_time` datetime DEFAULT NULL COMMENT 'create time',
+  `update_by` varchar(64) DEFAULT NULL COMMENT 'update by',
+  `update_time` datetime DEFAULT NULL COMMENT 'update time',
+  PRIMARY KEY (`id`),
+  KEY `idx_price_adjust_entry_parent` (`parent_id`),
+  KEY `idx_price_adjust_entry_material` (`material_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='purchase price adjust entry';
+/
+
+CREATE TABLE IF NOT EXISTS `stk_scrap_bill` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'pk',
+  `bill_no` varchar(64) NOT NULL COMMENT 'bill no BS-yyyyMMdd#####',
+  `warehouse_id` bigint(20) NOT NULL COMMENT 'warehouse id',
+  `bill_date` date DEFAULT NULL COMMENT 'bill date',
+  `total_amount` decimal(18,2) DEFAULT NULL COMMENT 'total amount',
+  `scrap_reason` varchar(500) DEFAULT NULL COMMENT 'scrap reason',
+  `bill_status` char(1) DEFAULT '0' COMMENT '0 draft 1 submitted 2 audited',
+  `audit_by` varchar(64) DEFAULT NULL COMMENT 'auditor',
+  `audit_date` datetime DEFAULT NULL COMMENT 'audit time',
+  `remark` varchar(500) DEFAULT NULL COMMENT 'remark',
+  `del_flag` char(1) DEFAULT '0' COMMENT 'del flag',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT 'tenant',
+  `create_by` varchar(64) DEFAULT NULL COMMENT 'create by',
+  `create_time` datetime DEFAULT NULL COMMENT 'create time',
+  `update_by` varchar(64) DEFAULT NULL COMMENT 'update by',
+  `update_time` datetime DEFAULT NULL COMMENT 'update time',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_scrap_bill_tenant_bill_no` (`tenant_id`, `bill_no`),
+  KEY `idx_scrap_bill_warehouse` (`warehouse_id`),
+  KEY `idx_scrap_bill_bill_date` (`bill_date`),
+  KEY `idx_scrap_bill_status` (`bill_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='warehouse scrap bill';
+/
+
+CREATE TABLE IF NOT EXISTS `stk_scrap_bill_entry` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'pk',
+  `parent_id` bigint(20) NOT NULL COMMENT 'parent id',
+  `bill_no` varchar(64) DEFAULT NULL COMMENT 'bill no',
+  `line_no` int DEFAULT NULL COMMENT 'line no',
+  `inventory_id` bigint(20) DEFAULT NULL COMMENT 'inventory id',
+  `material_id` bigint(20) NOT NULL COMMENT 'material id',
+  `material_code` varchar(64) DEFAULT NULL COMMENT 'material code',
+  `material_name` varchar(200) DEFAULT NULL COMMENT 'material name',
+  `speci` varchar(200) DEFAULT NULL COMMENT 'spec',
+  `model` varchar(200) DEFAULT NULL COMMENT 'model',
+  `unit_name` varchar(64) DEFAULT NULL COMMENT 'unit',
+  `qty` decimal(18,4) DEFAULT NULL COMMENT 'qty',
+  `price` decimal(18,6) DEFAULT NULL COMMENT 'price',
+  `amount` decimal(18,2) DEFAULT NULL COMMENT 'amount',
+  `batch_no` varchar(64) DEFAULT NULL COMMENT 'batch no',
+  `produce_date` date DEFAULT NULL COMMENT 'produce date',
+  `expiry_date` date DEFAULT NULL COMMENT 'expiry date',
+  `manufacturer` varchar(200) DEFAULT NULL COMMENT 'manufacturer',
+  `remark` varchar(500) DEFAULT NULL COMMENT 'remark',
+  `del_flag` char(1) DEFAULT '0' COMMENT 'del flag',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT 'tenant',
+  `create_by` varchar(64) DEFAULT NULL COMMENT 'create by',
+  `create_time` datetime DEFAULT NULL COMMENT 'create time',
+  `update_by` varchar(64) DEFAULT NULL COMMENT 'update by',
+  `update_time` datetime DEFAULT NULL COMMENT 'update time',
+  PRIMARY KEY (`id`),
+  KEY `idx_scrap_entry_parent` (`parent_id`),
+  KEY `idx_scrap_entry_material` (`material_id`),
+  KEY `idx_scrap_entry_inventory` (`inventory_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='warehouse scrap bill entry';
 /

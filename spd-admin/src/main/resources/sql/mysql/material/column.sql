@@ -3733,3 +3733,17 @@ SET t.write_off_status = 1,
 WHERE IFNULL(t.reverse_flag, 0) = 0
   AND t.write_off_status = 0;
 /
+-- ========== SCHEMA-GAP 2026-11-07: public-only DDL merge into column.sql ==========
+CALL add_table_column('fd_warehouse', 'inbound_expiry_warn_days', 'int', 'inbound expiry warn days', '60');
+/
+CALL add_table_column('bas_apply_template', 'template_type', 'varchar(10)', 'template type SL/SG', 'SL');
+/
+CALL add_table_column('bas_apply_template_entry', 'warehouse_id', 'bigint', 'warehouse id for SG template', NULL);
+/
+CALL add_table_column('purchase_price_adjust', 'adjust_reason', 'varchar(500)', 'adjust reason', NULL);
+/
+UPDATE bas_apply_template SET template_type = 'SL' WHERE template_type IS NULL OR template_type = '';
+/
+-- ========== WH-X-005 2026-11-07: scrap entry batch_number (生产批号) ==========
+CALL add_table_column('stk_scrap_bill_entry', 'batch_number', 'varchar(64)', 'batch number', NULL);
+/

@@ -496,6 +496,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
         // 仅当请求中带了明细列表且非空时，才同步明细（增量更新）；否则保留原明细，只更新主表
         List<StkIoBillEntry> entryList = stkIoBill.getStkIoBillEntryList();
+        boolean keepAuditedSnapshot = false;
+        StkIoBill auditedSnapshot = null;
         if (stkIoBill.getId() != null) {
             StkIoBill dbBill = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
             if (dbBill != null) {
@@ -504,10 +506,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     if (entryList != null && !entryList.isEmpty()) {
                         throw new ServiceException(stkIoBillDocLabel(dbBill) + "已审核，不能修改明细；如需调整请走退货流程");
                     }
-                    // 防止保存接口把已审核单回写成未审核（否则可重复审核产生重复库存）
-                    stkIoBill.setBillStatus(2);
-                    stkIoBill.setAuditDate(dbBill.getAuditDate());
-                    stkIoBill.setAuditBy(dbBill.getAuditBy());
+                    // 已审：仅允许改非审核态字段；审核态以库为准，禁止客户端回写
+                    keepAuditedSnapshot = true;
+                    auditedSnapshot = dbBill;
                 } else {
                     // 状态未审但已有审核时间/流水（异常态，与出库 WH-X-003 同类）→ 禁止再改
                     assertBillMutableForEdit(dbBill, "修改");
@@ -516,6 +517,13 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     stkIoBill.setBillType(dbBill.getBillType());
                 }
             }
+        }
+        // 未审路径：忽略客户端 billStatus/audit*，避免并发审核后保存把状态打回 1
+        clearClientAuditFieldsForEdit(stkIoBill);
+        if (keepAuditedSnapshot && auditedSnapshot != null) {
+            stkIoBill.setBillStatus(2);
+            stkIoBill.setAuditDate(auditedSnapshot.getAuditDate());
+            stkIoBill.setAuditBy(auditedSnapshot.getAuditBy());
         }
         assertWarehouseEnabledForLowValueInbound(stkIoBill.getWarehouseId(), stkIoBill.getBillType());
         if (entryList != null) {
@@ -530,7 +538,13 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 mergeDeliveryLineMetaFromDb(stkIoBill, entryList);
                 assertInboundDeliveryLineQtyWithinCap(stkIoBill, stkIoBill.getId());
             }
+            // 同步明细前再读：堵住「读时未审、并发已审」窗口
+            if (stkIoBill.getId() != null && !keepAuditedSnapshot) {
+                assertBillMutableForEdit(stkIoBillMapper.selectStkIoBillById(stkIoBill.getId()), "修改");
+            }
             syncStkIoBillEntry(stkIoBill);
+        } else if (stkIoBill.getId() != null && !keepAuditedSnapshot) {
+            assertBillMutableForEdit(stkIoBillMapper.selectStkIoBillById(stkIoBill.getId()), "修改");
         }
         int rows = stkIoBillMapper.updateStkIoBill(stkIoBill);
         if (stkIoBill.getBillType() != null && stkIoBill.getBillType() == 101 && stkIoBill.getSupplerId() != null
@@ -636,6 +650,20 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 "单据「%s」已审核，不能%s；请刷新后查看。如需调整请走退库/退货流程", billNo, act));
         }
         assertBillNotAlreadyStockPosted(existing, act);
+    }
+
+    /**
+     * 修改接口忽略前端传入的审核态字段，避免动态 UPDATE 把 bill_status/audit_* 写脏。
+     */
+    private void clearClientAuditFieldsForEdit(StkIoBill bill)
+    {
+        if (bill == null)
+        {
+            return;
+        }
+        bill.setBillStatus(null);
+        bill.setAuditBy(null);
+        bill.setAuditDate(null);
     }
 
     /**
@@ -2527,6 +2555,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 }
             }
         }
+        // 客户端不得回写审核态：审核成功后未刷新的「保存」若仍带 billStatus=1，会把已审打回待审（WH-X-003 竞态）
+        clearClientAuditFieldsForEdit(stkIoBill);
         List<StkIoBillEntry> entryList = stkIoBill.getStkIoBillEntryList();
         if (entryList != null && !entryList.isEmpty()) {
             assertOutBillEntriesQtyPositive(entryList);
@@ -2545,6 +2575,11 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkIoBill.setBillDate(DateUtils.getNowDate());
         }
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
+        // 写库前再读一次：堵住「先通过 assert、并发审核已落库」窗口
+        if (stkIoBill.getId() != null) {
+            StkIoBill latest = stkIoBillMapper.selectStkIoBillById(stkIoBill.getId());
+            assertBillMutableForEdit(latest, "修改");
+        }
         int filteredCount = syncOutStkIoBillEntry(stkIoBill);
         stkIoBill.setDedupFilteredCount(filteredCount);
         int u = stkIoBillMapper.updateStkIoBill(stkIoBill);
@@ -2660,6 +2695,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                 assertBillMutableForEdit(existing, "修改");
             }
         }
+        clearClientAuditFieldsForEdit(stkIoBill);
         syncBillHeaderSupplerFromUniformEntries(stkIoBill);
         assertReferencedQtyWithinLimits(stkIoBill, stkIoBill.getId());
         // 如果制单日期为空，自动设置为当前日期
@@ -2667,6 +2703,9 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             stkIoBill.setBillDate(DateUtils.getNowDate());
         }
         stkIoBill.setUpdateTime(DateUtils.getNowDate());
+        if (stkIoBill.getId() != null) {
+            assertBillMutableForEdit(stkIoBillMapper.selectStkIoBillById(stkIoBill.getId()), "修改");
+        }
         syncTKStkIoBillEntry(stkIoBill);
         int u = stkIoBillMapper.updateStkIoBill(stkIoBill);
         if (stkIoBill.getDocRefList() != null && !stkIoBill.getDocRefList().isEmpty()) {

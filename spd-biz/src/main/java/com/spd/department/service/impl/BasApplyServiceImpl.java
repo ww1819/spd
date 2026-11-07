@@ -465,6 +465,9 @@ public class BasApplyServiceImpl implements IBasApplyService
         if (existing != null) {
             basApply.setCreateBy(existing.getCreateBy());
             basApply.setCreateTime(existing.getCreateTime());
+            if (existing.getApplyBillStatus() != null && existing.getApplyBillStatus() == 2) {
+                throw new ServiceException("已审核的单据不可修改；请刷新后查看。如需调整请走后续冲回流程");
+            }
         }
         if (billType != null && billType == 1) {
             basApply.setWarehouseId(null);
@@ -473,6 +476,14 @@ public class BasApplyServiceImpl implements IBasApplyService
         basApply.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(basApply.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             basApply.setUpdateBy(SecurityUtils.getUserIdStr());
+        }
+        // 禁止客户端回写审核态（防并发审核后保存把 apply_bill_status 打回未审）
+        basApply.setApplyBillStatus(null);
+        basApply.setAuditBy(null);
+        basApply.setAuditDate(null);
+        BasApply latest = basApplyMapper.selectBasApplyById(basApply.getId());
+        if (latest != null && latest.getApplyBillStatus() != null && latest.getApplyBillStatus() == 2) {
+            throw new ServiceException("已审核的单据不可修改；请刷新后查看。如需调整请走后续冲回流程");
         }
         String deleteBy = SecurityUtils.getUserIdStr();
         basApplyMapper.deleteBasApplyEntryByParenId(basApply.getId(), deleteBy);

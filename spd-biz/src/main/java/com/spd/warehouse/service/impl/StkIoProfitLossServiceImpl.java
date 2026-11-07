@@ -298,6 +298,14 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         }
         stkIoProfitLoss.setUpdateTime(DateUtils.getNowDate());
         stkIoProfitLoss.setUpdateBy(SecurityUtils.getUserIdStr());
+        // 禁止客户端回写审核态（防并发审核后保存打回未审）
+        stkIoProfitLoss.setBillStatus(null);
+        stkIoProfitLoss.setAuditBy(null);
+        stkIoProfitLoss.setAuditDate(null);
+        StkIoProfitLoss latest = stkIoProfitLossMapper.selectStkIoProfitLossById(stkIoProfitLoss.getId());
+        if (latest != null && latest.getBillStatus() != null && latest.getBillStatus() == 2) {
+            throw new ServiceException("已审核的盈亏单不可修改");
+        }
         stkIoProfitLossMapper.deleteStkIoProfitLossEntryByParenId(stkIoProfitLoss.getId(), SecurityUtils.getUserIdStr());
         insertEntries(stkIoProfitLoss);
         return stkIoProfitLossMapper.updateStkIoProfitLoss(stkIoProfitLoss);

@@ -279,6 +279,9 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         if (existing != null) {
             SecurityUtils.ensureTenantAccess(existing.getTenantId());
             assertDepPurchaseDepartmentInUserScope(existing);
+            if (existing.getPurchaseBillStatus() != null && existing.getPurchaseBillStatus() == 2) {
+                throw new ServiceException("已审核的科室申购不可修改；请刷新后查看");
+            }
         }
         if (depPurchaseApply.getDepartmentId() != null) {
             assertDepartmentInUserScope(depPurchaseApply.getDepartmentId());
@@ -296,6 +299,14 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         }
         if (StringUtils.isEmpty(depPurchaseApply.getPurchaseBillNo()) && existing != null) {
             depPurchaseApply.setPurchaseBillNo(existing.getPurchaseBillNo());
+        }
+        // 禁止客户端回写审核态
+        depPurchaseApply.setPurchaseBillStatus(null);
+        depPurchaseApply.setAuditBy(null);
+        depPurchaseApply.setAuditDate(null);
+        DepPurchaseApply latest = depPurchaseApplyMapper.selectDepPurchaseApplyById(depPurchaseApply.getId());
+        if (latest != null && latest.getPurchaseBillStatus() != null && latest.getPurchaseBillStatus() == 2) {
+            throw new ServiceException("已审核的科室申购不可修改；请刷新后查看");
         }
 
         depPurchaseApplyMapper.deleteDepPurchaseApplyEntryByParentId(depPurchaseApply.getId(), com.spd.common.utils.SecurityUtils.getUserIdStr());

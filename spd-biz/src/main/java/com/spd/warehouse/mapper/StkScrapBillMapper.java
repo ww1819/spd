@@ -37,6 +37,8 @@ public interface StkScrapBillMapper {
 
     int batchInsertEntry(@Param("list") List<StkScrapBillEntry> list);
 
+    int updateEntrySnapshot(StkScrapBillEntry entry);
+
     int deleteEntryByParentId(@Param("parentId") Long parentId, @Param("updateBy") String updateBy);
 
     int deleteStkScrapBillById(@Param("id") Long id, @Param("updateBy") String updateBy);

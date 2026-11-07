@@ -130,8 +130,15 @@ public class PurchasePriceAdjustServiceImpl implements IPurchasePriceAdjustServi
         Date now = DateUtils.getNowDate();
         bill.setUpdateBy(uid);
         bill.setUpdateTime(now);
-        // 单号生成后不可改
+        // 单号生成后不可改；审核态禁止客户端回写（防并发审核后保存打回未审）
         bill.setBillNo(existing.getBillNo());
+        bill.setBillStatus(null);
+        bill.setAuditBy(null);
+        bill.setAuditDate(null);
+        PurchasePriceAdjust latest = purchasePriceAdjustMapper.selectPurchasePriceAdjustById(bill.getId());
+        if (latest != null && "2".equals(latest.getBillStatus())) {
+            throw new ServiceException("已审核的调价单不可修改");
+        }
 
         int rows = purchasePriceAdjustMapper.updatePurchasePriceAdjust(bill);
         purchasePriceAdjustMapper.deleteEntryByParentId(bill.getId(), uid);

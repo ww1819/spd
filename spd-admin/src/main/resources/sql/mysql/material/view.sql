@@ -7,6 +7,7 @@
 -- 1) 盈亏单 UNION 已补充：仅统计仓库盈亏（biz_scope 为空或 WH），排除科室盈亏（DEP），避免与仓库 stk_inventory 核对时混入科室数据。
 -- 1b) 仓库盘点（stk_io_stocktaking，audit_adjusts_inventory=1）审核后直接写 t_hc_ck_flow 的 PY/PK，不落 stk_io_profit_loss；
 --     故需单独 UNION，io_type=PD，io/jc 取明细 profit_qty / profit_amount（盘盈为正、盘亏为负），否则月结存「盘点数量」与结存漏计。
+-- 1c) 库房报损（stk_scrap_bill 已审）写 t_hc_ck_flow lx=BS；UNION io_type=BS，io_qty/io_amt 为正（报损发生额），jc 为负（减结存）。
 -- 2) 本视图不按 fd_material.is_gz 过滤；低值仓库维度汇总请用 view_lv_wh_stock_detail_from_jxc 或流水视图 view_lv_wh_stock_flow_detail。
 -- 3) bill_type=501 且单号 DB 开头段落同时承载「仓库调拨」与部分结算/期初类业务，与首段 101/201/301/401 并存；若与实物账不符，请以 t_hc_ck_flow 为准交叉核对。
 -- 4) 科室批量消耗、科室申领出库、科室盈亏（低值科室）等更多影响科室库存的事件见 t_hc_ks_flow / view_lv_dep_stock_flow_detail。
@@ -367,11 +368,67 @@ FROM stk_initial_import sii
          LEFT JOIN fd_unit fu ON fm.unit_id = fu.unit_id
          LEFT JOIN fd_factory ff ON fm.factory_id = ff.factory_id
 WHERE IFNULL(sii.del_flag, 0) = 0
-  AND sii.bill_status = 1;
+  AND sii.bill_status = 1
+UNION ALL
+SELECT CAST(ssb.id AS CHAR) AS mid,
+       CAST(sse.id AS CHAR) AS mxId,
+       ssb.bill_no AS bill_no,
+       ssb.warehouse_id AS warehouse_id,
+       fw.code AS warehouse_code,
+       fw.name AS warehouse_name,
+       COALESCE(ssb.audit_date, ssb.bill_date) AS audit_date,
+       801 AS bill_type,
+       i.supplier_id AS suppler_id,
+       fs.name AS suppler_name,
+       'BS' AS io_type,
+       sse.price AS unit_price,
+       IFNULL(sse.qty, 0) AS io_qty,
+       COALESCE(sse.amount, IFNULL(sse.qty, 0) * IFNULL(sse.price, 0)) AS io_amt,
+       -IFNULL(sse.qty, 0) AS jc_qty,
+       -COALESCE(sse.amount, IFNULL(sse.qty, 0) * IFNULL(sse.price, 0)) AS jc_amt,
+       sse.material_id AS material_id,
+       fm.code AS material_code,
+       fm.name AS material_name,
+       fm.speci AS speci,
+       fm.model AS model,
+       fm.unit_id AS unit_id,
+       fu.unit_name AS unit_name,
+       fm.factory_id AS factory_id,
+       ff.factory_code AS factory_code,
+       ff.factory_name AS factory_name,
+       sse.batch_number AS batch_number,
+       sse.batch_no AS batch_no,
+       sse.produce_date AS begin_time,
+       sse.expiry_date AS end_time,
+       fm.storeroom_id AS storeroom_id,
+       fwc.warehouse_category_code AS warehouse_category_code,
+       fwc.warehouse_category_name AS warehouse_category_name,
+       fm.finance_category_id AS finance_category_id,
+       ffc.finance_category_code AS finance_category_code,
+       ffc.finance_category_name AS finance_category_name,
+       ssb.tenant_id AS tenant_id,
+       'STK_SCRAP_BILL' AS bill_domain,
+       ssb.id AS bill_id,
+       sse.id AS bill_entry_id,
+       CAST(NULL AS CHAR(64)) AS ref_bill_id,
+       CAST(NULL AS CHAR(64)) AS ref_entry_id
+FROM stk_scrap_bill ssb
+         INNER JOIN stk_scrap_bill_entry sse ON ssb.id = sse.parent_id AND IFNULL(sse.del_flag, 0) = 0
+         LEFT JOIN stk_inventory i ON i.id = sse.inventory_id
+         LEFT JOIN fd_warehouse fw ON ssb.warehouse_id = fw.id
+         LEFT JOIN fd_material fm ON sse.material_id = fm.id
+         LEFT JOIN fd_warehouse_category fwc ON fm.storeroom_id = fwc.warehouse_category_id
+         LEFT JOIN fd_finance_category ffc ON fm.finance_category_id = ffc.finance_category_id
+         LEFT JOIN fd_supplier fs ON i.supplier_id = fs.id
+         LEFT JOIN fd_unit fu ON fm.unit_id = fu.unit_id
+         LEFT JOIN fd_factory ff ON fm.factory_id = ff.factory_id
+WHERE IFNULL(ssb.del_flag, 0) = 0
+  AND ssb.bill_status = '2'
+  AND IFNULL(sse.qty, 0) <> 0;
 /
 
 -- ========== 低值耗材：仓库流水明细（与 stk_inventory 变动同源：t_hc_ck_flow）==========
--- qty_signed_wh：按 lx 汇总后应与仓库维度结存变动一致（RK/ZR/PY/QC 增；CK/TH/TK/ZC/PK 减；KSZR 增；KSZC 减）。
+-- qty_signed_wh：按 lx 汇总后应与仓库维度结存变动一致（RK/ZR/PY/QC 增；CK/TH/TK/ZC/PK/BS 减；KSZR 增；KSZC 减）。
 -- 【覆盖边界·非流水直改库存】① 科室盘点审核时 ensureWarehouseQtyZeroInventory 可能 insert/update stk_inventory（多为 qty=0 占位）未必有 ck_flow。
 -- ② 库存档案手工维护（StkInventoryController / StkInventoryServiceImpl）无 ck_flow。③ 若存在独立采购审核入口仅改库存未写流水，亦不在此视图（主流程多为 StkIoBillServiceImpl 审核并写 ck_flow）。
 CREATE OR REPLACE ALGORITHM = UNDEFINED VIEW view_lv_wh_stock_flow_detail AS
@@ -402,6 +459,7 @@ SELECT 'HC_CK' AS src,
             WHEN 'TK' THEN -IFNULL(f.qty, 0)
             WHEN 'ZC' THEN -IFNULL(f.qty, 0)
             WHEN 'PK' THEN -IFNULL(f.qty, 0)
+            WHEN 'BS' THEN -IFNULL(f.qty, 0)
             WHEN 'KSZC' THEN -IFNULL(f.qty, 0)
             ELSE 0
         END) AS qty_signed_wh,

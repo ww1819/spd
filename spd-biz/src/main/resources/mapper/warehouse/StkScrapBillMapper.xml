@@ -42,6 +42,7 @@
         <result property="price" column="price"/>
         <result property="amount" column="amount"/>
         <result property="batchNo" column="batch_no"/>
+        <result property="batchNumber" column="batch_number"/>
         <result property="produceDate" column="produce_date"/>
         <result property="expiryDate" column="expiry_date"/>
         <result property="manufacturer" column="manufacturer"/>
@@ -132,7 +133,7 @@
     <select id="selectEntryListByParentId" parameterType="Long" resultMap="StkScrapBillEntryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         select id, parent_id, bill_no, line_no, inventory_id, material_id, material_code, material_name,
-               speci, model, unit_name, qty, price, amount, batch_no, produce_date, expiry_date,
+               speci, model, unit_name, qty, price, amount, batch_no, batch_number, produce_date, expiry_date,
                manufacturer, remark, del_flag, tenant_id, create_by, create_time, update_by, update_time
         from stk_scrap_bill_entry
         where parent_id = #{parentId}
@@ -189,23 +190,40 @@
             update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
           and (del_flag = '0' or del_flag is null)
+          <if test="billStatus != null and billStatus == '1'">and bill_status = '0'</if>
+          <if test="billStatus != null and billStatus == '2'">and bill_status = '1'</if>
     </update>
 
     <insert id="batchInsertEntry">
         insert into stk_scrap_bill_entry (
             parent_id, bill_no, line_no, inventory_id, material_id, material_code, material_name,
-            speci, model, unit_name, qty, price, amount, batch_no, produce_date, expiry_date,
+            speci, model, unit_name, qty, price, amount, batch_no, batch_number, produce_date, expiry_date,
             manufacturer, remark, del_flag, tenant_id, create_by, create_time
         ) values
         <foreach collection="list" item="e" separator=",">
             (
                 #{e.parentId}, #{e.billNo}, #{e.lineNo}, #{e.inventoryId}, #{e.materialId},
                 #{e.materialCode}, #{e.materialName}, #{e.speci}, #{e.model}, #{e.unitName},
-                #{e.qty}, #{e.price}, #{e.amount}, #{e.batchNo}, #{e.produceDate}, #{e.expiryDate},
+                #{e.qty}, #{e.price}, #{e.amount}, #{e.batchNo}, #{e.batchNumber}, #{e.produceDate}, #{e.expiryDate},
                 #{e.manufacturer}, #{e.remark}, #{e.delFlag}, #{e.tenantId}, #{e.createBy}, #{e.createTime}
             )
         </foreach>
     </insert>
+
+    <update id="updateEntrySnapshot" parameterType="com.spd.warehouse.domain.StkScrapBillEntry">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
+        update stk_scrap_bill_entry
+        set batch_no = #{batchNo},
+            batch_number = #{batchNumber},
+            produce_date = #{produceDate},
+            expiry_date = #{expiryDate},
+            manufacturer = #{manufacturer},
+            update_by = #{updateBy},
+            update_time = now()
+        where id = #{id}
+          and tenant_id = #{scopedTenantId}
+          and (del_flag = '0' or del_flag is null)
+    </update>
 
     <update id="deleteEntryByParentId">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
@@ -262,7 +280,13 @@
             and e.speci like concat('%', #{speci}, '%')
         </if>
         <if test="batchNo != null and batchNo != ''">
-            and e.batch_no like concat('%', #{batchNo}, '%')
+            and (
+                e.batch_no like concat('%', #{batchNo}, '%')
+                or ifnull(e.batch_number, '') like concat('%', #{batchNo}, '%')
+            )
+        </if>
+        <if test="batchNumber != null and batchNumber != ''">
+            and e.batch_number like concat('%', #{batchNumber}, '%')
         </if>
         <if test="manufacturer != null and manufacturer != ''">
             and e.manufacturer like concat('%', #{manufacturer}, '%')
@@ -304,7 +328,8 @@
                a.audit_date as auditDate,
                e.material_id as materialId, e.material_code as materialCode, e.material_name as materialName,
                e.speci, e.model, e.unit_name as unitName, e.qty, e.price, e.amount,
-               e.batch_no as batchNo, e.produce_date as produceDate, e.expiry_date as expiryDate,
+               e.batch_no as batchNo, e.batch_number as batchNumber,
+               e.produce_date as produceDate, e.expiry_date as expiryDate,
                e.manufacturer
         from stk_scrap_bill_entry e
         inner join stk_scrap_bill a on a.id = e.parent_id

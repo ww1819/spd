@@ -35,7 +35,10 @@ public class StkScrapQueryVo extends BaseEntity {
     private BigDecimal qty;
     private BigDecimal price;
     private BigDecimal amount;
+    /** 批次号 */
     private String batchNo;
+    /** 批号（生产批号） */
+    private String batchNumber;
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date produceDate;
     @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
@@ -216,6 +219,14 @@ public class StkScrapQueryVo extends BaseEntity {
 
     public void setBatchNo(String batchNo) {
         this.batchNo = batchNo;
+    }
+
+    public String getBatchNumber() {
+        return batchNumber;
+    }
+
+    public void setBatchNumber(String batchNumber) {
+        this.batchNumber = batchNumber;
     }
 
     public Date getProduceDate() {

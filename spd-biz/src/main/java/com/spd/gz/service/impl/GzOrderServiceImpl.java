@@ -294,14 +294,13 @@ public class GzOrderServiceImpl implements IGzOrderService
     {
         gzOrder.setUpdateBy(SecurityUtils.getUserIdStr());
         gzOrder.setUpdateTime(DateUtils.getNowDate());
-        // 未审核(1)：保存时将制单人记为当前登录用户（与界面当前操作人一致）；已审核等不改动制单人/制单时间
-        Integer st = gzOrder.getOrderStatus();
-        if (st == null && gzOrder.getId() != null) {
-            GzOrder existing = gzOrderMapper.selectGzOrderById(gzOrder.getId());
-            if (existing != null) {
-                st = existing.getOrderStatus();
-            }
+        GzOrder existing = gzOrder.getId() != null ? gzOrderMapper.selectGzOrderById(gzOrder.getId()) : null;
+        if (existing != null && existing.getOrderStatus() != null && existing.getOrderStatus() == 2) {
+            throw new ServiceException(String.format("单据 %s 已审核，不能修改；请刷新后查看",
+                StringUtils.defaultIfBlank(existing.getOrderNo(), String.valueOf(existing.getId()))));
         }
+        // 未审核(1)：保存时将制单人记为当前登录用户（与界面当前操作人一致）；已审核等不改动制单人/制单时间
+        Integer st = existing != null ? existing.getOrderStatus() : gzOrder.getOrderStatus();
         boolean pending = st != null && Integer.valueOf(1).equals(st);
         if (pending) {
             gzOrder.setCreateBy(SecurityUtils.getUserIdStr());
@@ -309,6 +308,17 @@ public class GzOrderServiceImpl implements IGzOrderService
             gzOrder.setCreateBy(null);
         }
         gzOrder.setCreateTime(null);
+        // 禁止客户端回写审核态（防并发审核后保存把 order_status 打回 1）
+        gzOrder.setOrderStatus(null);
+        gzOrder.setAuditBy(null);
+        gzOrder.setAuditDate(null);
+        if (gzOrder.getId() != null) {
+            GzOrder latest = gzOrderMapper.selectGzOrderById(gzOrder.getId());
+            if (latest != null && latest.getOrderStatus() != null && latest.getOrderStatus() == 2) {
+                throw new ServiceException(String.format("单据 %s 已审核，不能修改；请刷新后查看",
+                    StringUtils.defaultIfBlank(latest.getOrderNo(), String.valueOf(latest.getId()))));
+            }
+        }
         MasterDetailValidateUtil.assertEntryListNotEmpty(gzOrder.getGzOrderEntryList(), gzOrderDocLabel(gzOrder));
         assertWarehouseEnabledForStockInbound(gzOrder);
         syncGzOrderEntry(gzOrder);

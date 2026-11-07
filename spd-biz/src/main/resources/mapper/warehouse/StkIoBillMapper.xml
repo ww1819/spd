@@ -2442,6 +2442,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('DBC') then vsadj.io_amt else 0 end) as dbc_amt
         ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('PD') then vsadj.io_qty else 0 end) as pd_qty
         ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('PD') then vsadj.io_amt else 0 end) as pd_amt
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('BS') then vsadj.io_qty else 0 end) as bs_qty
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('BS') then vsadj.io_amt else 0 end) as bs_amt
         ,sum(vsadj.jc_qty) as jc_qty
         ,sum(vsadj.jc_amt) as jc_amt
         FROM
@@ -2561,6 +2563,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('DBC') then vsadj.io_amt else 0 end) as dbc_amt
         ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('PD') then vsadj.io_qty else 0 end) as pd_qty
         ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('PD') then vsadj.io_amt else 0 end) as pd_amt
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('BS') then vsadj.io_qty else 0 end) as bs_qty
+        ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('BS') then vsadj.io_amt else 0 end) as bs_amt
         ,sum(vsadj.jc_qty) as jc_qty
         ,sum(vsadj.jc_amt) as jc_amt
         FROM
@@ -2605,6 +2609,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         ,IFNULL(SUM(t.dbc_amt), 0) AS dbc_amt
         ,IFNULL(SUM(t.pd_qty), 0) AS pd_qty
         ,IFNULL(SUM(t.pd_amt), 0) AS pd_amt
+        ,IFNULL(SUM(t.bs_qty), 0) AS bs_qty
+        ,IFNULL(SUM(t.bs_amt), 0) AS bs_amt
         ,IFNULL(SUM(t.jc_qty), 0) AS jc_qty
         ,IFNULL(SUM(t.jc_amt), 0) AS jc_amt
         FROM (
@@ -2623,6 +2629,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('DBC') then vsadj.io_amt else 0 end) as dbc_amt
             ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('PD') then vsadj.io_qty else 0 end) as pd_qty
             ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('PD') then vsadj.io_amt else 0 end) as pd_amt
+            ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('BS') then vsadj.io_qty else 0 end) as bs_qty
+            ,sum(case when vsadj.audit_date >= #{beginDate} and vsadj.io_type in ('BS') then vsadj.io_amt else 0 end) as bs_amt
             ,sum(vsadj.jc_qty) as jc_qty
             ,sum(vsadj.jc_amt) as jc_amt
             FROM
