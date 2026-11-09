@@ -1790,9 +1790,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type = 501 and stk.bill_no not like 'JS%' and stk.tenant_id = #{scopedTenantId}
             <if test="warehouseId != null "> and stk.department_id = #{warehouseId}</if>
             union
-            -- 盘点：直改库存时数量/金额取盈亏数（profit_*）；账面 qty 盘盈常为 0，不能当发生额
-            select a.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, a.stock_no billNo, a.stock_date billDate,
-                    a.stock_type billType,
+            -- 盘点：报表类型固定 502（与字典「盘点」一致；勿用 stock_type=501，会与调拨冲突并显示成「期初」）
+            -- 直改库存时取盈亏数 profit_*（盘盈正、盘亏负）
+            select a.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, a.stock_no billNo,
+                    COALESCE(a.audit_date, a.stock_date) billDate,
+                    502 billType,
                     (case when IFNULL(a.audit_adjusts_inventory, 0) = 1 then IFNULL(b.profit_qty, 0) else IFNULL(b.qty, 0) end) materialQty,
                     COALESCE(b.unit_price, b.price) price,
                     (case when IFNULL(a.audit_adjusts_inventory, 0) = 1 then IFNULL(b.profit_amount, 0) else IFNULL(b.amt, 0) end) materialAmt,
@@ -1810,7 +1812,56 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             left join fd_unit u on u.unit_id = m.unit_id
             left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
             where a.del_flag != 1 and a.stock_status = 2 and a.tenant_id = #{scopedTenantId}
+              and a.warehouse_id is not null
               and (IFNULL(a.audit_adjusts_inventory, 0) = 0 or IFNULL(b.profit_qty, 0) &lt;&gt; 0)
+            <if test="warehouseId != null "> and a.warehouse_id = #{warehouseId}</if>
+            union
+            -- 报损：类型 801；数量/金额为负（与出库列示一致，减结存）
+            select b.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, b.bill_no billNo,
+                    COALESCE(b.audit_date, b.bill_date) billDate,
+                    801 billType,
+                    -abs(IFNULL(e.qty, 0)) materialQty,
+                    e.price price,
+                    -abs(IFNULL(e.amount, 0)) materialAmt,
+                    e.batch_no batchNo, e.batch_number batchNumber, e.produce_date beginTime,
+                    e.expiry_date endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
+                    COALESCE(e.manufacturer, f.factory_name) factoryName,fc.finance_category_name financeCategoryName,
+                    CAST(NULL AS CHAR) departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
+            from stk_scrap_bill b
+            inner join stk_scrap_bill_entry e on e.parent_id = b.id and (e.del_flag = '0' or e.del_flag is null)
+            left join stk_inventory i on i.id = e.inventory_id
+            left join fd_warehouse w on b.warehouse_id = w.id
+            left join fd_material m on e.material_id = m.id
+            left join fd_supplier s on s.id = COALESCE(i.supplier_id, m.supplier_id)
+            left join fd_factory f on f.factory_id = m.factory_id
+            left join fd_unit u on u.unit_id = m.unit_id
+            left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+            where (b.del_flag = '0' or b.del_flag is null) and b.bill_status = '2' and b.tenant_id = #{scopedTenantId}
+              and IFNULL(e.qty, 0) &lt;&gt; 0
+            <if test="warehouseId != null "> and b.warehouse_id = #{warehouseId}</if>
+            union
+            -- 期初导入：类型 701
+            select CRC32(CONCAT(IFNULL(sii.id,''), '-', IFNULL(sie.id,''))) id,
+                    m.code materialCode,m.name materialName, m.referred_name materialReferredName, sii.bill_no billNo,
+                    COALESCE(sii.audit_time, sii.stock_gen_time, sii.create_time) billDate,
+                    701 billType,
+                    abs(IFNULL(sie.qty, 0)) materialQty,
+                    sie.unit_price price,
+                    abs(COALESCE(sie.amt, IFNULL(sie.qty, 0) * IFNULL(sie.unit_price, 0))) materialAmt,
+                    sie.batch_no batchNo, sie.batch_number batchNumber, sie.begin_time beginTime,
+                    sie.end_time endTime,m.speci materialSpeci,m.model materialModel,u.unit_name unitName,
+                    f.factory_name factoryName,fc.finance_category_name financeCategoryName,
+                    CAST(NULL AS CHAR) departmentName, w.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
+            from stk_initial_import sii
+            inner join stk_initial_import_entry sie on sii.id = sie.paren_id and IFNULL(sie.del_flag, 0) = 0
+            left join fd_warehouse w on COALESCE(sie.warehouse_id, sii.warehouse_id) = w.id
+            left join fd_material m on sie.material_id = m.id
+            left join fd_supplier s on s.id = sie.supplier_id
+            left join fd_factory f on f.factory_id = m.factory_id
+            left join fd_unit u on u.unit_id = m.unit_id
+            left join fd_finance_category fc on fc.finance_category_id = m.finance_category_id
+            where IFNULL(sii.del_flag, 0) = 0 and sii.bill_status = 1 and sii.tenant_id = #{scopedTenantId}
+            <if test="warehouseId != null "> and COALESCE(sie.warehouse_id, sii.warehouse_id) = #{warehouseId}</if>
         ) t
         <where>
             <if test="billNo != null  and billNo != ''"> and billNo like concat('%', #{billNo}, '%')</if>
@@ -1896,8 +1947,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             where stk.del_flag != 1 and stk.bill_status = 2 and stk.bill_type = 501 and stk.bill_no not like 'JS%' and stk.tenant_id = #{scopedTenantId}
             <if test="warehouseId != null "> and stk.department_id = #{warehouseId}</if>
             union all
-            select a.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, a.stock_no billNo, a.stock_date billDate,
-                    a.stock_type billType,
+            select a.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, a.stock_no billNo,
+                    COALESCE(a.audit_date, a.stock_date) billDate,
+                    502 billType,
                     (case when IFNULL(a.audit_adjusts_inventory, 0) = 1 then IFNULL(b.profit_qty, 0) else IFNULL(b.qty, 0) end) materialQty,
                     (case when IFNULL(a.audit_adjusts_inventory, 0) = 1 then IFNULL(b.profit_amount, 0) else IFNULL(b.amt, 0) end) materialAmt,
                     m.speci materialSpeci,m.model materialModel,w.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
@@ -1907,7 +1959,40 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             left join fd_material m on b.material_id = m.id
             left join fd_supplier s on s.id = COALESCE(b.supplier_id, m.supplier_id)
             where a.del_flag != 1 and a.stock_status = 2 and a.tenant_id = #{scopedTenantId}
+              and a.warehouse_id is not null
               and (IFNULL(a.audit_adjusts_inventory, 0) = 0 or IFNULL(b.profit_qty, 0) &lt;&gt; 0)
+            <if test="warehouseId != null "> and a.warehouse_id = #{warehouseId}</if>
+            union all
+            select b.id,m.code materialCode,m.name materialName, m.referred_name materialReferredName, b.bill_no billNo,
+                    COALESCE(b.audit_date, b.bill_date) billDate,
+                    801 billType,
+                    -abs(IFNULL(e.qty, 0)) materialQty,
+                    -abs(IFNULL(e.amount, 0)) materialAmt,
+                    m.speci materialSpeci,m.model materialModel,w.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
+            from stk_scrap_bill b
+            inner join stk_scrap_bill_entry e on e.parent_id = b.id and (e.del_flag = '0' or e.del_flag is null)
+            left join stk_inventory i on i.id = e.inventory_id
+            left join fd_warehouse w on b.warehouse_id = w.id
+            left join fd_material m on e.material_id = m.id
+            left join fd_supplier s on s.id = COALESCE(i.supplier_id, m.supplier_id)
+            where (b.del_flag = '0' or b.del_flag is null) and b.bill_status = '2' and b.tenant_id = #{scopedTenantId}
+              and IFNULL(e.qty, 0) &lt;&gt; 0
+            <if test="warehouseId != null "> and b.warehouse_id = #{warehouseId}</if>
+            union all
+            select CRC32(CONCAT(IFNULL(sii.id,''), '-', IFNULL(sie.id,''))) id,
+                    m.code materialCode,m.name materialName, m.referred_name materialReferredName, sii.bill_no billNo,
+                    COALESCE(sii.audit_time, sii.stock_gen_time, sii.create_time) billDate,
+                    701 billType,
+                    abs(IFNULL(sie.qty, 0)) materialQty,
+                    abs(COALESCE(sie.amt, IFNULL(sie.qty, 0) * IFNULL(sie.unit_price, 0))) materialAmt,
+                    m.speci materialSpeci,m.model materialModel,w.name warehouseName,s.code supplierCode,s.name supplierName,s.referred_code supplierReferredCode
+            from stk_initial_import sii
+            inner join stk_initial_import_entry sie on sii.id = sie.paren_id and IFNULL(sie.del_flag, 0) = 0
+            left join fd_warehouse w on COALESCE(sie.warehouse_id, sii.warehouse_id) = w.id
+            left join fd_material m on sie.material_id = m.id
+            left join fd_supplier s on s.id = sie.supplier_id
+            where IFNULL(sii.del_flag, 0) = 0 and sii.bill_status = 1 and sii.tenant_id = #{scopedTenantId}
+            <if test="warehouseId != null "> and COALESCE(sie.warehouse_id, sii.warehouse_id) = #{warehouseId}</if>
         ) t
         <where>
             <if test="billNo != null  and billNo != ''"> and billNo like concat('%', #{billNo}, '%')</if>
