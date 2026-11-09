@@ -975,11 +975,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
 
     private String resolveChargeItemValueLevel(String tenantId, String chargeItemId, FdMaterial mat)
     {
-        if (mat != null)
-        {
-            return HisMirrorValueLevelSupport.resolveFromMaterial(mat);
-        }
-        return HisMirrorValueLevelSupport.resolveFromMaterial(fdMaterialMapper, tenantId, chargeItemId);
+        // 核销通道以收费项手工标志为准；档案仅用于后续库存匹配，不决定高低值
+        return HisMirrorValueLevelSupport.resolveFromChargeItem(hisChargeItemMirrorMapper, tenantId, chargeItemId);
     }
 
     private int appendPiecesForLine(String tenantId, String fetchBatchId, String visitKind, String mirrorRowId,

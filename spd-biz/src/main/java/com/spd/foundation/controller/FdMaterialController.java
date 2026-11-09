@@ -348,7 +348,7 @@ public class FdMaterialController extends BaseController
     }
 
     /**
-     * 维护收费项目高低值属性（1高值 2低值）
+     * 维护收费项目高低值属性（1高值 2低值 0未设置）；改后仅重算待核销统一镜像。
      */
     @PreAuthorize("@ss.hasPermi('foundation:material:edit') or @ss.hasPermi('foundation:chargeItem:edit')")
     @Log(title = "维护收费项目高低值属性", businessType = BusinessType.UPDATE)
@@ -365,9 +365,9 @@ public class FdMaterialController extends BaseController
         {
             return error("chargeItemId 不能为空");
         }
-        if (!"1".equals(valueLevel) && !"2".equals(valueLevel))
+        if (!"1".equals(valueLevel) && !"2".equals(valueLevel) && !"0".equals(valueLevel))
         {
-            return error("valueLevel 仅支持 1(高值) 或 2(低值)");
+            return error("valueLevel 仅支持 1(高值)、2(低值) 或 0(未设置)");
         }
         String tenantId = SecurityUtils.getCustomerId();
         int rows = hisChargeItemMirrorMapper.updateValueLevel(tenantId, chargeItemId, valueLevel);
@@ -382,7 +382,7 @@ public class FdMaterialController extends BaseController
     }
 
     /**
-     * 批量维护收费项目高低值属性（1高值 2低值）
+     * 批量维护收费项目高低值属性（1高值 2低值 0未设置）
      */
     @PreAuthorize("@ss.hasPermi('foundation:material:edit') or @ss.hasPermi('foundation:chargeItem:edit')")
     @Log(title = "批量维护收费项目高低值属性", businessType = BusinessType.UPDATE)
@@ -394,9 +394,9 @@ public class FdMaterialController extends BaseController
             return error("chargeItemIds 和 valueLevel 不能为空");
         }
         String valueLevel = String.valueOf(body.get("valueLevel")).trim();
-        if (!"1".equals(valueLevel) && !"2".equals(valueLevel))
+        if (!"1".equals(valueLevel) && !"2".equals(valueLevel) && !"0".equals(valueLevel))
         {
-            return error("valueLevel 仅支持 1(高值) 或 2(低值)");
+            return error("valueLevel 仅支持 1(高值)、2(低值) 或 0(未设置)");
         }
         Object idsObj = body.get("chargeItemIds");
         if (!(idsObj instanceof List))
@@ -448,7 +448,20 @@ public class FdMaterialController extends BaseController
     }
 
     /**
-     * 将产品档案 is_gz 同步到已对照 HIS 收费项目的 value_level（1高值 2低值）
+     * 按收费项手工标志重算本租户待核销费用明细高低值（已核销/已退费不改）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:edit') or @ss.hasPermi('foundation:chargeItem:edit')")
+    @Log(title = "重算待核销高低值", businessType = BusinessType.UPDATE)
+    @PostMapping("/hisChargeItem/valueLevel/recalcPending")
+    public AjaxResult recalcPendingUnifiedValueLevels()
+    {
+        String tenantId = SecurityUtils.getCustomerId();
+        int n = fdMaterialService.recalcPendingUnifiedValueLevels(tenantId);
+        return success("已按收费项标志重算待核销 " + n + " 行（已核销冻结）");
+    }
+
+    /**
+     * 将产品档案 is_gz 同步到已对照 HIS 收费项目的 value_level（显式工具；日常以手工维护为准）
      */
     @PreAuthorize("@ss.hasPermi('foundation:material:edit') or @ss.hasPermi('foundation:chargeItem:edit')")
     @Log(title = "同步产品档案高低值到收费项目", businessType = BusinessType.UPDATE)

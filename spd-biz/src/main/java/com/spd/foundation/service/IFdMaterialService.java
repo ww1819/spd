@@ -79,9 +79,15 @@ public interface IFdMaterialService
     int clearMaterialHisChargeItem(Long materialId);
 
     /**
-     * 异步按收费编码刷新统一计费镜像 value_level（key=chargeItemId, value=1高值/2低值）
+     * 异步按收费编码刷新统一计费镜像 value_level（仅 PENDING；key=chargeItemId, value=1/2/0）
      */
     void scheduleRefreshUnifiedValueLevels(String tenantId, Map<String, String> chargeItemToLevel);
+
+    /**
+     * 按收费项手工标志重算本租户全部待核销统一镜像 value_level（已核销冻结）
+     * @return 更新行数
+     */
+    int recalcPendingUnifiedValueLevels(String tenantId);
 
     /**
      * 批量删除耗材产品

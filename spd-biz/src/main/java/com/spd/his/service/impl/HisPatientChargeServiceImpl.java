@@ -446,8 +446,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                 {
                     continue;
                 }
-                String level = HisMirrorValueLevelSupport.resolveFromMaterial(
-                    fdMaterialMapper, tenantId, row.getChargeItemId());
+                String level = resolveChargeItemValueLevel(tenantId, row.getChargeItemId(), row.getValueLevel());
                 if (!isLowValueMirrorRow(level))
                 {
                     continue;
@@ -479,8 +478,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                 {
                     continue;
                 }
-                String level = HisMirrorValueLevelSupport.resolveFromMaterial(
-                    fdMaterialMapper, tenantId, row.getChargeItemId());
+                String level = resolveChargeItemValueLevel(tenantId, row.getChargeItemId(), row.getValueLevel());
                 if (!isLowValueMirrorRow(level))
                 {
                     continue;
@@ -553,6 +551,17 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     private static boolean isLowValueMirrorRow(String valueLevel)
     {
         return HisMirrorValueLevelSupport.isLowValue(valueLevel);
+    }
+
+    /** 自动核销：优先用镜像联表收费项标志，否则查收费项；未设置/高值均不自动低值核销 */
+    private String resolveChargeItemValueLevel(String tenantId, String chargeItemId, String joinedLevel)
+    {
+        String fromJoin = HisMirrorValueLevelSupport.normalizeToCanonical(joinedLevel);
+        if (!HisMirrorValueLevelSupport.isUnknown(fromJoin))
+        {
+            return fromJoin;
+        }
+        return HisMirrorValueLevelSupport.resolveFromChargeItem(hisChargeItemMirrorMapper, tenantId, chargeItemId);
     }
 
     /**
@@ -2092,12 +2101,44 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         hisPatientChargeMirrorUnifiedMapper.insertBatch(list);
     }
 
-    /** 入库前补齐 value_level（以耗材档案 is_gz 为准） */
+    /** 入库前补齐 value_level（以收费项手工维护为准；未维护→0） */
     private void enrichUnifiedValueLevel(String tenantId, List<HisPatientChargeMirrorUnified> list)
     {
         if (list == null || list.isEmpty() || StringUtils.isEmpty(tenantId))
         {
             return;
+        }
+        Set<String> ids = new HashSet<>();
+        for (HisPatientChargeMirrorUnified m : list)
+        {
+            if (m == null)
+            {
+                continue;
+            }
+            String cid = HisPatientChargeMirrorUnifiedSupport.normalizeChargeItemId(m.getChargeItemId());
+            m.setChargeItemId(cid);
+            if (StringUtils.isNotEmpty(cid))
+            {
+                ids.add(cid);
+            }
+        }
+        Map<String, String> levelByCid = new HashMap<>();
+        if (!ids.isEmpty())
+        {
+            List<HisChargeItemMirror> rows = hisChargeItemMirrorMapper.selectValueLevelsByChargeItemIds(
+                tenantId, new ArrayList<>(ids));
+            if (rows != null)
+            {
+                for (HisChargeItemMirror r : rows)
+                {
+                    if (r == null || StringUtils.isEmpty(r.getChargeItemId()))
+                    {
+                        continue;
+                    }
+                    levelByCid.put(r.getChargeItemId().trim(),
+                        HisMirrorValueLevelSupport.normalizeToCanonical(r.getValueLevel()));
+                }
+            }
         }
         for (HisPatientChargeMirrorUnified m : list)
         {
@@ -2105,8 +2146,10 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             {
                 continue;
             }
-            m.setChargeItemId(HisPatientChargeMirrorUnifiedSupport.normalizeChargeItemId(m.getChargeItemId()));
-            m.setValueLevel(HisMirrorValueLevelSupport.resolveFromMaterial(fdMaterialMapper, tenantId, m.getChargeItemId()));
+            String cid = m.getChargeItemId();
+            String level = StringUtils.isEmpty(cid) ? HisMirrorValueLevelSupport.LEVEL_UNKNOWN
+                : levelByCid.getOrDefault(cid, HisMirrorValueLevelSupport.LEVEL_UNKNOWN);
+            m.setValueLevel(level);
         }
     }
 

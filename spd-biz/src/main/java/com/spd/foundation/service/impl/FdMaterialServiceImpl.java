@@ -443,12 +443,8 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         if (StringUtils.isEmpty(fdMaterial.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdMaterial.setCreateBy(SecurityUtils.getUserIdStr());
         }
-        int rows = fdMaterialMapper.insertFdMaterial(fdMaterial);
-        if (rows > 0)
-        {
-            syncHisChargeItemValueLevelFromMaterial(null, fdMaterial);
-        }
-        return rows;
+        // 高低值以收费项手工维护为准：新增档案不静默回写收费项标志
+        return fdMaterialMapper.insertFdMaterial(fdMaterial);
     }
 
     /**
@@ -637,16 +633,13 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             saveChangeLogs(fdMaterial.getId(), oldMaterial, fdMaterial, now, operator);
         }
         int rows = fdMaterialMapper.updateFdMaterial(fdMaterial);
-        if (rows > 0)
-        {
-            syncHisChargeItemValueLevelFromMaterial(oldMaterial, fdMaterial);
-        }
+        // 高低值以收费项手工维护为准：档案保存不再静默回写 his_charge_item_mirror.value_level
         return rows;
     }
 
     /**
-     * 衡水三院：按收费编码汇总档案高低值后写收费项/统一计费镜像。
-     * 规则与提取入库一致：同编码下任一未删档案 is_gz=1 → 高值，否则低值（避免单条低值覆盖其它高值档案）。
+     * 显式「档案同步到收费项」工具：按收费编码汇总档案 is_gz 后写收费项，并仅刷新 PENDING 统一镜像。
+     * 档案日常增改/绑定不再调用（避免覆盖手工标志）。
      */
     private void syncHisChargeItemValueLevelFromMaterial(FdMaterial before, FdMaterial after)
     {
@@ -663,7 +656,6 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
         String afterCid = StringUtils.trimToNull(after.getHisChargeItemId());
         String beforeCid = before != null ? StringUtils.trimToNull(before.getHisChargeItemId()) : null;
-        // 对照变更时：新旧收费编码都要按库内档案重算，防止旧编码残留高值或新编码未刷上
         if (StringUtils.isNotEmpty(afterCid))
         {
             refreshChargeItemValueLevelByMaterials(tenantId, afterCid, after.getId());
@@ -674,7 +666,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
     }
 
-    /** 按收费编码查库汇总 is_gz 后写镜像（收费项同步 + 统一计费异步） */
+    /** 按收费编码查库汇总 is_gz 后写镜像（仅显式同步接口；统一计费只刷 PENDING） */
     private void refreshChargeItemValueLevelByMaterials(String tenantId, String chargeItemId, Long materialIdForLog)
     {
         String cid = StringUtils.trimToNull(chargeItemId);
@@ -707,8 +699,18 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         scheduleRefreshUnifiedValueLevels(tenantId, one);
     }
 
+    @Override
+    public int recalcPendingUnifiedValueLevels(String tenantId)
+    {
+        if (StringUtils.isEmpty(tenantId))
+        {
+            return 0;
+        }
+        return hisPatientChargeMirrorUnifiedMapper.refreshAllValueLevelsForTenant(tenantId);
+    }
+
     /**
-     * 异步按收费编码刷新统一计费镜像 value_level（绑定/同步后调用，请求内不刷大表）。
+     * 异步按收费编码刷新统一计费镜像 value_level（仅 PENDING；请求内不刷大表）。
      */
     @Override
     public void scheduleRefreshUnifiedValueLevels(String tenantId, Map<String, String> chargeItemToLevel)
@@ -736,6 +738,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         {
             return;
         }
+        // 仅刷 PENDING_CONSUME（mapper 内限制）；已核销/已退费冻结
         Runnable task = () -> {
             for (Map.Entry<String, String> e : snapshot.entrySet())
             {
@@ -745,7 +748,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
                         tenantId, e.getKey(), e.getValue());
                     if (n <= 0)
                     {
-                        log.info("异步刷新计费镜像高低值：无匹配行 tenantId={} chargeItemId={} valueLevel={}",
+                        log.info("异步刷新计费镜像高低值：无待核销匹配行 tenantId={} chargeItemId={} valueLevel={}",
                             tenantId, e.getKey(), e.getValue());
                     }
                 }
@@ -793,18 +796,8 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         {
             throw new ServiceException("当前租户未启用 HIS 收费项目对照");
         }
-        // 只写对照字段，与解绑同路径。高低值按档案 is_gz 异步刷冗余列（请求内不刷大表）
-        int rows = fdMaterialMapper.bindHisChargeItemIdByMaterialId(materialId, cid, SecurityUtils.getUserIdStr());
-        if (rows > 0)
-        {
-            FdMaterial bound = new FdMaterial();
-            bound.setId(material.getId());
-            bound.setTenantId(material.getTenantId());
-            bound.setHisChargeItemId(cid);
-            bound.setIsGz(material.getIsGz());
-            syncHisChargeItemValueLevelFromMaterial(material, bound);
-        }
-        return rows;
+        // 只写对照字段；高低值不因绑定静默改写（手工维护收费项为准）
+        return fdMaterialMapper.bindHisChargeItemIdByMaterialId(materialId, cid, SecurityUtils.getUserIdStr());
     }
 
     @Override

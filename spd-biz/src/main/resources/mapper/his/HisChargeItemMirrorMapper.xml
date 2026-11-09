@@ -38,8 +38,11 @@
         <if test="referredCode != null and referredCode != ''">
             and referred_code like concat('%', #{referredCode}, '%')
         </if>
-        <if test="valueLevel != null and valueLevel != ''">
+        <if test="valueLevel != null and valueLevel != '' and valueLevel != '0' and valueLevel != 'UNSET'">
             and value_level = #{valueLevel}
+        </if>
+        <if test="valueLevel != null and (valueLevel == '0' or valueLevel == 'UNSET')">
+            and (value_level is null or trim(value_level) = '' or value_level = '0')
         </if>
         <if test="speci != null and speci != ''">
             and spec_model like concat('%', #{speci}, '%')
@@ -118,7 +121,7 @@
         <foreach collection="rows" item="r" separator=",">
             (
                 #{r.tenantId}, #{r.chargeItemId}, #{r.itemCode}, #{r.itemName}, #{r.itemType}, #{r.consumableType},
-                #{r.specModel}, #{r.unit}, #{r.price}, #{r.manufacturer}, #{r.registerNo}, #{r.isActive}, #{r.referredCode}, '2',
+                #{r.specModel}, #{r.unit}, #{r.price}, #{r.manufacturer}, #{r.registerNo}, #{r.isActive}, #{r.referredCode}, '0',
                 #{r.hisCreateTime}, #{r.hisUpdateTime}, 0, now(), now()
             )
         </foreach>
@@ -138,6 +141,7 @@
             his_update_time = values(his_update_time),
             deleted_flag = 0,
             update_time = now()
+            /* value_level 手工维护，抓取同步不覆盖 */
     </insert>
 
     <select id="selectValueLevelsByChargeItemIds" resultType="com.spd.his.domain.HisChargeItemMirror">

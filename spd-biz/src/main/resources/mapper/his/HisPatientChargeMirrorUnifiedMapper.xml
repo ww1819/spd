@@ -32,11 +32,15 @@
     </sql>
 
     <!--
-      列表高低值：直接用冗余列 m.value_level（入库/绑定/refreshAllValueLevelsForTenant 维护）。
-      禁止再 left join fd_material 派生表 + trim()，否则 list+count 易超 2s。
+      列表高低值：直接用冗余列 m.value_level（入库/收费项维护/仅 PENDING 刷新）。
+      1高值 2低值；空/0=未设置。禁止再 join fd_material 派生。
     -->
     <sql id="resolvedValueLevelExpr">
-        ifnull(nullif(trim(m.value_level), ''), '2')
+        case
+            when nullif(trim(m.value_level), '') = '1' then '1'
+            when nullif(trim(m.value_level), '') = '2' then '2'
+            else '0'
+        end
     </sql>
 
     <sql id="unifiedListFrom">
@@ -180,10 +184,13 @@
         <if test="beginProcessTime != null"> and m.process_time &gt;= #{beginProcessTime}</if>
         <if test="endProcessTime != null"> and m.process_time &lt;= #{endProcessTime}</if>
         <if test="chargeListMode != null and chargeListMode == 'HIGH'"> and m.value_level = '1'</if>
-        <if test="chargeListMode != null and chargeListMode == 'LOW'"> and (m.value_level is null or m.value_level &lt;&gt; '1')</if>
+        <if test="chargeListMode != null and chargeListMode == 'LOW'"> and m.value_level = '2'</if>
         <if test="chargeListMode == null or chargeListMode == ''">
             <if test='valueLevel != null and valueLevel.toString() == "1"'> and m.value_level = '1'</if>
-            <if test='valueLevel != null and valueLevel.toString() == "2"'> and (m.value_level is null or m.value_level &lt;&gt; '1')</if>
+            <if test='valueLevel != null and valueLevel.toString() == "2"'> and m.value_level = '2'</if>
+            <if test='valueLevel != null and (valueLevel.toString() == "0" or valueLevel.toString() == "UNSET")'>
+                and (m.value_level is null or trim(m.value_level) = '' or m.value_level = '0')
+            </if>
         </if>
         <if test="valueLevelIn != null and valueLevelIn.size() &gt; 0">
             and (<include refid="resolvedValueLevelExpr"/>) in
@@ -352,7 +359,11 @@
             ),
             m.quantity, m.unit_price, m.total_amount, m.charge_operator, null, null, m.remark, m.row_fingerprint,
             m.process_status, m.process_type, m.process_time, m.process_by,
-            ifnull(cim.value_level, '2'),
+            case
+                when nullif(trim(cim.value_level), '') = '1' then '1'
+                when nullif(trim(cim.value_level), '') = '2' then '2'
+                else '0'
+            end,
             m.create_by, m.create_time, m.update_by, m.update_time
         from his_inpatient_charge_mirror m
         left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
@@ -387,7 +398,11 @@
             ),
             m.quantity, m.unit_price, m.total_amount, m.charge_operator, m.payment_type, m.receipt_no, m.remark, m.row_fingerprint,
             m.process_status, m.process_type, m.process_time, m.process_by,
-            ifnull(cim.value_level, '2'),
+            case
+                when nullif(trim(cim.value_level), '') = '1' then '1'
+                when nullif(trim(cim.value_level), '') = '2' then '2'
+                else '0'
+            end,
             m.create_by, m.create_time, m.update_by, m.update_time
         from his_outpatient_charge_mirror m
         left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
@@ -587,40 +602,33 @@
         </choose>
     </sql>
 
-    <!-- trim 两侧：兼容历史空格；Java 侧已 trim 入参。等值 OR trim 等值，尽量仍能命中 charge_item_id 索引 -->
+    <!-- 仅重算待核销；已核销/已退费冻结。trim 两侧兼容历史空格。 -->
     <update id="refreshValueLevelByChargeItemId">
         update his_patient_charge_mirror_unified
         set value_level = #{valueLevel},
             update_time = now()
         where tenant_id = #{tenantId}
+          and process_status = 'PENDING_CONSUME'
           and (
                 charge_item_id = #{chargeItemId}
              or trim(charge_item_id) = #{chargeItemId}
           )
     </update>
 
+    <!-- 历史 PENDING 按收费项手工标志重算；已核销不动。未维护→0。等值联表避免 TRIM 全表扫。 -->
     <update id="refreshAllValueLevelsForTenant">
         update his_patient_charge_mirror_unified u
-        left join (
-            select distinct fm.tenant_id as tenant_id, trim(fm.his_charge_item_id) as charge_item_id
-            from fd_material fm
-            where fm.tenant_id = #{tenantId}
-              and (fm.del_flag = 0 or fm.del_flag is null)
-              and trim(fm.is_gz) = '1'
-              and fm.his_charge_item_id is not null
-              and trim(fm.his_charge_item_id) != ''
-        ) hf on hf.tenant_id = u.tenant_id and hf.charge_item_id = trim(u.charge_item_id)
-        left join (
-            select distinct cim.tenant_id as tenant_id, trim(cim.charge_item_id) as charge_item_id
-            from his_charge_item_mirror cim
-            where cim.tenant_id = #{tenantId}
-              and (cim.deleted_flag is null or cim.deleted_flag != 1)
-              and cim.value_level = '1'
-              and cim.charge_item_id is not null
-              and trim(cim.charge_item_id) != ''
-        ) hcf on hcf.tenant_id = u.tenant_id and hcf.charge_item_id = trim(u.charge_item_id)
-        set u.value_level = case when hf.charge_item_id is not null or hcf.charge_item_id is not null then '1' else '2' end,
+        left join his_charge_item_mirror cim
+          on cim.tenant_id = u.tenant_id
+         and cim.charge_item_id = u.charge_item_id
+         and (cim.deleted_flag is null or cim.deleted_flag != 1)
+        set u.value_level = case
+                when nullif(trim(cim.value_level), '') = '1' then '1'
+                when nullif(trim(cim.value_level), '') = '2' then '2'
+                else '0'
+            end,
             u.update_time = now()
         where u.tenant_id = #{tenantId}
+          and u.process_status = 'PENDING_CONSUME'
     </update>
 </mapper>
