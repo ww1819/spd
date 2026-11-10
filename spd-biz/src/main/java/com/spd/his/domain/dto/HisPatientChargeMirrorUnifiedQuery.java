@@ -40,6 +40,8 @@ public class HisPatientChargeMirrorUnifiedQuery extends BaseEntity
     private String valueLevel;
     /** 高低值 IN 筛选，如高值页传 1,0 */
     private java.util.List<String> valueLevelIn;
+    /** 是否对照耗材档案：Y已对照 N未对照，空=全部 */
+    private String materialBound;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date beginChargeDate;

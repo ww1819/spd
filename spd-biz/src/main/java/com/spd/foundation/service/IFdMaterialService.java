@@ -78,17 +78,27 @@ public interface IFdMaterialService
     /** 清空耗材与 HIS 收费项目对照（仅 his_charge_item_id） */
     int clearMaterialHisChargeItem(Long materialId);
 
+    /** 对照履历：按耗材 / 收费项 / 关键词查询（currentOnly: true当前 false历史 null全部） */
+    java.util.List<com.spd.foundation.domain.FdMaterialHisChargeBind> listMaterialHisChargeBinds(
+        Long materialId, String chargeItemId, Boolean currentOnly,
+        String materialKeyword, String chargeKeyword);
+
     /**
      * 异步按收费编码刷新统一计费镜像 value_level（仅 PENDING；key=chargeItemId, value=1/2/0）
      */
     void scheduleRefreshUnifiedValueLevels(String tenantId, Map<String, String> chargeItemToLevel);
 
     /**
+     * 同步按收费编码刷新待核销统一镜像 value_level（单条维护用，保证保存后列表立即一致）
+     * @return 更新行数
+     */
+    int refreshPendingUnifiedValueLevelNow(String tenantId, String chargeItemId, String valueLevel);
+
+    /**
      * 按收费项手工标志重算本租户全部待核销统一镜像 value_level（已核销冻结）
      * @return 更新行数
      */
     int recalcPendingUnifiedValueLevels(String tenantId);
-
     /**
      * 批量删除耗材产品
      *

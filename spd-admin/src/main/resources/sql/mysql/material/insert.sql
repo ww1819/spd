@@ -88,3 +88,32 @@ SELECT 8, '报损', '801', 'bill_type', '', 'danger', 'N', '0', 'admin', NOW(), 
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM sys_dict_data WHERE dict_type = 'bill_type' AND dict_value = '801');
 /
+
+-- ========== HV-X-003：已有 his_charge_item_id 的耗材回填「当前生效」对照履历（可重复执行）==========
+-- 表结构：material/table.sql → fd_material_his_charge_bind；手工同源：docs/sql/HV-X-003-material-his-charge-bind.sql
+INSERT INTO fd_material_his_charge_bind (
+  id, tenant_id, material_id, charge_item_id,
+  effective_from, effective_to, bind_by, unbind_by, create_time, update_time
+)
+SELECT
+  REPLACE(UUID(), '-', ''),
+  m.tenant_id,
+  m.id,
+  TRIM(m.his_charge_item_id),
+  COALESCE(m.update_time, m.create_time, NOW()),
+  NULL,
+  COALESCE(NULLIF(TRIM(m.update_by), ''), NULLIF(TRIM(m.create_by), ''), 'system'),
+  NULL,
+  NOW(),
+  NOW()
+FROM fd_material m
+WHERE (m.del_flag = 0 OR m.del_flag IS NULL)
+  AND m.his_charge_item_id IS NOT NULL
+  AND TRIM(m.his_charge_item_id) <> ''
+  AND NOT EXISTS (
+    SELECT 1 FROM fd_material_his_charge_bind b
+    WHERE b.tenant_id = m.tenant_id
+      AND b.material_id = m.id
+      AND b.effective_to IS NULL
+  );
+/

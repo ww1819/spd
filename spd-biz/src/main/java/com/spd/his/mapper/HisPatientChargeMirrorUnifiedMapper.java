@@ -32,6 +32,11 @@ public interface HisPatientChargeMirrorUnifiedMapper
         @Param("processSituation") String processSituation,
         @Param("processParty") String processParty);
 
+    /** 待核销落账前冻结收费项当时高低值到行快照 */
+    int freezeValueLevelFromChargeItemByIds(
+        @Param("tenantId") String tenantId,
+        @Param("ids") List<String> ids);
+
     /** 乐观认领：PENDING_CONSUME → CONSUMING */
     int claimMirrorProcessPending(
         @Param("tenantId") String tenantId,

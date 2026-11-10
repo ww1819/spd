@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FdMaterialHisChargeBindMapper">
+
+    <insert id="insert">
+        insert into fd_material_his_charge_bind (
+            id, tenant_id, material_id, charge_item_id,
+            effective_from, effective_to, bind_by, unbind_by, create_time, update_time
+        ) values (
+            #{id}, #{tenantId}, #{materialId}, #{chargeItemId},
+            #{effectiveFrom}, #{effectiveTo}, #{bindBy}, #{unbindBy}, #{createTime}, #{updateTime}
+        )
+    </insert>
+
+    <update id="closeOpenByMaterialId">
+        update fd_material_his_charge_bind
+        set effective_to = #{effectiveTo},
+            unbind_by = #{unbindBy},
+            update_time = #{effectiveTo}
+        where tenant_id = #{tenantId}
+          and material_id = #{materialId}
+          and effective_to is null
+    </update>
+
+    <sql id="selectColumns">
+        b.id, b.tenant_id as tenantId, b.material_id as materialId, b.charge_item_id as chargeItemId,
+        b.effective_from as effectiveFrom, b.effective_to as effectiveTo,
+        b.bind_by as bindBy, b.unbind_by as unbindBy,
+        b.create_time as createTime, b.update_time as updateTime,
+        m.code as materialCode, m.name as materialName,
+        cim.item_code as chargeItemCode, cim.item_name as chargeItemName,
+        case when b.effective_to is null then 'Y' else 'N' end as currentFlag
+    </sql>
+
+    <sql id="fromJoin">
+        from fd_material_his_charge_bind b
+        left join fd_material m on m.id = b.material_id
+        left join his_charge_item_mirror cim
+          on cim.tenant_id = b.tenant_id
+         and cim.charge_item_id = b.charge_item_id
+         and (cim.deleted_flag is null or cim.deleted_flag != 1)
+    </sql>
+
+    <select id="selectByMaterialId" resultType="com.spd.foundation.domain.FdMaterialHisChargeBind">
+        select <include refid="selectColumns"/>
+        <include refid="fromJoin"/>
+        where b.tenant_id = #{tenantId}
+          and b.material_id = #{materialId}
+        <if test="currentOnly != null and currentOnly">
+            and b.effective_to is null
+        </if>
+        order by b.effective_from desc, b.id desc
+    </select>
+
+    <select id="selectByChargeItemId" resultType="com.spd.foundation.domain.FdMaterialHisChargeBind">
+        select <include refid="selectColumns"/>
+        <include refid="fromJoin"/>
+        where b.tenant_id = #{tenantId}
+          and b.charge_item_id = #{chargeItemId}
+        <if test="currentOnly != null and currentOnly">
+            and b.effective_to is null
+        </if>
+        order by b.effective_from desc, b.id desc
+    </select>
+
+    <select id="selectList" resultType="com.spd.foundation.domain.FdMaterialHisChargeBind">
+        select <include refid="selectColumns"/>
+        <include refid="fromJoin"/>
+        where b.tenant_id = #{tenantId}
+        <if test="materialId != null">
+            and b.material_id = #{materialId}
+        </if>
+        <if test="chargeItemId != null and chargeItemId != ''">
+            and b.charge_item_id = #{chargeItemId}
+        </if>
+        <if test="currentOnly != null and currentOnly == true">
+            and b.effective_to is null
+        </if>
+        <if test="currentOnly != null and currentOnly == false">
+            and b.effective_to is not null
+        </if>
+        <if test="materialKeyword != null and materialKeyword != ''">
+            and (
+                ifnull(m.code, '') like concat('%', #{materialKeyword}, '%')
+                or ifnull(m.name, '') like concat('%', #{materialKeyword}, '%')
+                or cast(b.material_id as char) = #{materialKeyword}
+            )
+        </if>
+        <if test="chargeKeyword != null and chargeKeyword != ''">
+            and (
+                b.charge_item_id like concat('%', #{chargeKeyword}, '%')
+                or ifnull(cim.item_code, '') like concat('%', #{chargeKeyword}, '%')
+                or ifnull(cim.item_name, '') like concat('%', #{chargeKeyword}, '%')
+            )
+        </if>
+        order by b.effective_from desc, b.id desc
+    </select>
+</mapper>

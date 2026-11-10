@@ -446,7 +446,8 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                 {
                     continue;
                 }
-                String level = resolveChargeItemValueLevel(tenantId, row.getChargeItemId(), row.getValueLevel());
+                String level = HisMirrorValueLevelSupport.resolveFromChargeItem(
+                    hisChargeItemMirrorMapper, tenantId, row.getChargeItemId());
                 if (!isLowValueMirrorRow(level))
                 {
                     continue;
@@ -478,7 +479,8 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                 {
                     continue;
                 }
-                String level = resolveChargeItemValueLevel(tenantId, row.getChargeItemId(), row.getValueLevel());
+                String level = HisMirrorValueLevelSupport.resolveFromChargeItem(
+                    hisChargeItemMirrorMapper, tenantId, row.getChargeItemId());
                 if (!isLowValueMirrorRow(level))
                 {
                     continue;
@@ -551,17 +553,6 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     private static boolean isLowValueMirrorRow(String valueLevel)
     {
         return HisMirrorValueLevelSupport.isLowValue(valueLevel);
-    }
-
-    /** 自动核销：优先用镜像联表收费项标志，否则查收费项；未设置/高值均不自动低值核销 */
-    private String resolveChargeItemValueLevel(String tenantId, String chargeItemId, String joinedLevel)
-    {
-        String fromJoin = HisMirrorValueLevelSupport.normalizeToCanonical(joinedLevel);
-        if (!HisMirrorValueLevelSupport.isUnknown(fromJoin))
-        {
-            return fromJoin;
-        }
-        return HisMirrorValueLevelSupport.resolveFromChargeItem(hisChargeItemMirrorMapper, tenantId, chargeItemId);
     }
 
     /**

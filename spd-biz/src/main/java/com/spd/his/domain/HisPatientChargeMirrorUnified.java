@@ -75,6 +75,8 @@ public class HisPatientChargeMirrorUnified extends BaseEntity
 
     /** 高低值冗余字段（1高2低，入库时从收费项镜像写入） */
     private String valueLevel;
+    /** 是否对照耗材档案：Y/N（列表计算，非表字段） */
+    private String materialBound;
     /** 查询后填充 */
     private BigDecimal highValueStockQty;
     /** 查询后填充 */

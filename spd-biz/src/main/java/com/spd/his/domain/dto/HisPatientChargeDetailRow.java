@@ -61,4 +61,6 @@ public class HisPatientChargeDetailRow
     private BigDecimal lowValueStockQty;
     /** 收费项目高低值：1高值 2低值（his_charge_item_mirror.value_level） */
     private String valueLevel;
+    /** 是否对照耗材档案：Y/N */
+    private String materialBound;
 }

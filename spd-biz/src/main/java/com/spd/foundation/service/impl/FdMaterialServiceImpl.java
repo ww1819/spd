@@ -26,6 +26,7 @@ import com.spd.foundation.domain.FdFocus18;
 import com.spd.foundation.domain.FdFactory;
 import com.spd.foundation.domain.FdFinanceCategory;
 import com.spd.foundation.domain.FdMaterialChangeLog;
+import com.spd.foundation.domain.FdMaterialHisChargeBind;
 import com.spd.foundation.domain.FdMaterialImport;
 import com.spd.foundation.domain.FdMaterialStatusLog;
 import com.spd.foundation.domain.FdSupplier;
@@ -37,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.spd.foundation.mapper.FdFactoryMapper;
 import com.spd.foundation.mapper.FdFinanceCategoryMapper;
 import com.spd.foundation.mapper.FdMaterialChangeLogMapper;
+import com.spd.foundation.mapper.FdMaterialHisChargeBindMapper;
 import com.spd.foundation.mapper.FdMaterialImportMapper;
 import com.spd.foundation.mapper.FdMaterialStatusLogMapper;
 import com.spd.foundation.mapper.FdSupplierMapper;
@@ -135,6 +137,9 @@ public class FdMaterialServiceImpl implements IFdMaterialService
 
     @Autowired
     private FdMaterialChangeLogMapper fdMaterialChangeLogMapper;
+
+    @Autowired
+    private FdMaterialHisChargeBindMapper fdMaterialHisChargeBindMapper;
 
     @Autowired
     private HisChargeItemMirrorMapper hisChargeItemMirrorMapper;
@@ -709,6 +714,18 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         return hisPatientChargeMirrorUnifiedMapper.refreshAllValueLevelsForTenant(tenantId);
     }
 
+    @Override
+    public int refreshPendingUnifiedValueLevelNow(String tenantId, String chargeItemId, String valueLevel)
+    {
+        String cid = StringUtils.trimToNull(chargeItemId);
+        String level = StringUtils.trimToNull(valueLevel);
+        if (StringUtils.isEmpty(tenantId) || cid == null || level == null)
+        {
+            return 0;
+        }
+        return hisPatientChargeMirrorUnifiedMapper.refreshValueLevelByChargeItemId(tenantId, cid, level);
+    }
+
     /**
      * 异步按收费编码刷新统一计费镜像 value_level（仅 PENDING；请求内不刷大表）。
      */
@@ -797,7 +814,14 @@ public class FdMaterialServiceImpl implements IFdMaterialService
             throw new ServiceException("当前租户未启用 HIS 收费项目对照");
         }
         // 只写对照字段；高低值不因绑定静默改写（手工维护收费项为准）
-        return fdMaterialMapper.bindHisChargeItemIdByMaterialId(materialId, cid, SecurityUtils.getUserIdStr());
+        String operator = SecurityUtils.getUserIdStr();
+        String oldCid = StringUtils.trimToNull(material.getHisChargeItemId());
+        int rows = fdMaterialMapper.bindHisChargeItemIdByMaterialId(materialId, cid, operator);
+        if (rows > 0)
+        {
+            recordMaterialHisChargeBindChange(material.getTenantId(), materialId, oldCid, cid, operator);
+        }
+        return rows;
     }
 
     @Override
@@ -814,13 +838,61 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         }
         SecurityUtils.ensureTenantAccess(material.getTenantId());
         String oldChargeItemId = StringUtils.trimToNull(material.getHisChargeItemId());
-        int rows = fdMaterialMapper.clearHisChargeItemIdByMaterialId(materialId, SecurityUtils.getUserIdStr());
+        String operator = SecurityUtils.getUserIdStr();
+        int rows = fdMaterialMapper.clearHisChargeItemIdByMaterialId(materialId, operator);
+        if (rows > 0 && oldChargeItemId != null)
+        {
+            recordMaterialHisChargeBindChange(material.getTenantId(), materialId, oldChargeItemId, null, operator);
+        }
         // 解绑后按剩余对照档案重算该收费编码高低值，避免统一镜像仍停在高值/低值旧值
         if (rows > 0 && HS_THIRD_CUSTOMER_ID.equals(material.getTenantId()) && oldChargeItemId != null)
         {
             refreshChargeItemValueLevelByMaterials(material.getTenantId(), oldChargeItemId, materialId);
         }
         return rows;
+    }
+
+    @Override
+    public List<FdMaterialHisChargeBind> listMaterialHisChargeBinds(Long materialId, String chargeItemId,
+        Boolean currentOnly, String materialKeyword, String chargeKeyword)
+    {
+        String tenantId = SecurityUtils.getCustomerId();
+        return fdMaterialHisChargeBindMapper.selectList(tenantId, materialId,
+            StringUtils.trimToNull(chargeItemId), currentOnly,
+            StringUtils.trimToNull(materialKeyword), StringUtils.trimToNull(chargeKeyword));
+    }
+
+    /** 绑定/解绑写履历：结束开放行后，新收费项非空则开新开放行 */
+    private void recordMaterialHisChargeBindChange(String tenantId, Long materialId, String oldChargeItemId,
+        String newChargeItemId, String operator)
+    {
+        if (StringUtils.isEmpty(tenantId) || materialId == null)
+        {
+            return;
+        }
+        String oldCid = StringUtils.trimToNull(oldChargeItemId);
+        String newCid = StringUtils.trimToNull(newChargeItemId);
+        if (oldCid != null && oldCid.equals(newCid))
+        {
+            return;
+        }
+        Date now = DateUtils.getNowDate();
+        fdMaterialHisChargeBindMapper.closeOpenByMaterialId(tenantId, materialId, now, operator);
+        if (newCid == null)
+        {
+            return;
+        }
+        FdMaterialHisChargeBind row = new FdMaterialHisChargeBind();
+        row.setId(UUID7.generateUUID7());
+        row.setTenantId(tenantId);
+        row.setMaterialId(materialId);
+        row.setChargeItemId(newCid);
+        row.setEffectiveFrom(now);
+        row.setEffectiveTo(null);
+        row.setBindBy(operator);
+        row.setCreateTime(now);
+        row.setUpdateTime(now);
+        fdMaterialHisChargeBindMapper.insert(row);
     }
 
     private static boolean isZqTcmTenant(String tenantId)

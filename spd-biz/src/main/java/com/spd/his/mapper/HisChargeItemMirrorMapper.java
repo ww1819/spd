@@ -12,7 +12,8 @@ public interface HisChargeItemMirrorMapper
         @Param("chargeItemId") String chargeItemId,
         @Param("itemCode") String itemCode,
         @Param("referredCode") String referredCode,
-        @Param("valueLevel") String valueLevel);
+        @Param("valueLevel") String valueLevel,
+        @Param("materialBound") String materialBound);
 
     HisChargeItemMirror selectByTenantAndChargeItemId(@Param("tenantId") String tenantId,
         @Param("chargeItemId") String chargeItemId);

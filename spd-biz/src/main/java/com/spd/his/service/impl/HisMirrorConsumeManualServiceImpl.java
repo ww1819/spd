@@ -1497,6 +1497,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         String procBy = HisAutoWriteOffOperatorSupport.resolveProcessBy(tenantId, processParty, sbTenantSettingService);
         String situation = HisMirrorProcessConstants.RESULT_SUCCESS;
         String party = HisMirrorProcessConstants.resolveParty(processParty);
+        // 落账前冻结收费项当时高低值；已核销后列表不再跟项变
+        hisPatientChargeMirrorUnifiedMapper.freezeValueLevelFromChargeItemByIds(tenantId, ids);
         if (KIND_IN.equals(visitKind))
         {
             hisInpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids, processStatus, processType, procTime,

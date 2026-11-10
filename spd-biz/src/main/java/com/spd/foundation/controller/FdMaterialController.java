@@ -293,6 +293,7 @@ public class FdMaterialController extends BaseController
         @RequestParam(value = "itemCode", required = false) String itemCode,
         @RequestParam(value = "referredCode", required = false) String referredCode,
         @RequestParam(value = "valueLevel", required = false) String valueLevel,
+        @RequestParam(value = "materialBound", required = false) String materialBound,
         @RequestParam(value = "pageNum", required = false) Integer pageNum,
         @RequestParam(value = "pageSize", required = false) Integer pageSize)
     {
@@ -305,7 +306,8 @@ public class FdMaterialController extends BaseController
         if (pageNum == null || pageNum < 1) pageNum = 1;
         if (pageSize == null || pageSize < 1) pageSize = 10;
         PageHelper.startPage(pageNum, pageSize);
-        List<HisChargeItemMirror> mirrorRows = hisChargeItemMirrorMapper.selectList(tenantId, name, speci, chargeItemId, itemCode, referredCode, valueLevel);
+        List<HisChargeItemMirror> mirrorRows = hisChargeItemMirrorMapper.selectList(
+            tenantId, name, speci, chargeItemId, itemCode, referredCode, valueLevel, materialBound);
         long total = new PageInfo<>(mirrorRows).getTotal();
         List<Map<String, Object>> rows = new ArrayList<>();
         for (HisChargeItemMirror r : mirrorRows)
@@ -319,6 +321,7 @@ public class FdMaterialController extends BaseController
             item.put("chargePrice", r.getPrice());
             item.put("referredCode", r.getReferredCode());
             item.put("valueLevel", r.getValueLevel());
+            item.put("materialBound", r.getMaterialBound());
             rows.add(item);
         }
         TableDataInfo data = getDataTable(rows);
@@ -339,10 +342,12 @@ public class FdMaterialController extends BaseController
         @RequestParam(value = "chargeItemId", required = false) String chargeItemId,
         @RequestParam(value = "itemCode", required = false) String itemCode,
         @RequestParam(value = "referredCode", required = false) String referredCode,
-        @RequestParam(value = "valueLevel", required = false) String valueLevel)
+        @RequestParam(value = "valueLevel", required = false) String valueLevel,
+        @RequestParam(value = "materialBound", required = false) String materialBound)
     {
         String tenantId = SecurityUtils.getCustomerId();
-        List<HisChargeItemMirror> list = hisChargeItemMirrorMapper.selectList(tenantId, name, speci, chargeItemId, itemCode, referredCode, valueLevel);
+        List<HisChargeItemMirror> list = hisChargeItemMirrorMapper.selectList(
+            tenantId, name, speci, chargeItemId, itemCode, referredCode, valueLevel, materialBound);
         ExcelUtil<HisChargeItemMirror> util = new ExcelUtil<>(HisChargeItemMirror.class);
         util.exportExcel(response, list, "收费项目维护数据");
     }
@@ -375,10 +380,9 @@ public class FdMaterialController extends BaseController
         {
             return error("收费项目不存在或不可维护");
         }
-        Map<String, String> refresh = new LinkedHashMap<>();
-        refresh.put(chargeItemId, valueLevel);
-        fdMaterialService.scheduleRefreshUnifiedValueLevels(tenantId, refresh);
-        return success("保存成功");
+        // 单条保存同步刷 PENDING，避免异步未跑完时费用明细仍显示「未设置」
+        int pendingUpdated = fdMaterialService.refreshPendingUnifiedValueLevelNow(tenantId, chargeItemId, valueLevel);
+        return success("保存成功，已同步待核销 " + pendingUpdated + " 行");
     }
 
     /**
@@ -646,6 +650,28 @@ public class FdMaterialController extends BaseController
         data.put("markedDeletedRows", markedDeleted);
         data.put("refreshTime", new java.util.Date());
         return AjaxResult.success("抓取完成", data);
+    }
+
+    /**
+     * 耗材-HIS收费项对照履历（当前生效 / 历史；支持按耗材或收费项查一对多）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:material:query') or @ss.hasPermi('foundation:chargeItem:query')")
+    @GetMapping("/hisChargeItem/bindList")
+    public TableDataInfo listMaterialHisChargeBinds(
+        @RequestParam(value = "materialId", required = false) Long materialId,
+        @RequestParam(value = "chargeItemId", required = false) String chargeItemId,
+        @RequestParam(value = "currentOnly", required = false) Boolean currentOnly,
+        @RequestParam(value = "materialKeyword", required = false) String materialKeyword,
+        @RequestParam(value = "chargeKeyword", required = false) String chargeKeyword,
+        @RequestParam(value = "pageNum", required = false) Integer pageNum,
+        @RequestParam(value = "pageSize", required = false) Integer pageSize)
+    {
+        if (pageNum == null || pageNum < 1) pageNum = 1;
+        if (pageSize == null || pageSize < 1) pageSize = 10;
+        PageHelper.startPage(pageNum, pageSize);
+        List<com.spd.foundation.domain.FdMaterialHisChargeBind> list = fdMaterialService.listMaterialHisChargeBinds(
+            materialId, chargeItemId, currentOnly, materialKeyword, chargeKeyword);
+        return getDataTable(list);
     }
 
     /**

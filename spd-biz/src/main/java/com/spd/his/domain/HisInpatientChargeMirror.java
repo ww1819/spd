@@ -71,6 +71,8 @@ public class HisInpatientChargeMirror extends BaseEntity
     private BigDecimal lowValueStockQty;
     /** 收费项目高低值：1高值 2低值（来自 his_charge_item_mirror，仅查询展示） */
     private String valueLevel;
+    /** 是否对照耗材档案：Y/N（列表计算）；查询条件同 */
+    private String materialBound;
 
     private Long departmentId;
     /** 查询：开单科室（fd_department.id），与 HIS dept_code 对照 */

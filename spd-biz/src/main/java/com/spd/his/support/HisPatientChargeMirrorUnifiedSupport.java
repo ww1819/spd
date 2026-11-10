@@ -124,7 +124,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
     public static final String LIST_MODE_HIGH = "HIGH";
     public static final String LIST_MODE_LOW = "LOW";
 
-    /** 高值扫描核销：仅显示收费项标高值（value_level=1）的计费；无档案也可进列表 */
+    /** 高值扫描核销：待核销按收费项现标志=高值；已核销按行快照 */
     public static void applyHighChargeListScope(HisPatientChargeMirrorUnifiedQuery u)
     {
         if (u == null)
@@ -136,7 +136,8 @@ public final class HisPatientChargeMirrorUnifiedSupport
     }
 
     /**
-     * 患者收费查询：保留前端 valueLevel（含未设置 0），便于治理未划分数据。
+     * 患者收费查询：保留前端 valueLevel（含未设置 0）。
+     * 待核销展示/筛选实时跟收费项；已核销跟行快照。
      */
     public static void applyPatientChargeListScope(HisPatientChargeMirrorUnifiedQuery u)
     {
@@ -145,10 +146,9 @@ public final class HisPatientChargeMirrorUnifiedSupport
             return;
         }
         u.setChargeListMode(null);
-        // 保留 u.valueLevel / valueLevelIn，由查询条件筛选
     }
 
-    /** 仅明确低值（value_level=2）；未设置不进低值通道 */
+    /** 仅明确低值；待核销跟收费项现标志，未设置不进低值通道 */
     public static void applyLowChargeListScope(HisPatientChargeMirrorUnifiedQuery u)
     {
         if (u == null)
@@ -179,6 +179,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setProcessed(q.getProcessed());
         u.setExecDeptEmpty(q.getExecDeptEmpty());
         u.setValueLevel(q.getValueLevel());
+        u.setMaterialBound(StringUtils.trimToNull(q.getMaterialBound()));
         u.setBeginChargeDate(q.getBeginChargeDate());
         u.setEndChargeDate(q.getEndChargeDate());
         u.setBeginProcessTime(q.getBeginProcessTime());
@@ -214,6 +215,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setProcessed(q.getProcessed());
         u.setExecDeptEmpty(q.getExecDeptEmpty());
         u.setValueLevel(q.getValueLevel());
+        u.setMaterialBound(StringUtils.trimToNull(q.getMaterialBound()));
         u.setBeginChargeDate(q.getBeginChargeDate());
         u.setEndChargeDate(q.getEndChargeDate());
         u.setBeginProcessTime(q.getBeginProcessTime());
@@ -249,6 +251,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         u.setProcessed(q.getProcessed());
         u.setExecDeptEmpty(q.getExecDeptEmpty());
         u.setValueLevel(q.getValueLevel());
+        u.setMaterialBound(StringUtils.trimToNull(q.getMaterialBound()));
         u.setBeginChargeDate(q.getBeginChargeDate());
         u.setEndChargeDate(q.getEndChargeDate());
         u.setBeginProcessTime(q.getBeginProcessTime());
@@ -313,6 +316,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setUpdateBy(u.getUpdateBy());
         r.setUpdateTime(u.getUpdateTime());
         r.setValueLevel(HisMirrorValueLevelSupport.normalizeStoredLevel(u.getValueLevel()));
+        r.setMaterialBound(u.getMaterialBound());
         r.setHighValueStockQty(u.getHighValueStockQty() != null ? u.getHighValueStockQty() : BigDecimal.ZERO);
         r.setLowValueStockQty(u.getLowValueStockQty() != null ? u.getLowValueStockQty() : BigDecimal.ZERO);
         return r;
@@ -367,6 +371,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setUpdateBy(u.getUpdateBy());
         r.setUpdateTime(u.getUpdateTime());
         r.setValueLevel(HisMirrorValueLevelSupport.normalizeStoredLevel(u.getValueLevel()));
+        r.setMaterialBound(u.getMaterialBound());
         r.setHighValueStockQty(u.getHighValueStockQty() != null ? u.getHighValueStockQty() : BigDecimal.ZERO);
         r.setLowValueStockQty(u.getLowValueStockQty() != null ? u.getLowValueStockQty() : BigDecimal.ZERO);
         return r;
@@ -425,6 +430,7 @@ public final class HisPatientChargeMirrorUnifiedSupport
         r.setProcessByName(u.getProcessByName());
         r.setCreateTime(u.getCreateTime());
         r.setValueLevel(HisMirrorValueLevelSupport.normalizeStoredLevel(u.getValueLevel()));
+        r.setMaterialBound(u.getMaterialBound());
         r.setHighValueStockQty(u.getHighValueStockQty() != null ? u.getHighValueStockQty() : BigDecimal.ZERO);
         r.setLowValueStockQty(u.getLowValueStockQty() != null ? u.getLowValueStockQty() : BigDecimal.ZERO);
         return r;

@@ -40,6 +40,8 @@ public class HisPatientChargeAllQuery extends BaseEntity
     private String execDeptEmpty;
     /** 收费项目高低值筛选：1高值 2低值 0未设置，空=全部 */
     private String valueLevel;
+    /** 是否对照耗材档案：Y已对照 N未对照，空=全部 */
+    private String materialBound;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date beginChargeDate;
