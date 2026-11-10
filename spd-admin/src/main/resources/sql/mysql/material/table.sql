@@ -520,6 +520,25 @@ CREATE TABLE IF NOT EXISTS `fd_material_change_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='产品档案变更记录表';
 /
 
+-- HV-X-003：耗材档案 ↔ HIS 收费项对照履历；主键 UUID7；effective_to 空=当前生效
+-- 手工/对照脚本：docs/sql/HV-X-003-material-his-charge-bind.sql
+CREATE TABLE IF NOT EXISTS `fd_material_his_charge_bind` (
+  `id` varchar(36) NOT NULL COMMENT '主键 UUID7',
+  `tenant_id` varchar(64) NOT NULL COMMENT '租户',
+  `material_id` bigint(20) NOT NULL COMMENT '耗材档案 fd_material.id',
+  `charge_item_id` varchar(64) NOT NULL COMMENT 'HIS 收费项 ID',
+  `effective_from` datetime NOT NULL COMMENT '生效开始',
+  `effective_to` datetime DEFAULT NULL COMMENT '生效结束，空=当前生效',
+  `bind_by` varchar(64) DEFAULT NULL COMMENT '绑定人',
+  `unbind_by` varchar(64) DEFAULT NULL COMMENT '解绑人',
+  `create_time` datetime DEFAULT NULL,
+  `update_time` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_mhcb_tenant_material` (`tenant_id`, `material_id`, `effective_to`),
+  KEY `idx_mhcb_tenant_charge` (`tenant_id`, `charge_item_id`, `effective_to`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='耗材-HIS收费项对照履历';
+/
+
 -- 耗材系统 SaaS 表（与设备共用 sb_customer 客户列表，耗材侧单独建表并与租户 tenant_id 关联）
 -- 执行时按「/」分段执行
 -- 耗材工作组：使用系统岗位表 sys_post（及 sys_user_post、sys_post_menu 等），不单独建 hc_work_group 表。

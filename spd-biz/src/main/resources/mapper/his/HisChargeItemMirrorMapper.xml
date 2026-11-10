@@ -2,49 +2,68 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.spd.his.mapper.HisChargeItemMirrorMapper">
 
+    <sql id="chargeItemMaterialBoundExists">
+        exists (
+            select 1 from fd_material fm
+            where fm.tenant_id = cim.tenant_id
+              and fm.his_charge_item_id = cim.charge_item_id
+              and (fm.del_flag = 0 or fm.del_flag is null)
+        )
+    </sql>
+
     <select id="selectList" resultType="com.spd.his.domain.HisChargeItemMirror">
         select
-            tenant_id as tenantId,
-            charge_item_id as chargeItemId,
-            item_code as itemCode,
-            item_name as itemName,
-            item_type as itemType,
-            consumable_type as consumableType,
-            spec_model as specModel,
-            unit as unit,
-            price as price,
-            manufacturer as manufacturer,
-            register_no as registerNo,
-            is_active as isActive,
-            referred_code as referredCode,
-            value_level as valueLevel,
-            his_create_time as hisCreateTime,
-            his_update_time as hisUpdateTime,
-            deleted_flag as deletedFlag,
-            create_time as createTime,
-            update_time as updateTime
-        from his_charge_item_mirror
-        where tenant_id = #{tenantId}
-          and (deleted_flag is null or deleted_flag != 1)
+            cim.tenant_id as tenantId,
+            cim.charge_item_id as chargeItemId,
+            cim.item_code as itemCode,
+            cim.item_name as itemName,
+            cim.item_type as itemType,
+            cim.consumable_type as consumableType,
+            cim.spec_model as specModel,
+            cim.unit as unit,
+            cim.price as price,
+            cim.manufacturer as manufacturer,
+            cim.register_no as registerNo,
+            cim.is_active as isActive,
+            cim.referred_code as referredCode,
+            cim.value_level as valueLevel,
+            case when <include refid="chargeItemMaterialBoundExists"/> then 'Y' else 'N' end as materialBound,
+            cim.his_create_time as hisCreateTime,
+            cim.his_update_time as hisUpdateTime,
+            cim.deleted_flag as deletedFlag,
+            cim.create_time as createTime,
+            cim.update_time as updateTime
+        from his_charge_item_mirror cim
+        where cim.tenant_id = #{tenantId}
+          and (cim.deleted_flag is null or cim.deleted_flag != 1)
         <if test="chargeItemId != null and chargeItemId != ''">
-            and charge_item_id = #{chargeItemId}
+            and cim.charge_item_id = #{chargeItemId}
         </if>
         <if test="itemCode != null and itemCode != ''">
-            and item_code like concat('%', #{itemCode}, '%')
+            and cim.item_code like concat('%', #{itemCode}, '%')
         </if>
         <if test="name != null and name != ''">
-            and item_name like concat('%', #{name}, '%')
+            and cim.item_name like concat('%', #{name}, '%')
         </if>
         <if test="referredCode != null and referredCode != ''">
-            and referred_code like concat('%', #{referredCode}, '%')
+            and cim.referred_code like concat('%', #{referredCode}, '%')
         </if>
-        <if test="valueLevel != null and valueLevel != ''">
-            and value_level = #{valueLevel}
+        <if test="valueLevel != null and valueLevel != '' and valueLevel != '0' and valueLevel != 'UNSET'">
+            and cim.value_level = #{valueLevel}
+        </if>
+        <if test="valueLevel != null and (valueLevel == '0' or valueLevel == 'UNSET')">
+            and (cim.value_level is null or trim(cim.value_level) = '' or cim.value_level = '0')
         </if>
         <if test="speci != null and speci != ''">
-            and spec_model like concat('%', #{speci}, '%')
+            and cim.spec_model like concat('%', #{speci}, '%')
         </if>
-        order by charge_item_id
+        <if test='materialBound != null and materialBound == "Y"'>
+            and <include refid="chargeItemMaterialBoundExists"/>
+        </if>
+        <if test='materialBound != null and materialBound == "N"'>
+            and not <include refid="chargeItemMaterialBoundExists"/>
+        </if>
+        order by cim.charge_item_id
     </select>
 
     <select id="selectByTenantAndChargeItemId" resultType="com.spd.his.domain.HisChargeItemMirror">
@@ -118,7 +137,7 @@
         <foreach collection="rows" item="r" separator=",">
             (
                 #{r.tenantId}, #{r.chargeItemId}, #{r.itemCode}, #{r.itemName}, #{r.itemType}, #{r.consumableType},
-                #{r.specModel}, #{r.unit}, #{r.price}, #{r.manufacturer}, #{r.registerNo}, #{r.isActive}, #{r.referredCode}, '2',
+                #{r.specModel}, #{r.unit}, #{r.price}, #{r.manufacturer}, #{r.registerNo}, #{r.isActive}, #{r.referredCode}, '0',
                 #{r.hisCreateTime}, #{r.hisUpdateTime}, 0, now(), now()
             )
         </foreach>
@@ -138,6 +157,7 @@
             his_update_time = values(his_update_time),
             deleted_flag = 0,
             update_time = now()
+            /* value_level 手工维护，抓取同步不覆盖 */
     </insert>
 
     <select id="selectValueLevelsByChargeItemIds" resultType="com.spd.his.domain.HisChargeItemMirror">

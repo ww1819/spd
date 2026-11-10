@@ -22,8 +22,10 @@ public class HisChargeItemMirror
     private String isActive;
     /** 收费项目拼音简码（首字母） */
     private String referredCode;
-    /** 收费项目高低值属性：1高值 2低值 */
+    /** 收费项目高低值属性：1高值 2低值 0未设置 */
     private String valueLevel;
+    /** 是否已对照耗材档案：Y/N（列表计算，非表字段） */
+    private String materialBound;
     private String hisCreateTime;
     private String hisUpdateTime;
     /** 本地删除标记：0正常，1已删除（HIS未返回） */
@@ -59,6 +61,8 @@ public class HisChargeItemMirror
     public void setReferredCode(String referredCode) { this.referredCode = referredCode; }
     public String getValueLevel() { return valueLevel; }
     public void setValueLevel(String valueLevel) { this.valueLevel = valueLevel; }
+    public String getMaterialBound() { return materialBound; }
+    public void setMaterialBound(String materialBound) { this.materialBound = materialBound; }
     public String getHisCreateTime() { return hisCreateTime; }
     public void setHisCreateTime(String hisCreateTime) { this.hisCreateTime = hisCreateTime; }
     public String getHisUpdateTime() { return hisUpdateTime; }

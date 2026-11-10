@@ -975,11 +975,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
 
     private String resolveChargeItemValueLevel(String tenantId, String chargeItemId, FdMaterial mat)
     {
-        if (mat != null)
-        {
-            return HisMirrorValueLevelSupport.resolveFromMaterial(mat);
-        }
-        return HisMirrorValueLevelSupport.resolveFromMaterial(fdMaterialMapper, tenantId, chargeItemId);
+        // 核销通道以收费项手工标志为准；档案仅用于后续库存匹配，不决定高低值
+        return HisMirrorValueLevelSupport.resolveFromChargeItem(hisChargeItemMirrorMapper, tenantId, chargeItemId);
     }
 
     private int appendPiecesForLine(String tenantId, String fetchBatchId, String visitKind, String mirrorRowId,
@@ -1500,6 +1497,8 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         String procBy = HisAutoWriteOffOperatorSupport.resolveProcessBy(tenantId, processParty, sbTenantSettingService);
         String situation = HisMirrorProcessConstants.RESULT_SUCCESS;
         String party = HisMirrorProcessConstants.resolveParty(processParty);
+        // 落账前冻结收费项当时高低值；已核销后列表不再跟项变
+        hisPatientChargeMirrorUnifiedMapper.freezeValueLevelFromChargeItemByIds(tenantId, ids);
         if (KIND_IN.equals(visitKind))
         {
             hisInpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids, processStatus, processType, procTime,

@@ -32,15 +32,51 @@
     </sql>
 
     <!--
-      列表高低值：直接用冗余列 m.value_level（入库/绑定/refreshAllValueLevelsForTenant 维护）。
-      禁止再 left join fd_material 派生表 + trim()，否则 list+count 易超 2s。
+      有效高低值：待核销/核销中 实时跟收费项；已核销/已退费等用行上快照。
+      1高值 2低值；空/0=未设置。等值 join 收费项，禁止 TRIM OR / fd_material。
     -->
+    <sql id="chargeItemValueLevelCanonical">
+        case
+            when nullif(trim(cim_vl.value_level), '') = '1' then '1'
+            when nullif(trim(cim_vl.value_level), '') = '2' then '2'
+            else '0'
+        end
+    </sql>
+    <sql id="snapshotValueLevelCanonical">
+        case
+            when nullif(trim(m.value_level), '') = '1' then '1'
+            when nullif(trim(m.value_level), '') = '2' then '2'
+            else '0'
+        end
+    </sql>
     <sql id="resolvedValueLevelExpr">
-        ifnull(nullif(trim(m.value_level), ''), '2')
+        case
+            when m.process_status in ('PENDING_CONSUME', 'CONSUMING') then
+                <include refid="chargeItemValueLevelCanonical"/>
+            else
+                <include refid="snapshotValueLevelCanonical"/>
+        end
     </sql>
 
     <sql id="unifiedListFrom">
         from his_patient_charge_mirror_unified m
+        left join his_charge_item_mirror cim_vl
+          on cim_vl.tenant_id = m.tenant_id
+         and cim_vl.charge_item_id = m.charge_item_id
+         and (cim_vl.deleted_flag is null or cim_vl.deleted_flag != 1)
+    </sql>
+
+    <!-- 收费项是否已对照未删耗材档案 -->
+    <sql id="materialBoundExistsExpr">
+        exists (
+            select 1 from fd_material fm_bd
+            where fm_bd.tenant_id = m.tenant_id
+              and fm_bd.his_charge_item_id = m.charge_item_id
+              and (fm_bd.del_flag = 0 or fm_bd.del_flag is null)
+        )
+    </sql>
+    <sql id="resolvedMaterialBoundExpr">
+        case when <include refid="materialBoundExistsExpr"/> then 'Y' else 'N' end
     </sql>
 
     <sql id="unifiedSelectColumns">
@@ -53,7 +89,8 @@
         m.use_date, m.charge_date_display, m.charge_at,
         m.quantity, m.unit_price, m.total_amount, m.charge_operator, m.payment_type, m.receipt_no, m.remark, m.row_fingerprint,
         m.process_status, m.process_type, m.process_time, m.process_by, m.process_party, m.process_situation,
-        m.value_level,
+        (<include refid="resolvedValueLevelExpr"/>) as value_level,
+        (<include refid="resolvedMaterialBoundExpr"/>) as material_bound,
         m.create_by, m.create_time, m.update_by, m.update_time
     </sql>
 
@@ -179,15 +216,24 @@
         <if test="endChargeDate != null"> and m.charge_at &lt;= #{endChargeDate}</if>
         <if test="beginProcessTime != null"> and m.process_time &gt;= #{beginProcessTime}</if>
         <if test="endProcessTime != null"> and m.process_time &lt;= #{endProcessTime}</if>
-        <if test="chargeListMode != null and chargeListMode == 'HIGH'"> and m.value_level = '1'</if>
-        <if test="chargeListMode != null and chargeListMode == 'LOW'"> and (m.value_level is null or m.value_level &lt;&gt; '1')</if>
+        <if test="chargeListMode != null and chargeListMode == 'HIGH'"> and (<include refid="resolvedValueLevelExpr"/>) = '1'</if>
+        <if test="chargeListMode != null and chargeListMode == 'LOW'"> and (<include refid="resolvedValueLevelExpr"/>) = '2'</if>
         <if test="chargeListMode == null or chargeListMode == ''">
-            <if test='valueLevel != null and valueLevel.toString() == "1"'> and m.value_level = '1'</if>
-            <if test='valueLevel != null and valueLevel.toString() == "2"'> and (m.value_level is null or m.value_level &lt;&gt; '1')</if>
+            <if test='valueLevel != null and valueLevel.toString() == "1"'> and (<include refid="resolvedValueLevelExpr"/>) = '1'</if>
+            <if test='valueLevel != null and valueLevel.toString() == "2"'> and (<include refid="resolvedValueLevelExpr"/>) = '2'</if>
+            <if test='valueLevel != null and (valueLevel.toString() == "0" or valueLevel.toString() == "UNSET")'>
+                and (<include refid="resolvedValueLevelExpr"/>) = '0'
+            </if>
         </if>
         <if test="valueLevelIn != null and valueLevelIn.size() &gt; 0">
             and (<include refid="resolvedValueLevelExpr"/>) in
             <foreach collection="valueLevelIn" item="vl" open="(" separator="," close=")">#{vl}</foreach>
+        </if>
+        <if test='materialBound != null and materialBound == "Y"'>
+            and <include refid="materialBoundExistsExpr"/>
+        </if>
+        <if test='materialBound != null and materialBound == "N"'>
+            and not <include refid="materialBoundExistsExpr"/>
         </if>
         <if test='"INPATIENT".equals(visitKind) and deptNameLike != null'>
             and m.dept_name like concat('%', #{deptNameLike}, '%')
@@ -314,6 +360,7 @@
         <result property="updateBy" column="update_by"/>
         <result property="updateTime" column="update_time"/>
         <result property="valueLevel" column="value_level"/>
+        <result property="materialBound" column="material_bound"/>
     </resultMap>
 
     <select id="countByTenantId" resultType="long">
@@ -352,7 +399,11 @@
             ),
             m.quantity, m.unit_price, m.total_amount, m.charge_operator, null, null, m.remark, m.row_fingerprint,
             m.process_status, m.process_type, m.process_time, m.process_by,
-            ifnull(cim.value_level, '2'),
+            case
+                when nullif(trim(cim.value_level), '') = '1' then '1'
+                when nullif(trim(cim.value_level), '') = '2' then '2'
+                else '0'
+            end,
             m.create_by, m.create_time, m.update_by, m.update_time
         from his_inpatient_charge_mirror m
         left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
@@ -387,7 +438,11 @@
             ),
             m.quantity, m.unit_price, m.total_amount, m.charge_operator, m.payment_type, m.receipt_no, m.remark, m.row_fingerprint,
             m.process_status, m.process_type, m.process_time, m.process_by,
-            ifnull(cim.value_level, '2'),
+            case
+                when nullif(trim(cim.value_level), '') = '1' then '1'
+                when nullif(trim(cim.value_level), '') = '2' then '2'
+                else '0'
+            end,
             m.create_by, m.create_time, m.update_by, m.update_time
         from his_outpatient_charge_mirror m
         left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
@@ -431,6 +486,25 @@
             update_time = now()
         where tenant_id = #{tenantId}
         and id in
+        <foreach collection="ids" item="rid" open="(" separator="," close=")">#{rid}</foreach>
+    </update>
+
+    <!-- 核销/退费落账前：把当时收费项标志写入行快照，之后列表不再跟项变 -->
+    <update id="freezeValueLevelFromChargeItemByIds">
+        update his_patient_charge_mirror_unified u
+        left join his_charge_item_mirror cim
+          on cim.tenant_id = u.tenant_id
+         and cim.charge_item_id = u.charge_item_id
+         and (cim.deleted_flag is null or cim.deleted_flag != 1)
+        set u.value_level = case
+                when nullif(trim(cim.value_level), '') = '1' then '1'
+                when nullif(trim(cim.value_level), '') = '2' then '2'
+                else '0'
+            end,
+            u.update_time = now()
+        where u.tenant_id = #{tenantId}
+          and u.process_status in ('PENDING_CONSUME', 'CONSUMING')
+          and u.id in
         <foreach collection="ids" item="rid" open="(" separator="," close=")">#{rid}</foreach>
     </update>
 
@@ -524,7 +598,7 @@
         <include refid="unifiedListOrderBy"/>
     </select>
 
-    <!-- 消息提醒：科室销提醒（待处理低值计费镜像） -->
+    <!-- 消息提醒：科室销提醒（待处理低值计费镜像；高低值口径与列表一致） -->
     <select id="selectDepartmentConsumeReminderList" parameterType="com.spd.his.domain.dto.HisPatientChargeMirrorUnifiedQuery"
             resultType="com.spd.department.vo.DepartmentConsumeReminderRowVo">
         select
@@ -536,12 +610,9 @@
             ifnull(m.charge_item_id, '') as chargeItemId,
             ifnull(m.item_name, '') as itemName,
             ifnull(m.spec_model, '') as specModel,
-            ifnull(cim.unit, '') as unitName,
+            ifnull(cim_vl.unit, '') as unitName,
             m.unit_price as unitPrice
-        from his_patient_charge_mirror_unified m
-        left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
-            and trim(cim.charge_item_id) = trim(m.charge_item_id)
-            and (cim.deleted_flag is null or cim.deleted_flag != 1)
+        <include refid="unifiedListFrom"/>
         <include refid="unifiedListWhere"/>
         order by m.charge_at desc, m.id desc
         limit 500
@@ -550,7 +621,7 @@
     <select id="countDepartmentConsumeReminder" parameterType="com.spd.his.domain.dto.HisPatientChargeMirrorUnifiedQuery"
             resultType="long">
         select count(1)
-        from his_patient_charge_mirror_unified m
+        <include refid="unifiedListFrom"/>
         <include refid="unifiedListWhere"/>
     </select>
 
@@ -587,40 +658,33 @@
         </choose>
     </sql>
 
-    <!-- trim 两侧：兼容历史空格；Java 侧已 trim 入参。等值 OR trim 等值，尽量仍能命中 charge_item_id 索引 -->
+    <!-- 仅重算待核销；已核销/已退费冻结。trim 两侧兼容历史空格。 -->
     <update id="refreshValueLevelByChargeItemId">
         update his_patient_charge_mirror_unified
         set value_level = #{valueLevel},
             update_time = now()
         where tenant_id = #{tenantId}
+          and process_status = 'PENDING_CONSUME'
           and (
                 charge_item_id = #{chargeItemId}
              or trim(charge_item_id) = #{chargeItemId}
           )
     </update>
 
+    <!-- 历史 PENDING 按收费项手工标志重算；已核销不动。未维护→0。等值联表避免 TRIM 全表扫。 -->
     <update id="refreshAllValueLevelsForTenant">
         update his_patient_charge_mirror_unified u
-        left join (
-            select distinct fm.tenant_id as tenant_id, trim(fm.his_charge_item_id) as charge_item_id
-            from fd_material fm
-            where fm.tenant_id = #{tenantId}
-              and (fm.del_flag = 0 or fm.del_flag is null)
-              and trim(fm.is_gz) = '1'
-              and fm.his_charge_item_id is not null
-              and trim(fm.his_charge_item_id) != ''
-        ) hf on hf.tenant_id = u.tenant_id and hf.charge_item_id = trim(u.charge_item_id)
-        left join (
-            select distinct cim.tenant_id as tenant_id, trim(cim.charge_item_id) as charge_item_id
-            from his_charge_item_mirror cim
-            where cim.tenant_id = #{tenantId}
-              and (cim.deleted_flag is null or cim.deleted_flag != 1)
-              and cim.value_level = '1'
-              and cim.charge_item_id is not null
-              and trim(cim.charge_item_id) != ''
-        ) hcf on hcf.tenant_id = u.tenant_id and hcf.charge_item_id = trim(u.charge_item_id)
-        set u.value_level = case when hf.charge_item_id is not null or hcf.charge_item_id is not null then '1' else '2' end,
+        left join his_charge_item_mirror cim
+          on cim.tenant_id = u.tenant_id
+         and cim.charge_item_id = u.charge_item_id
+         and (cim.deleted_flag is null or cim.deleted_flag != 1)
+        set u.value_level = case
+                when nullif(trim(cim.value_level), '') = '1' then '1'
+                when nullif(trim(cim.value_level), '') = '2' then '2'
+                else '0'
+            end,
             u.update_time = now()
         where u.tenant_id = #{tenantId}
+          and u.process_status = 'PENDING_CONSUME'
     </update>
 </mapper>

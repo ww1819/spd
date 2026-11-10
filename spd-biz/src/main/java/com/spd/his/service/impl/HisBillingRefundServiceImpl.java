@@ -551,6 +551,7 @@ public class HisBillingRefundServiceImpl implements IHisBillingRefundService
         Date procTime = DateUtils.getNowDate();
         String procBy = SecurityUtils.getUserIdStr();
         List<String> ids = java.util.Collections.singletonList(refundMirrorRowId.trim());
+        hisPatientChargeMirrorUnifiedMapper.freezeValueLevelFromChargeItemByIds(tenantId, ids);
         if (KIND_IN.equals(visitKind))
         {
             hisInpatientChargeMirrorMapper.updateMirrorProcessByIds(tenantId, ids,

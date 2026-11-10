@@ -53,7 +53,7 @@ public final class HisMirrorProcessUserMessages
 
     public static String valueLevelUnknown(String chargeItemId, String itemName)
     {
-        return "收费项目【" + chargeItemLabel(chargeItemId, itemName) + "】未维护高低值标识";
+        return "收费项目【" + chargeItemLabel(chargeItemId, itemName) + "】未维护高低值标识，请先在「HIS收费项目」维护后再核销";
     }
 
     public static String valueLevelHigh(String chargeItemId, String itemName)
