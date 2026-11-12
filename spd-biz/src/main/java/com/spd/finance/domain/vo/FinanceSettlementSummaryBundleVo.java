@@ -17,7 +17,7 @@ public class FinanceSettlementSummaryBundleVo
     private List<FinanceSettlementSummaryRowVo> unrecognizedSuppliers = new ArrayList<>();
     private BigDecimal unrecognizedWholesaleTotal = BigDecimal.ZERO;
 
-    /** 表二：按科室汇总（storeroom_id 12/11/13 对应普通耗材/高值耗材/试剂） */
+    /** 表二：按科室汇总（财务分类「高值/高值耗材」→高值耗材，「普通」→普通耗材，其余已维护财务分类→试剂） */
     private List<FinanceDeptConsumablePickupRowVo> deptConsumablePickupRows = new ArrayList<>();
 
     /** 表三：科室月消耗（按计费/不计费耗材金额汇总） */

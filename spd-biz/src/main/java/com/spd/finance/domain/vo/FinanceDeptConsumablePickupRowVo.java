@@ -3,7 +3,8 @@ package com.spd.finance.domain.vo;
 import java.math.BigDecimal;
 
 /**
- * 财务结算汇总表二：科室出退库按产品档案库房分类 id（storeroom_id 12/11/13）汇总金额（普通耗材/高值耗材/试剂列）
+ * 财务结算汇总表二：科室出退库按产品档案财务分类汇总金额
+ * （「高值/高值耗材」→高值耗材，「普通」→普通耗材，其余已维护财务分类→试剂）
  */
 public class FinanceDeptConsumablePickupRowVo
 {
@@ -14,13 +15,13 @@ public class FinanceDeptConsumablePickupRowVo
     /** 院区（来自科室档案 fd_department.campus） */
     private String campus;
 
-    /** 普通耗材（storeroom_id = 12） */
+    /** 普通耗材（财务分类名称=「普通」） */
     private BigDecimal plainConsumablesAmt;
 
-    /** 高值耗材（storeroom_id = 11） */
+    /** 高值耗材（财务分类名称=「高值」或「高值耗材」） */
     private BigDecimal highValueConsumablesAmt;
 
-    /** 试剂（storeroom_id = 13） */
+    /** 试剂（已维护财务分类且非高值、非普通，如生化/免疫/分子等） */
     private BigDecimal reagentAmt;
 
     public Long getDepartmentId()

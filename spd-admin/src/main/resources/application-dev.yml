@@ -148,7 +148,7 @@ spring:
                 testOnReturn: false
             # 初始连接数
             initialSize: 5
-            # 最小连接池数量
+            # 最小连接池数量局部截取_20261111_165517.png
             minIdle: 10
             # 最大连接池数量
             maxActive: 20
