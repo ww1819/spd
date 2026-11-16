@@ -1,12 +1,19 @@
 package com.spd.system.service.impl;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.spd.common.core.domain.entity.SysMenu;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.uuid.UUID7;
@@ -16,6 +23,7 @@ import com.spd.system.domain.vo.HcCustomerMenuManageVo;
 import com.spd.system.mapper.HcCustomerMenuMapper;
 import com.spd.system.mapper.HcCustomerMenuPeriodLogMapper;
 import com.spd.system.mapper.HcCustomerMenuStatusLogMapper;
+import com.spd.system.mapper.SysMenuMapper;
 import com.spd.system.service.IHcCustomerMenuManageService;
 
 /**
@@ -27,13 +35,76 @@ public class HcCustomerMenuManageServiceImpl implements IHcCustomerMenuManageSer
   @Autowired
   private HcCustomerMenuMapper hcCustomerMenuMapper;
   @Autowired
+  private SysMenuMapper sysMenuMapper;
+  @Autowired
   private HcCustomerMenuStatusLogMapper statusLogMapper;
   @Autowired
   private HcCustomerMenuPeriodLogMapper periodLogMapper;
 
   @Override
   public List<HcCustomerMenuManageVo> listMenusByTenantId(String tenantId) {
-    return hcCustomerMenuMapper.selectListWithMenuNameByTenantId(tenantId);
+    List<HcCustomerMenuManageVo> list = hcCustomerMenuMapper.selectListWithMenuNameByTenantId(tenantId);
+    if (list == null) {
+      list = new ArrayList<>();
+    }
+    for (HcCustomerMenuManageVo vo : list) {
+      if (vo != null) {
+        vo.setAssigned(Boolean.TRUE);
+      }
+    }
+    appendAncestorNodes(list, tenantId);
+    list.sort(Comparator
+        .comparing((HcCustomerMenuManageVo v) -> v.getParentId() == null ? 0L : v.getParentId())
+        .thenComparing(v -> v.getOrderNum() == null ? 0 : v.getOrderNum())
+        .thenComparing(v -> v.getMenuId() == null ? 0L : v.getMenuId()));
+    return list;
+  }
+
+  /** 客户未单独登记父级目录时，向上补齐祖先节点，便于前端按菜单层级展示 */
+  private void appendAncestorNodes(List<HcCustomerMenuManageVo> list, String tenantId) {
+    Map<Long, HcCustomerMenuManageVo> byId = new LinkedHashMap<>();
+    for (HcCustomerMenuManageVo vo : list) {
+      if (vo != null && vo.getMenuId() != null) {
+        byId.put(vo.getMenuId(), vo);
+      }
+    }
+    int guard = 0;
+    while (guard++ < 64) {
+      Set<Long> missing = new HashSet<>();
+      for (HcCustomerMenuManageVo vo : byId.values()) {
+        Long pid = vo.getParentId();
+        if (pid != null && pid > 0 && !byId.containsKey(pid)) {
+          missing.add(pid);
+        }
+      }
+      if (missing.isEmpty()) {
+        break;
+      }
+      List<SysMenu> parents = sysMenuMapper.selectMenuByIds(new ArrayList<>(missing));
+      if (parents == null || parents.isEmpty()) {
+        break;
+      }
+      int added = 0;
+      for (SysMenu parent : parents) {
+        if (parent == null || parent.getMenuId() == null || byId.containsKey(parent.getMenuId())) {
+          continue;
+        }
+        HcCustomerMenuManageVo node = new HcCustomerMenuManageVo();
+        node.setTenantId(tenantId);
+        node.setMenuId(parent.getMenuId());
+        node.setParentId(parent.getParentId());
+        node.setMenuName(parent.getMenuName());
+        node.setMenuType(parent.getMenuType());
+        node.setOrderNum(parent.getOrderNum());
+        node.setAssigned(Boolean.FALSE);
+        byId.put(parent.getMenuId(), node);
+        list.add(node);
+        added++;
+      }
+      if (added == 0) {
+        break;
+      }
+    }
   }
 
   @Override
