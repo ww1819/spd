@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.spd.common.annotation.Log;
+import com.spd.common.annotation.RepeatSubmit;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.enums.BusinessType;
@@ -87,6 +88,7 @@ public class GzShipmentController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:apply:add')")
     @Log(title = "高值备货出库", businessType = BusinessType.INSERT)
+    @RepeatSubmit(interval = 3000, message = "高值备货出库正在保存，请勿重复提交")
     @PostMapping
     public AjaxResult add(@RequestBody GzShipment gzShipment)
     {
@@ -106,6 +108,7 @@ public class GzShipmentController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:apply:edit')")
     @Log(title = "高值备货出库", businessType = BusinessType.UPDATE)
+    @RepeatSubmit(interval = 3000, message = "高值备货出库正在保存，请勿重复提交")
     @PutMapping
     public AjaxResult edit(@RequestBody GzShipment gzShipment)
     {

@@ -2,6 +2,7 @@ package com.spd.warehouse.controller;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.spd.common.annotation.Log;
+import com.spd.common.annotation.RepeatSubmit;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
@@ -80,6 +81,7 @@ public class StkThInventoryController extends BaseController {
      */
     @Log(title = "退货", businessType = BusinessType.INSERT)
     @PreAuthorize("@ss.hasPermi('inWarehouse:refundGoodsApply:add')")
+    @RepeatSubmit(interval = 3000, message = "退货单正在保存，请勿重复提交")
     @PostMapping("/addThInventory")
     public AjaxResult addThInventory(@RequestBody StkIoBill stkIoBill)
     {
@@ -95,6 +97,7 @@ public class StkThInventoryController extends BaseController {
      */
     @PreAuthorize("@ss.hasPermi('inWarehouse:refundGoodsApply:edit')")
     @Log(title = "退货", businessType = BusinessType.UPDATE)
+    @RepeatSubmit(interval = 3000, message = "退货单正在保存，请勿重复提交")
     @PutMapping("/updateThInventory")
     public AjaxResult updateThInventory(@RequestBody StkIoBill stkIoBill)
     {

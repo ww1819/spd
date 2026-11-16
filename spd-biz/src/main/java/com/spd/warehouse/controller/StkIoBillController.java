@@ -134,6 +134,7 @@ public class StkIoBillController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('inWarehouse:apply:edit')")
     @Log(title = "入库", businessType = BusinessType.UPDATE)
+    @RepeatSubmit(interval = 3000, message = "入库单正在保存，请勿重复提交")
     @PutMapping
     public AjaxResult edit(@RequestBody StkIoBill stkIoBill)
     {

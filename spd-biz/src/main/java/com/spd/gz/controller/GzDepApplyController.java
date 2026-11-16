@@ -89,6 +89,7 @@ public class GzDepApplyController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('gzDepartment:apply:edit')")
     @Log(title = "高值科室申领", businessType = BusinessType.UPDATE)
+    @RepeatSubmit(interval = 3000, message = "高值科室申领正在保存，请勿重复提交")
     @PutMapping
     public AjaxResult edit(@RequestBody GzDepApply gzDepApply)
     {
