@@ -40,7 +40,7 @@
 | 菜单/功能 | 差异说明 | 关键实现 |
 |-----------|----------|----------|
 | 患者收费查询 | HIS 计费镜像抓取与查询；**高低值均展示**（类型列按镜像 value_level；低值核销按钮仍仅低值可用）；菜单挂在 **科室消耗** 下 | `department/patientCharge`；`applyPatientChargeListScope` |
-| 高值扫描核销 | HIS 计费镜像**仅高值**（`value_level=1`，以档案 is_gz 对照为准）；与患者收费查询并存；条码/追溯删除后无有效消耗则回退待核销 | `gz/highChargeScan`；`applyHighChargeListScope` |
+| 高值扫描核销 | HIS 计费镜像**仅高值**（待核销跟收费项、已核销跟行快照；列表 WHERE 用可索引 OR，避免 CASE 过滤生产超时）；与患者收费查询并存；条码/追溯删除后无有效消耗则回退待核销 | `gz/highChargeScan`；`applyHighChargeListScope`；`highValueLevelFilter` |
 | HIS 计费自动处理 | 抓取后自动低值消耗 / 自动退费开关 | `HisBillingTenantConstants`；`sb_tenant_setting`；菜单「衡水计费自动消耗开关」 |
 | 众阳 HIS 单据推送 | **未接入**（与枣强不同） | `MSUN_INTEGRATED_TENANT_IDS` 不含本租户 |
 

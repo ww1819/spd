@@ -58,6 +58,37 @@
         end
     </sql>
 
+    <!--
+      列表 WHERE 专用：拆成可走索引的 OR，禁止对 CASE 表达式 = '1'/'2'（生产 count 易超时）。
+      口径与 resolvedValueLevelExpr 一致：待核销/核销中跟收费项；其余跟行快照。
+    -->
+    <sql id="pendingOrConsumingStatus">
+        m.process_status in ('PENDING_CONSUME', 'CONSUMING')
+    </sql>
+    <sql id="notPendingOrConsumingStatus">
+        (m.process_status is null or m.process_status not in ('PENDING_CONSUME', 'CONSUMING'))
+    </sql>
+    <sql id="highValueLevelFilter">
+        (
+            (<include refid="pendingOrConsumingStatus"/> and cim_vl.value_level = '1')
+            or (<include refid="notPendingOrConsumingStatus"/> and m.value_level = '1')
+        )
+    </sql>
+    <sql id="lowValueLevelFilter">
+        (
+            (<include refid="pendingOrConsumingStatus"/> and cim_vl.value_level = '2')
+            or (<include refid="notPendingOrConsumingStatus"/> and m.value_level = '2')
+        )
+    </sql>
+    <sql id="unsetValueLevelFilter">
+        (
+            (<include refid="pendingOrConsumingStatus"/>
+                and (cim_vl.value_level is null or cim_vl.value_level = '' or cim_vl.value_level = '0'))
+            or (<include refid="notPendingOrConsumingStatus"/>
+                and (m.value_level is null or nullif(trim(m.value_level), '') is null or m.value_level = '0'))
+        )
+    </sql>
+
     <sql id="unifiedListFrom">
         from his_patient_charge_mirror_unified m
         left join his_charge_item_mirror cim_vl
@@ -216,18 +247,25 @@
         <if test="endChargeDate != null"> and m.charge_at &lt;= #{endChargeDate}</if>
         <if test="beginProcessTime != null"> and m.process_time &gt;= #{beginProcessTime}</if>
         <if test="endProcessTime != null"> and m.process_time &lt;= #{endProcessTime}</if>
-        <if test="chargeListMode != null and chargeListMode == 'HIGH'"> and (<include refid="resolvedValueLevelExpr"/>) = '1'</if>
-        <if test="chargeListMode != null and chargeListMode == 'LOW'"> and (<include refid="resolvedValueLevelExpr"/>) = '2'</if>
+        <if test="chargeListMode != null and chargeListMode == 'HIGH'"> and <include refid="highValueLevelFilter"/></if>
+        <if test="chargeListMode != null and chargeListMode == 'LOW'"> and <include refid="lowValueLevelFilter"/></if>
         <if test="chargeListMode == null or chargeListMode == ''">
-            <if test='valueLevel != null and valueLevel.toString() == "1"'> and (<include refid="resolvedValueLevelExpr"/>) = '1'</if>
-            <if test='valueLevel != null and valueLevel.toString() == "2"'> and (<include refid="resolvedValueLevelExpr"/>) = '2'</if>
+            <if test='valueLevel != null and valueLevel.toString() == "1"'> and <include refid="highValueLevelFilter"/></if>
+            <if test='valueLevel != null and valueLevel.toString() == "2"'> and <include refid="lowValueLevelFilter"/></if>
             <if test='valueLevel != null and (valueLevel.toString() == "0" or valueLevel.toString() == "UNSET")'>
-                and (<include refid="resolvedValueLevelExpr"/>) = '0'
+                and <include refid="unsetValueLevelFilter"/>
             </if>
         </if>
         <if test="valueLevelIn != null and valueLevelIn.size() &gt; 0">
-            and (<include refid="resolvedValueLevelExpr"/>) in
-            <foreach collection="valueLevelIn" item="vl" open="(" separator="," close=")">#{vl}</foreach>
+            and (
+            <foreach collection="valueLevelIn" item="vl" separator=" or ">
+                <choose>
+                    <when test='vl != null and vl.toString() == "1"'><include refid="highValueLevelFilter"/></when>
+                    <when test='vl != null and vl.toString() == "2"'><include refid="lowValueLevelFilter"/></when>
+                    <otherwise><include refid="unsetValueLevelFilter"/></otherwise>
+                </choose>
+            </foreach>
+            )
         </if>
         <if test='materialBound != null and materialBound == "Y"'>
             and <include refid="materialBoundExistsExpr"/>
