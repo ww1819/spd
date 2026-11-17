@@ -97,6 +97,7 @@ public class GzRefundStockController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('gzOrder:goodsApply:edit')")
     @Log(title = "高值备货退库", businessType = BusinessType.UPDATE)
+    @RepeatSubmit(interval = 3000, message = "高值退库单正在保存，请勿重复提交")
     @PutMapping
     public AjaxResult edit(@RequestBody GzRefundGoods gzRefundGoods)
     {

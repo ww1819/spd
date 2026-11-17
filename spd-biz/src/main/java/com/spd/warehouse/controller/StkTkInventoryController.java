@@ -2,6 +2,7 @@ package com.spd.warehouse.controller;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.spd.common.annotation.Log;
+import com.spd.common.annotation.RepeatSubmit;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
@@ -79,10 +80,15 @@ public class StkTkInventoryController extends BaseController {
      */
     @Log(title = "退库", businessType = BusinessType.INSERT)
     @PreAuthorize("@ss.hasPermi('outWarehouse:refundDepotApply:add')")
+    @RepeatSubmit(interval = 3000, message = "退库单正在保存，请勿重复提交")
     @PostMapping("/addTkInventory")
     public AjaxResult addTkInventory(@RequestBody StkIoBill stkIoBill)
     {
-        return toAjax(stkIoBillService.insertTkStkIoBill(stkIoBill));
+        int rows = stkIoBillService.insertTkStkIoBill(stkIoBill);
+        if (rows > 0) {
+            return success(stkIoBill);
+        }
+        return AjaxResult.error("新增失败");
     }
 
     /**
@@ -90,6 +96,7 @@ public class StkTkInventoryController extends BaseController {
      */
     @PreAuthorize("@ss.hasPermi('outWarehouse:refundDepotApply:edit')")
     @Log(title = "退库", businessType = BusinessType.UPDATE)
+    @RepeatSubmit(interval = 3000, message = "退库单正在保存，请勿重复提交")
     @PutMapping("/updateTkInventory")
     public AjaxResult updateTkInventory(@RequestBody StkIoBill stkIoBill)
     {

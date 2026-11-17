@@ -2,6 +2,7 @@ package com.spd.warehouse.controller;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.spd.common.annotation.Log;
+import com.spd.common.annotation.RepeatSubmit;
 import com.spd.common.core.controller.BaseController;
 import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
@@ -184,6 +185,7 @@ public class StkIoBillOutController extends BaseController {
      */
     @Log(title = "出库", businessType = BusinessType.INSERT)
     @PreAuthorize("@ss.hasPermi('outWarehouse:apply:add')")
+    @RepeatSubmit(interval = 3000, message = "出库单正在保存，请勿重复提交")
     @PostMapping("/addOutWarehouse")
     public AjaxResult addOutWarehouse(@RequestBody StkIoBill stkIoBill)
     {
@@ -203,6 +205,7 @@ public class StkIoBillOutController extends BaseController {
      */
     @PreAuthorize("@ss.hasPermi('outWarehouse:apply:edit')")
     @Log(title = "出库", businessType = BusinessType.UPDATE)
+    @RepeatSubmit(interval = 3000, message = "出库单正在保存，请勿重复提交")
     @PutMapping("/updateOutWarehouse")
     public AjaxResult updateOutWarehouse(@RequestBody StkIoBill stkIoBill)
     {

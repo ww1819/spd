@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import com.alibaba.fastjson2.JSON;
@@ -139,6 +140,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
 
     private static final String DEFAULT_INTERFACE_IP = "127.0.0.1";
     private static final String DEFAULT_INTERFACE_PORT = "8088";
+    /** 同一入库单明细增量同步串行化，避免并发 PUT 各自 insert 导致活跃明细翻倍 */
+    private static final ConcurrentHashMap<Long, Object> STK_IO_ENTRY_SYNC_LOCKS = new ConcurrentHashMap<>();
 
     @Autowired
     private StkIoBillMapper stkIoBillMapper;
@@ -1070,6 +1073,34 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             throw new ServiceException(String.format(
                 "入库明细%s【%s】%s为空，请维护后再%s！",
                 formatInboundChineseRowNo(i + 1), name, String.join("、", missing), action));
+        }
+        assertInboundEntryUniqueBatchExpiry(list, action);
+    }
+
+    /** 入库明细：同耗材 + 批号 + 生产日期 + 有效期 不可重复（与前端 assertInboundBillEntriesUniqueBatchExpiry 对齐） */
+    private void assertInboundEntryUniqueBatchExpiry(List<StkIoBillEntry> list, String actionLabel) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        String action = StringUtils.isNotEmpty(actionLabel) ? actionLabel : "保存";
+        Map<String, Integer> seen = new HashMap<>();
+        for (int i = 0; i < list.size(); i++) {
+            StkIoBillEntry e = list.get(i);
+            if (e == null || !MasterDetailValidateUtil.isNotDeletedFlag(e.getDelFlag()) || e.getMaterialId() == null) {
+                continue;
+            }
+            String key = e.getMaterialId() + "|"
+                + StringUtils.trimToEmpty(e.getBatchNumber()) + "|"
+                + (e.getBeginTime() == null ? "" : DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD, e.getBeginTime())) + "|"
+                + (e.getEndTime() == null ? "" : DateUtils.parseDateToStr(DateUtils.YYYY_MM_DD, e.getEndTime()));
+            Integer firstIdx = seen.get(key);
+            if (firstIdx != null) {
+                String name = StringUtils.isNotEmpty(e.getMaterialName()) ? e.getMaterialName() : "--";
+                throw new ServiceException(String.format(
+                    "入库明细%s与%s【%s】生产日期、有效期、批号完全一致，请核对后再%s！",
+                    formatInboundChineseRowNo(firstIdx + 1), formatInboundChineseRowNo(i + 1), name, action));
+            }
+            seen.put(key, i);
         }
     }
 
@@ -2375,6 +2406,16 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     private void applyIncrementalSync(Long parenId, List<StkIoBillEntry> preparedEntries, Integer billType, String tenantId) {
+        if (parenId == null) {
+            throw new ServiceException("单据主键为空，无法同步明细");
+        }
+        Object lock = STK_IO_ENTRY_SYNC_LOCKS.computeIfAbsent(parenId, id -> new Object());
+        synchronized (lock) {
+            applyIncrementalSyncLocked(parenId, preparedEntries, billType, tenantId);
+        }
+    }
+
+    private void applyIncrementalSyncLocked(Long parenId, List<StkIoBillEntry> preparedEntries, Integer billType, String tenantId) {
         List<Long> existingIds = stkIoBillMapper.selectActiveStkIoBillEntryIdsByParenId(parenId);
         Map<Long, StkIoBillEntry> oldEntryMap = stkIoBillMapper.selectActiveStkIoBillEntriesByParenId(parenId)
             .stream().collect(Collectors.toMap(StkIoBillEntry::getId, e -> e, (a, b) -> a));
