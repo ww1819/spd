@@ -230,6 +230,8 @@ public class StkIoBill extends BaseEntity
     private String supplierKeyword;
     /** 查询参数：生产厂家关键字（编码/名称/简码） */
     private String factoryKeyword;
+    /** 查询参数：生产厂家ID（下拉精确选择） */
+    private Long queryFactoryId;
     /** 查询参数：仓库关键字（编码/名称/简拼） */
     private String warehouseKeyword;
     /** 查询参数：科室关键字（编码/名称/简拼） */
@@ -632,6 +634,14 @@ public class StkIoBill extends BaseEntity
 
     public void setFactoryKeyword(String factoryKeyword) {
         this.factoryKeyword = factoryKeyword;
+    }
+
+    public Long getQueryFactoryId() {
+        return queryFactoryId;
+    }
+
+    public void setQueryFactoryId(Long queryFactoryId) {
+        this.queryFactoryId = queryFactoryId;
     }
 
     public String getWarehouseKeyword() {
