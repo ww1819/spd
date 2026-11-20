@@ -42,6 +42,29 @@
         <if test="supplierId != null">
             and (se.supplier_id = #{supplierId} or m.supplier_id = #{supplierId})
         </if>
+        <if test="materialKeyword != null and materialKeyword != ''">
+            and (
+                m.code like concat('%', #{materialKeyword}, '%')
+                or m.name like concat('%', #{materialKeyword}, '%')
+                or m.speci like concat('%', #{materialKeyword}, '%')
+                or m.model like concat('%', #{materialKeyword}, '%')
+            )
+        </if>
+        <if test="batchNumber != null and batchNumber != ''">
+            and se.batch_number like concat('%', #{batchNumber}, '%')
+        </if>
+        <if test="batchNo != null and batchNo != ''">
+            and se.batch_no like concat('%', #{batchNo}, '%')
+        </if>
+        <if test="udiNo != null and udiNo != ''">
+            and m.udi_no like concat('%', #{udiNo}, '%')
+        </if>
+        <if test="factoryKeyword != null and factoryKeyword != ''">
+            and f.factory_name like concat('%', #{factoryKeyword}, '%')
+        </if>
+        <if test="materialSpeci != null and materialSpeci != ''">
+            and m.speci like concat('%', #{materialSpeci}, '%')
+        </if>
         <if test="inHospitalCode == null or inHospitalCode == ''">
             <include refid="stockQueryDateFilterShipment"/>
         </if>
@@ -61,8 +84,79 @@
         <if test="supplierId != null">
             and m.supplier_id = #{supplierId}
         </if>
+        <if test="materialKeyword != null and materialKeyword != ''">
+            and (
+                m.code like concat('%', #{materialKeyword}, '%')
+                or m.name like concat('%', #{materialKeyword}, '%')
+                or m.speci like concat('%', #{materialKeyword}, '%')
+                or m.model like concat('%', #{materialKeyword}, '%')
+            )
+        </if>
+        <if test="batchNumber != null and batchNumber != ''">
+            and rse.batch_number like concat('%', #{batchNumber}, '%')
+        </if>
+        <if test="batchNo != null and batchNo != ''">
+            and rse.batch_no like concat('%', #{batchNo}, '%')
+        </if>
+        <if test="udiNo != null and udiNo != ''">
+            and m.udi_no like concat('%', #{udiNo}, '%')
+        </if>
+        <if test="factoryKeyword != null and factoryKeyword != ''">
+            and f.factory_name like concat('%', #{factoryKeyword}, '%')
+        </if>
+        <if test="materialSpeci != null and materialSpeci != ''">
+            and m.speci like concat('%', #{materialSpeci}, '%')
+        </if>
         <if test="inHospitalCode == null or inHospitalCode == ''">
             <include refid="stockQueryDateFilterRefundStock"/>
+        </if>
+    </sql>
+
+    <sql id="outboundShipmentOptionalJoins">
+        <if test="supplierId != null or (materialKeyword != null and materialKeyword != '') or (udiNo != null and udiNo != '') or (materialSpeci != null and materialSpeci != '') or (factoryKeyword != null and factoryKeyword != '')">
+            left join fd_material m on se.material_id = m.id
+        </if>
+        <if test="factoryKeyword != null and factoryKeyword != ''">
+            left join fd_factory f on m.factory_id = f.factory_id
+        </if>
+    </sql>
+
+    <sql id="outboundRefundStockOptionalJoins">
+        <if test="supplierId != null or (materialKeyword != null and materialKeyword != '') or (udiNo != null and udiNo != '') or (materialSpeci != null and materialSpeci != '') or (factoryKeyword != null and factoryKeyword != '')">
+            left join fd_material m on rse.material_id = m.id
+        </if>
+        <if test="factoryKeyword != null and factoryKeyword != ''">
+            left join fd_factory f on m.factory_id = f.factory_id
+        </if>
+    </sql>
+
+    <sql id="outboundShipmentQtySource">
+        select se.qty as qty, se.amt as amt
+        from gz_shipment_entry se
+        inner join gz_shipment gs on gs.id = se.paren_id
+            and ifnull(gs.del_flag, 0) != 1
+            and gs.tenant_id = #{scopedTenantId}
+        <include refid="outboundShipmentOptionalJoins"/>
+        where ifnull(se.del_flag, 0) != 1
+        <include refid="outboundShipmentEntryFilters"/>
+        <if test="branchFetchLimit != null">
+            order by gs.create_time desc, se.id desc
+            limit #{branchFetchLimit}
+        </if>
+    </sql>
+
+    <sql id="outboundRefundStockQtySource">
+        select rse.qty as qty, rse.amt as amt
+        from gz_refund_stock_entry rse
+        inner join gz_refund_stock rs on rs.id = rse.paren_id
+            and ifnull(rs.del_flag, 0) != 1
+            and rs.tenant_id = #{scopedTenantId}
+        <include refid="outboundRefundStockOptionalJoins"/>
+        where ifnull(rse.del_flag, 0) != 1
+        <include refid="outboundRefundStockEntryFilters"/>
+        <if test="branchFetchLimit != null">
+            order by rs.create_time desc, rse.id desc
+            limit #{branchFetchLimit}
         </if>
     </sql>
 
@@ -77,9 +171,7 @@
                  inner join gz_shipment gs on gs.id = se.paren_id
                      and ifnull(gs.del_flag, 0) != 1
                      and gs.tenant_id = #{scopedTenantId}
-                 <if test="supplierId != null">
-                 left join fd_material m on se.material_id = m.id
-                 </if>
+                 <include refid="outboundShipmentOptionalJoins"/>
                  where ifnull(se.del_flag, 0) != 1
                  <include refid="outboundShipmentEntryFilters"/>
                 )
@@ -91,14 +183,33 @@
                  inner join gz_refund_stock rs on rs.id = rse.paren_id
                      and ifnull(rs.del_flag, 0) != 1
                      and rs.tenant_id = #{scopedTenantId}
-                 <if test="supplierId != null">
-                 left join fd_material m on rse.material_id = m.id
-                 </if>
+                 <include refid="outboundRefundStockOptionalJoins"/>
                  where ifnull(rse.del_flag, 0) != 1
                  <include refid="outboundRefundStockEntryFilters"/>
                 )
             </if>
         </trim>
+    </select>
+
+    <select id="sumOutboundRefundEntryList" parameterType="com.spd.gz.domain.GzStockQueryParam"
+            resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select coalesce(sum(qty), 0) as totalQty, coalesce(sum(amt), 0) as totalAmt
+        from (
+            <choose>
+                <when test="billKindScope != null and billKindScope == 'refundStock'">
+                    (<include refid="outboundRefundStockQtySource"/>)
+                </when>
+                <when test="billKindScope != null and billKindScope == 'shipment'">
+                    (<include refid="outboundShipmentQtySource"/>)
+                </when>
+                <otherwise>
+                    (<include refid="outboundShipmentQtySource"/>)
+                    union all
+                    (<include refid="outboundRefundStockQtySource"/>)
+                </otherwise>
+            </choose>
+        ) total_rows
     </select>
 
     <select id="selectOutboundRefundEntryList" parameterType="com.spd.gz.domain.GzStockQueryParam"
@@ -140,6 +251,7 @@
                 gs.department_id as departmentId,
                 d.name as departmentName,
                 coalesce(se.supplier_id, m.supplier_id) as supplierId,
+                sup.name as supplierName,
                 gs.create_time as sortTime
             from gz_shipment_entry se
             inner join gz_shipment gs on gs.id = se.paren_id
@@ -150,6 +262,7 @@
             left join fd_material m on se.material_id = m.id
             left join fd_unit u on m.unit_id = u.unit_id
             left join fd_factory f on m.factory_id = f.factory_id
+            left join fd_supplier sup on sup.id = coalesce(se.supplier_id, m.supplier_id)
             where ifnull(se.del_flag, 0) != 1
             <include refid="outboundShipmentEntryFilters"/>
             <if test="billKindScope != null and billKindScope == 'refundStock'">
@@ -198,6 +311,7 @@
                 rs.department_id as departmentId,
                 d.name as departmentName,
                 m.supplier_id as supplierId,
+                sup.name as supplierName,
                 rs.create_time as sortTime
             from gz_refund_stock_entry rse
             inner join gz_refund_stock rs on rs.id = rse.paren_id
@@ -208,6 +322,7 @@
             left join fd_material m on rse.material_id = m.id
             left join fd_unit u on m.unit_id = u.unit_id
             left join fd_factory f on m.factory_id = f.factory_id
+            left join fd_supplier sup on sup.id = m.supplier_id
             where ifnull(rse.del_flag, 0) != 1
             <include refid="outboundRefundStockEntryFilters"/>
             <if test="billKindScope != null and billKindScope == 'shipment'">
@@ -218,6 +333,471 @@
                 limit #{branchFetchLimit}
             </if>
             )
+        ) t
+        order by t.sortTime desc, t.entryId desc
+    </select>
+
+    <!-- 验收/跟台：按院内码一行展开；无院内码时回落明细行。日期默认 audit_date -->
+    <sql id="stockQueryDateFilterOrder">
+        <choose>
+            <when test="timeField != null and timeField == 'createTime'">
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and gz.create_time >= #{beginDate} ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and gz.create_time <= #{endDate} ]]></if>
+            </when>
+            <otherwise>
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and gz.audit_date >= #{beginDate} ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and gz.audit_date <= #{endDate} ]]></if>
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="stockQueryDateFilterRefundGoods">
+        <choose>
+            <when test="timeField != null and timeField == 'createTime'">
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and rg.create_time >= #{beginDate} ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and rg.create_time <= #{endDate} ]]></if>
+            </when>
+            <otherwise>
+                <if test="beginDate != null and beginDate != ''"><![CDATA[ and rg.audit_date >= #{beginDate} ]]></if>
+                <if test="endDate != null and endDate != ''"><![CDATA[ and rg.audit_date <= #{endDate} ]]></if>
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="orderBarcodeSelectList">
+        coalesce(ic.id, oe.id) as entryId,
+        '${billKind}' as billKind,
+        '${billTypeName}' as billTypeName,
+        gz.order_no as orderNo,
+        gz.order_status as orderStatus,
+        gz.order_date as orderDate,
+        gz.audit_date as auditDate,
+        gz.create_by as createBy,
+        gz.update_by as updateBy,
+        gz.audit_by as auditBy,
+        oe.material_id as materialId,
+        m.code as materialCode,
+        coalesce(ic.material_name, m.name) as materialName,
+        coalesce(m.speci, ic.material_speci) as materialSpeci,
+        coalesce(m.model, ic.material_model) as materialModel,
+        coalesce(ic.material_unit_name, u.unit_name) as unitName,
+        coalesce(ic.factory_name, f.factory_name) as factoryName,
+        coalesce(m.register_no, ic.register_no) as registerNo,
+        m.period_date as periodDate,
+        coalesce(nullif(m.udi_no, ''), ic.master_barcode, oe.master_barcode) as udiNo,
+        case when ic.id is not null then coalesce(ic.price, oe.price) else oe.price end as price,
+        case when ic.id is not null then 1 else oe.qty end as qty,
+        case when ic.id is not null then coalesce(ic.price, oe.price) else coalesce(oe.amt, oe.qty * oe.price) end as amt,
+        coalesce(ic.batch_no, oe.batch_no) as batchNo,
+        coalesce(ic.batch_number, oe.batch_number) as batchNumber,
+        oe.begin_time as beginTime,
+        case when ic.id is not null then coalesce(ic.end_date, oe.end_time) else oe.end_time end as endTime,
+        ic.in_hospital_code as inHospitalCode,
+        gz.warehouse_id as warehouseId,
+        w.name as warehouseName,
+        coalesce(gz.department_id, gz.apply_department_id) as departmentId,
+        coalesce(d.name, ad.name) as departmentName,
+        coalesce(ic.supplier_id, oe.supplier_id, gz.suppler_id, m.supplier_id) as supplierId,
+        coalesce(sup.name, ic.supplier_name) as supplierName,
+        <choose>
+            <when test="timeField != null and timeField == 'createTime'">gz.create_time</when>
+            <otherwise>gz.audit_date</otherwise>
+        </choose> as sortTime
+    </sql>
+
+    <!-- 统计用：仅按需关联物料/厂家，避免默认日期查询时多余 JOIN -->
+    <sql id="orderBarcodeFromWhereCore">
+        from gz_order gz
+        inner join gz_order_entry oe on oe.paren_id = gz.id
+            and ifnull(oe.del_flag, 0) != 1
+        left join gz_order_entry_inhospitalcode_list ic
+            on ic.parent_id = gz.id
+            and ic.detail_id = oe.id
+            and ifnull(ic.del_flag, 0) = 0
+            and ic.in_hospital_code is not null
+            and trim(ic.in_hospital_code) != ''
+        <if test="supplierId != null or materialId != null or (materialKeyword != null and materialKeyword != '') or (udiNo != null and udiNo != '') or (materialSpeci != null and materialSpeci != '') or (factoryKeyword != null and factoryKeyword != '')">
+            left join fd_material m on oe.material_id = m.id
+        </if>
+        <if test="factoryKeyword != null and factoryKeyword != ''">
+            left join fd_factory f on m.factory_id = f.factory_id
+        </if>
+        where ifnull(gz.del_flag, 0) != 1
+          and gz.tenant_id = #{scopedTenantId}
+          and gz.order_type = ${orderType}
+    </sql>
+
+    <!-- 列表用：带展示字段所需关联 -->
+    <sql id="orderBarcodeFromWhere">
+        from gz_order gz
+        inner join gz_order_entry oe on oe.paren_id = gz.id
+            and ifnull(oe.del_flag, 0) != 1
+        left join gz_order_entry_inhospitalcode_list ic
+            on ic.parent_id = gz.id
+            and ic.detail_id = oe.id
+            and ifnull(ic.del_flag, 0) = 0
+            and ic.in_hospital_code is not null
+            and trim(ic.in_hospital_code) != ''
+        left join fd_warehouse w on gz.warehouse_id = w.id
+        left join fd_department d on gz.department_id = d.id
+        left join fd_department ad on gz.apply_department_id = ad.id
+        left join fd_material m on oe.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_supplier sup on sup.id = coalesce(ic.supplier_id, oe.supplier_id, gz.suppler_id, m.supplier_id)
+        where ifnull(gz.del_flag, 0) != 1
+          and gz.tenant_id = #{scopedTenantId}
+          and gz.order_type = ${orderType}
+    </sql>
+
+    <sql id="orderBarcodeFilters">
+        <if test="warehouseId != null"> and gz.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> and (gz.department_id = #{departmentId} or gz.apply_department_id = #{departmentId})</if>
+        <if test="materialId != null"> and oe.material_id = #{materialId}</if>
+        <if test="orderStatus != null"> and gz.order_status = #{orderStatus}</if>
+        <if test="inHospitalCode != null and inHospitalCode != ''">
+            and ic.in_hospital_code = #{inHospitalCode}
+        </if>
+        <if test="orderNo != null and orderNo != ''">
+            and gz.order_no like concat('%', #{orderNo}, '%')
+        </if>
+        <if test="supplierId != null">
+            and (
+                gz.suppler_id = #{supplierId}
+                or oe.supplier_id = #{supplierId}
+                or ic.supplier_id = #{supplierId}
+                or m.supplier_id = #{supplierId}
+            )
+        </if>
+        <if test="materialKeyword != null and materialKeyword != ''">
+            and (
+                m.code like concat('%', #{materialKeyword}, '%')
+                or m.name like concat('%', #{materialKeyword}, '%')
+                or ifnull(m.speci, ic.material_speci) like concat('%', #{materialKeyword}, '%')
+                or ifnull(m.model, ic.material_model) like concat('%', #{materialKeyword}, '%')
+                or ic.material_name like concat('%', #{materialKeyword}, '%')
+            )
+        </if>
+        <if test="batchNumber != null and batchNumber != ''">
+            and ifnull(ic.batch_number, oe.batch_number) like concat('%', #{batchNumber}, '%')
+        </if>
+        <if test="batchNo != null and batchNo != ''">
+            and ifnull(ic.batch_no, oe.batch_no) like concat('%', #{batchNo}, '%')
+        </if>
+        <if test="udiNo != null and udiNo != ''">
+            and (
+                m.udi_no like concat('%', #{udiNo}, '%')
+                or ic.master_barcode like concat('%', #{udiNo}, '%')
+                or oe.master_barcode like concat('%', #{udiNo}, '%')
+            )
+        </if>
+        <if test="factoryKeyword != null and factoryKeyword != ''">
+            and ifnull(ic.factory_name, f.factory_name) like concat('%', #{factoryKeyword}, '%')
+        </if>
+        <if test="materialSpeci != null and materialSpeci != ''">
+            and ifnull(m.speci, ic.material_speci) like concat('%', #{materialSpeci}, '%')
+        </if>
+        <if test="inHospitalCode == null or inHospitalCode == ''">
+            <include refid="stockQueryDateFilterOrder"/>
+        </if>
+    </sql>
+
+    <sql id="orderBarcodeBranchOrder">
+        order by
+        <choose>
+            <when test="timeField != null and timeField == 'createTime'">gz.create_time</when>
+            <otherwise>gz.audit_date</otherwise>
+        </choose>
+        desc, gz.id desc, coalesce(ic.id, oe.id) desc
+        <if test="branchFetchLimit != null">
+            limit #{branchFetchLimit}
+        </if>
+    </sql>
+
+    <sql id="acceptanceQtyAmtSelect">
+        select
+            case when ic.id is not null then 1 else oe.qty end as qty,
+            case when ic.id is not null then coalesce(ic.price, oe.price) else coalesce(oe.amt, oe.qty * oe.price) end as amt
+        <include refid="orderBarcodeFromWhereCore">
+            <property name="orderType" value="101"/>
+        </include>
+        <include refid="orderBarcodeFilters"/>
+        <!-- 全量合计禁止 ORDER BY，否则无 limit 时会全量排序拖垮 -->
+        <if test="branchFetchLimit != null">
+            <include refid="orderBarcodeBranchOrder"/>
+        </if>
+    </sql>
+
+    <sql id="refundGoodsSelectList">
+        rge.id as entryId,
+        'refundGoods' as billKind,
+        '备货退货' as billTypeName,
+        rg.goods_no as orderNo,
+        rg.goods_status as orderStatus,
+        rg.goods_date as orderDate,
+        rg.audit_date as auditDate,
+        rg.create_by as createBy,
+        rg.update_by as updateBy,
+        rg.audit_by as auditBy,
+        rge.material_id as materialId,
+        m.code as materialCode,
+        m.name as materialName,
+        m.speci as materialSpeci,
+        m.model as materialModel,
+        u.unit_name as unitName,
+        f.factory_name as factoryName,
+        m.register_no as registerNo,
+        m.period_date as periodDate,
+        coalesce(nullif(m.udi_no, ''), rge.master_barcode) as udiNo,
+        rge.price as price,
+        rge.qty as qty,
+        coalesce(rge.amt, rge.qty * rge.price) as amt,
+        rge.batch_no as batchNo,
+        rge.batch_number as batchNumber,
+        rge.begin_time as beginTime,
+        rge.end_time as endTime,
+        rge.in_hospital_code as inHospitalCode,
+        rg.warehouse_id as warehouseId,
+        w.name as warehouseName,
+        rg.department_id as departmentId,
+        d.name as departmentName,
+        coalesce(rge.supplier_id, rg.suppler_id, m.supplier_id) as supplierId,
+        sup.name as supplierName,
+        <choose>
+            <when test="timeField != null and timeField == 'createTime'">rg.create_time</when>
+            <otherwise>rg.audit_date</otherwise>
+        </choose> as sortTime
+    </sql>
+
+    <!-- 统计用：按需关联物料/厂家 -->
+    <sql id="refundGoodsFromWhereCore">
+        from gz_refund_goods_entry rge
+        inner join gz_refund_goods rg on rg.id = rge.paren_id
+            and ifnull(rg.del_flag, 0) != 1
+            and rg.tenant_id = #{scopedTenantId}
+            and rg.goods_no like 'GZTH%'
+        <if test="supplierId != null or materialId != null or (materialKeyword != null and materialKeyword != '') or (udiNo != null and udiNo != '') or (materialSpeci != null and materialSpeci != '') or (factoryKeyword != null and factoryKeyword != '')">
+            left join fd_material m on rge.material_id = m.id
+        </if>
+        <if test="factoryKeyword != null and factoryKeyword != ''">
+            left join fd_factory f on m.factory_id = f.factory_id
+        </if>
+        where ifnull(rge.del_flag, 0) != 1
+    </sql>
+
+    <!-- 列表用：带展示字段 -->
+    <sql id="refundGoodsFromWhere">
+        from gz_refund_goods_entry rge
+        inner join gz_refund_goods rg on rg.id = rge.paren_id
+            and ifnull(rg.del_flag, 0) != 1
+            and rg.tenant_id = #{scopedTenantId}
+            and rg.goods_no like 'GZTH%'
+        left join fd_warehouse w on rg.warehouse_id = w.id
+        left join fd_department d on rg.department_id = d.id
+        left join fd_material m on rge.material_id = m.id
+        left join fd_unit u on m.unit_id = u.unit_id
+        left join fd_factory f on m.factory_id = f.factory_id
+        left join fd_supplier sup on sup.id = coalesce(rge.supplier_id, rg.suppler_id, m.supplier_id)
+        where ifnull(rge.del_flag, 0) != 1
+    </sql>
+
+    <sql id="refundGoodsFilters">
+        <if test="warehouseId != null"> and rg.warehouse_id = #{warehouseId}</if>
+        <if test="departmentId != null"> and rg.department_id = #{departmentId}</if>
+        <if test="materialId != null"> and rge.material_id = #{materialId}</if>
+        <if test="orderStatus != null"> and rg.goods_status = #{orderStatus}</if>
+        <if test="inHospitalCode != null and inHospitalCode != ''">
+            and rge.in_hospital_code = #{inHospitalCode}
+        </if>
+        <if test="orderNo != null and orderNo != ''">
+            and rg.goods_no like concat('%', #{orderNo}, '%')
+        </if>
+        <if test="supplierId != null">
+            and (rg.suppler_id = #{supplierId} or rge.supplier_id = #{supplierId} or m.supplier_id = #{supplierId})
+        </if>
+        <if test="materialKeyword != null and materialKeyword != ''">
+            and (
+                m.code like concat('%', #{materialKeyword}, '%')
+                or m.name like concat('%', #{materialKeyword}, '%')
+                or m.speci like concat('%', #{materialKeyword}, '%')
+                or m.model like concat('%', #{materialKeyword}, '%')
+            )
+        </if>
+        <if test="batchNumber != null and batchNumber != ''">
+            and rge.batch_number like concat('%', #{batchNumber}, '%')
+        </if>
+        <if test="batchNo != null and batchNo != ''">
+            and rge.batch_no like concat('%', #{batchNo}, '%')
+        </if>
+        <if test="udiNo != null and udiNo != ''">
+            and (m.udi_no like concat('%', #{udiNo}, '%') or rge.master_barcode like concat('%', #{udiNo}, '%'))
+        </if>
+        <if test="factoryKeyword != null and factoryKeyword != ''">
+            and f.factory_name like concat('%', #{factoryKeyword}, '%')
+        </if>
+        <if test="materialSpeci != null and materialSpeci != ''">
+            and m.speci like concat('%', #{materialSpeci}, '%')
+        </if>
+        <if test="inHospitalCode == null or inHospitalCode == ''">
+            <include refid="stockQueryDateFilterRefundGoods"/>
+        </if>
+    </sql>
+
+    <sql id="refundGoodsBranchOrder">
+        order by
+        <choose>
+            <when test="timeField != null and timeField == 'createTime'">rg.create_time</when>
+            <otherwise>rg.audit_date</otherwise>
+        </choose>
+        desc, rge.id desc
+        <if test="branchFetchLimit != null">
+            limit #{branchFetchLimit}
+        </if>
+    </sql>
+
+    <sql id="refundGoodsQtyAmtSelect">
+        select
+            rge.qty as qty,
+            coalesce(rge.amt, rge.qty * rge.price) as amt
+        <include refid="refundGoodsFromWhereCore"/>
+        <include refid="refundGoodsFilters"/>
+        <if test="branchFetchLimit != null">
+            <include refid="refundGoodsBranchOrder"/>
+        </if>
+    </sql>
+
+    <select id="countInboundRefundEntryList" parameterType="com.spd.gz.domain.GzStockQueryParam"
+            resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select
+        <choose>
+            <when test="billKindScope != null and billKindScope == 'refundGoods'">
+                (select count(*)
+                 <include refid="refundGoodsFromWhereCore"/>
+                 <include refid="refundGoodsFilters"/>
+                )
+            </when>
+            <when test="billKindScope != null and billKindScope == 'acceptance'">
+                (select count(*)
+                 <include refid="orderBarcodeFromWhereCore">
+                     <property name="orderType" value="101"/>
+                 </include>
+                 <include refid="orderBarcodeFilters"/>
+                )
+            </when>
+            <otherwise>
+                (select count(*)
+                 <include refid="orderBarcodeFromWhereCore">
+                     <property name="orderType" value="101"/>
+                 </include>
+                 <include refid="orderBarcodeFilters"/>
+                )
+                +
+                (select count(*)
+                 <include refid="refundGoodsFromWhereCore"/>
+                 <include refid="refundGoodsFilters"/>
+                )
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="sumInboundRefundEntryList" parameterType="com.spd.gz.domain.GzStockQueryParam"
+            resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select coalesce(sum(qty), 0) as totalQty, coalesce(sum(amt), 0) as totalAmt
+        from (
+            <choose>
+                <when test="billKindScope != null and billKindScope == 'refundGoods'">
+                    (<include refid="refundGoodsQtyAmtSelect"/>)
+                </when>
+                <when test="billKindScope != null and billKindScope == 'acceptance'">
+                    (<include refid="acceptanceQtyAmtSelect"/>)
+                </when>
+                <otherwise>
+                    (<include refid="acceptanceQtyAmtSelect"/>)
+                    union all
+                    (<include refid="refundGoodsQtyAmtSelect"/>)
+                </otherwise>
+            </choose>
+        ) total_rows
+    </select>
+
+    <select id="selectInboundRefundEntryList" parameterType="com.spd.gz.domain.GzStockQueryParam"
+            resultType="com.spd.gz.domain.vo.GzStockQueryEntryVo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select * from (
+            (
+            select
+            <include refid="orderBarcodeSelectList">
+                <property name="billKind" value="acceptance"/>
+                <property name="billTypeName" value="备货验收"/>
+            </include>
+            <include refid="orderBarcodeFromWhere">
+                <property name="orderType" value="101"/>
+            </include>
+            <include refid="orderBarcodeFilters"/>
+            <if test="billKindScope != null and billKindScope == 'refundGoods'">
+                and 1 = 0
+            </if>
+            <include refid="orderBarcodeBranchOrder"/>
+            )
+            union all
+            (
+            select
+            <include refid="refundGoodsSelectList"/>
+            <include refid="refundGoodsFromWhere"/>
+            <include refid="refundGoodsFilters"/>
+            <if test="billKindScope != null and billKindScope == 'acceptance'">
+                and 1 = 0
+            </if>
+            <include refid="refundGoodsBranchOrder"/>
+            )
+        ) t
+        order by t.sortTime desc, t.entryId desc
+    </select>
+
+    <select id="countFollowEntryList" parameterType="com.spd.gz.domain.GzStockQueryParam"
+            resultType="long">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select count(*)
+        <include refid="orderBarcodeFromWhereCore">
+            <property name="orderType" value="401"/>
+        </include>
+        <include refid="orderBarcodeFilters"/>
+    </select>
+
+    <select id="sumFollowEntryList" parameterType="com.spd.gz.domain.GzStockQueryParam"
+            resultType="com.spd.common.core.page.TotalInfo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select coalesce(sum(qty), 0) as totalQty, coalesce(sum(amt), 0) as totalAmt
+        from (
+            select
+                case when ic.id is not null then 1 else oe.qty end as qty,
+                case when ic.id is not null then coalesce(ic.price, oe.price) else coalesce(oe.amt, oe.qty * oe.price) end as amt
+            <include refid="orderBarcodeFromWhereCore">
+                <property name="orderType" value="401"/>
+            </include>
+            <include refid="orderBarcodeFilters"/>
+            <if test="branchFetchLimit != null">
+                <include refid="orderBarcodeBranchOrder"/>
+            </if>
+        ) total_rows
+    </select>
+
+    <select id="selectFollowEntryList" parameterType="com.spd.gz.domain.GzStockQueryParam"
+            resultType="com.spd.gz.domain.vo.GzStockQueryEntryVo">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        select * from (
+            select
+            <include refid="orderBarcodeSelectList">
+                <property name="billKind" value="follow"/>
+                <property name="billTypeName" value="跟台"/>
+            </include>
+            <include refid="orderBarcodeFromWhere">
+                <property name="orderType" value="401"/>
+            </include>
+            <include refid="orderBarcodeFilters"/>
+            <include refid="orderBarcodeBranchOrder"/>
         ) t
         order by t.sortTime desc, t.entryId desc
     </select>

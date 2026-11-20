@@ -15,10 +15,22 @@ public class GzStockQueryParam
     private String beginDate;
     private String endDate;
     private String timeField;
-    /** shipment / refundStock / refundGoods，空=出库+退库 */
+    /** shipment / refundStock / acceptance / refundGoods，空=该接口默认的全部单据 */
     private String billKindScope;
     /** UNION 各分支预取行数（分页查询性能优化，由 Controller 注入） */
     private Integer branchFetchLimit;
+    /** 耗材编码/名称/规格/型号模糊 */
+    private String materialKeyword;
+    /** 批号模糊 */
+    private String batchNumber;
+    /** 批次模糊 */
+    private String batchNo;
+    /** UDI 模糊 */
+    private String udiNo;
+    /** 生产厂家模糊 */
+    private String factoryKeyword;
+    /** 规格模糊 */
+    private String materialSpeci;
 
     public Long getWarehouseId() { return warehouseId; }
     public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
@@ -44,4 +56,16 @@ public class GzStockQueryParam
     public void setBillKindScope(String billKindScope) { this.billKindScope = billKindScope; }
     public Integer getBranchFetchLimit() { return branchFetchLimit; }
     public void setBranchFetchLimit(Integer branchFetchLimit) { this.branchFetchLimit = branchFetchLimit; }
+    public String getMaterialKeyword() { return materialKeyword; }
+    public void setMaterialKeyword(String materialKeyword) { this.materialKeyword = materialKeyword; }
+    public String getBatchNumber() { return batchNumber; }
+    public void setBatchNumber(String batchNumber) { this.batchNumber = batchNumber; }
+    public String getBatchNo() { return batchNo; }
+    public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
+    public String getUdiNo() { return udiNo; }
+    public void setUdiNo(String udiNo) { this.udiNo = udiNo; }
+    public String getFactoryKeyword() { return factoryKeyword; }
+    public void setFactoryKeyword(String factoryKeyword) { this.factoryKeyword = factoryKeyword; }
+    public String getMaterialSpeci() { return materialSpeci; }
+    public void setMaterialSpeci(String materialSpeci) { this.materialSpeci = materialSpeci; }
 }
