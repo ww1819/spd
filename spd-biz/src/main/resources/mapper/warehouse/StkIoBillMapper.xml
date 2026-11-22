@@ -54,6 +54,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="whWarehouseApplyBillNo"    column="wh_warehouse_apply_bill_no"    />
         <result property="depPurchaseApplyId"    column="dep_purchase_apply_id"    />
         <result property="depPurchaseApplyBillNo"    column="dep_purchase_apply_bill_no"    />
+        <result property="recipientName"    column="recipient_name"    />
         <result property="deliveryRefWarehouseId"    column="delivery_ref_warehouse_id"    />
         <result property="deliveryRefWarehouseName"    column="delivery_ref_warehouse_name"    />
         <result property="deliveryRefSupplierId"    column="delivery_ref_supplier_id"    />
@@ -253,6 +254,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				stk.invoice_time,stk.pro_person,stk.return_reason,stk.is_month_init,stk.receipt_confirm_status,stk.audit_by,
 				stk.his_push_status,stk.his_push_msg,stk.his_push_time,stk.print_date,stk.print_person,
 				stk.d_apply_id,stk.wh_warehouse_apply_id,stk.wh_warehouse_apply_bill_no,
+				stk.dep_purchase_apply_id,stk.dep_purchase_apply_bill_no,stk.recipient_name,
 				stk.delivery_ref_warehouse_id,stk.delivery_ref_warehouse_name,stk.delivery_ref_supplier_id,
 				stk.delivery_ref_supplier_name,stk.delivery_ref_dept_id,stk.delivery_ref_dept_name,
 				s.id sId,s.code supplierCode,s.name supplierName,
@@ -1258,7 +1260,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.bill_no, a.ref_bill_no, a.suppler_id, a.bill_date, a.warehouse_id, a.department_id, a.bill_status, a.user_id as stk_user_id, a.bill_type, a.del_flag, a.tenant_id, a.delete_by, a.delete_time, a.settlement_type, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 a.d_apply_id, a.wh_warehouse_apply_id, a.wh_warehouse_apply_bill_no,
-                a.dep_purchase_apply_id, a.dep_purchase_apply_bill_no,
+                a.dep_purchase_apply_id, a.dep_purchase_apply_bill_no, a.recipient_name,
                 a.delivery_ref_warehouse_id, a.delivery_ref_warehouse_name, a.delivery_ref_supplier_id,
                 a.delivery_ref_supplier_name, a.delivery_ref_dept_id, a.delivery_ref_dept_name,
                 a.del_person,a.telephone,a.total_amount,a.invoice_number,a.invoice_amount,
@@ -1349,6 +1351,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="whWarehouseApplyBillNo != null and whWarehouseApplyBillNo != ''">wh_warehouse_apply_bill_no,</if>
             <if test="depPurchaseApplyId != null">dep_purchase_apply_id,</if>
             <if test="depPurchaseApplyBillNo != null and depPurchaseApplyBillNo != ''">dep_purchase_apply_bill_no,</if>
+            <if test="recipientName != null and recipientName != ''">recipient_name,</if>
             <if test="deliveryRefWarehouseId != null and deliveryRefWarehouseId != ''">delivery_ref_warehouse_id,</if>
             <if test="deliveryRefWarehouseName != null and deliveryRefWarehouseName != ''">delivery_ref_warehouse_name,</if>
             <if test="deliveryRefSupplierId != null and deliveryRefSupplierId != ''">delivery_ref_supplier_id,</if>
@@ -1391,6 +1394,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="whWarehouseApplyBillNo != null and whWarehouseApplyBillNo != ''">#{whWarehouseApplyBillNo},</if>
             <if test="depPurchaseApplyId != null">#{depPurchaseApplyId},</if>
             <if test="depPurchaseApplyBillNo != null and depPurchaseApplyBillNo != ''">#{depPurchaseApplyBillNo},</if>
+            <if test="recipientName != null and recipientName != ''">#{recipientName},</if>
             <if test="deliveryRefWarehouseId != null and deliveryRefWarehouseId != ''">#{deliveryRefWarehouseId},</if>
             <if test="deliveryRefWarehouseName != null and deliveryRefWarehouseName != ''">#{deliveryRefWarehouseName},</if>
             <if test="deliveryRefSupplierId != null and deliveryRefSupplierId != ''">#{deliveryRefSupplierId},</if>
@@ -1440,6 +1444,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="whWarehouseApplyBillNo != null">wh_warehouse_apply_bill_no = #{whWarehouseApplyBillNo},</if>
             <if test="depPurchaseApplyId != null">dep_purchase_apply_id = #{depPurchaseApplyId},</if>
             <if test="depPurchaseApplyBillNo != null">dep_purchase_apply_bill_no = #{depPurchaseApplyBillNo},</if>
+            recipient_name = #{recipientName},
             <if test="deliveryRefWarehouseId != null">delivery_ref_warehouse_id = #{deliveryRefWarehouseId},</if>
             <if test="deliveryRefWarehouseName != null">delivery_ref_warehouse_name = #{deliveryRefWarehouseName},</if>
             <if test="deliveryRefSupplierId != null">delivery_ref_supplier_id = #{deliveryRefSupplierId},</if>

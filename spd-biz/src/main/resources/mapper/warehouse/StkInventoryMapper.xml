@@ -71,6 +71,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="registerNo"    column="m_registerNo"    />
         <result property="isUse"    column="m_is_use"    />
         <result property="isBilling"    column="m_isBilling"    />
+        <result property="isProcure"    column="m_is_procure"    />
+        <result property="isTemporaryPurchase"    column="m_is_temporary_purchase"    />
+        <result property="isSunshineProcurement"    column="m_is_sunshine_procurement"    />
+        <result property="isMonitor"    column="m_is_monitor"    />
+        <result property="sunshineCode"    column="m_sunshine_code"    />
+        <result property="medicalName"    column="m_medical_name"    />
+        <result property="medicalNo"    column="m_medical_no"    />
         <result property="hisChargeItemId" column="his_charge_item_id" />
         <result property="hisChargeItemCode" column="his_charge_item_code" />
         <result property="hisChargeItemName" column="his_charge_item_name" />
@@ -126,6 +133,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				m.is_use m_is_use,
 				m.is_billing m_isBilling, m.period_date m_periodDate,
 				m.package_speci m_packageSpeci, m.is_way m_isWay,
+				m.is_procure m_is_procure,
+				m.is_temporary_purchase m_is_temporary_purchase,
+				m.is_sunshine_procurement m_is_sunshine_procurement,
+				m.is_monitor m_is_monitor,
+				m.sunshine_code m_sunshine_code,
+				m.medical_name m_medical_name,
+				m.medical_no m_medical_no,
 				m.his_charge_item_id,
 				hci.item_code as his_charge_item_code,
 				hci.item_name as his_charge_item_name,
