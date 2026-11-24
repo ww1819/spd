@@ -2,6 +2,7 @@ package com.spd.gz.mapper;
 
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
+import com.spd.common.core.page.TotalInfo;
 import com.spd.gz.domain.GzStockQueryParam;
 import com.spd.gz.domain.vo.GzDepInventoryCodeRepairVo;
 import com.spd.gz.domain.vo.GzDepotInventoryTraceResultVo;
@@ -13,6 +14,20 @@ public interface GzStockQueryMapper
     List<GzStockQueryEntryVo> selectOutboundRefundEntryList(GzStockQueryParam param);
 
     long countOutboundRefundEntryList(GzStockQueryParam param);
+
+    TotalInfo sumOutboundRefundEntryList(GzStockQueryParam param);
+
+    List<GzStockQueryEntryVo> selectInboundRefundEntryList(GzStockQueryParam param);
+
+    long countInboundRefundEntryList(GzStockQueryParam param);
+
+    TotalInfo sumInboundRefundEntryList(GzStockQueryParam param);
+
+    List<GzStockQueryEntryVo> selectFollowEntryList(GzStockQueryParam param);
+
+    long countFollowEntryList(GzStockQueryParam param);
+
+    TotalInfo sumFollowEntryList(GzStockQueryParam param);
 
     List<GzDepotInventoryTraceVo> selectDepotInventoryTraceByInHospitalCode(String inHospitalCode);
 

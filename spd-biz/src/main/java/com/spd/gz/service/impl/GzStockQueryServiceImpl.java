@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.spd.common.core.page.TotalInfo;
 import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.DateUtils;
 import com.spd.common.utils.SecurityUtils;
@@ -51,17 +52,100 @@ public class GzStockQueryServiceImpl implements IGzStockQueryService
         return gzStockQueryMapper.countOutboundRefundEntryList(prepareOutboundRefundParam(param));
     }
 
+    @Override
+    public TotalInfo sumOutboundRefundEntryList(GzStockQueryParam param)
+    {
+        return normalizeTotalInfo(gzStockQueryMapper.sumOutboundRefundEntryList(prepareOutboundRefundParam(param)));
+    }
+
+    @Override
+    public List<GzStockQueryEntryVo> selectInboundRefundEntryList(GzStockQueryParam param)
+    {
+        return gzStockQueryMapper.selectInboundRefundEntryList(prepareInboundRefundParam(param));
+    }
+
+    @Override
+    public long countInboundRefundEntryList(GzStockQueryParam param)
+    {
+        return gzStockQueryMapper.countInboundRefundEntryList(prepareInboundRefundParam(param));
+    }
+
+    @Override
+    public TotalInfo sumInboundRefundEntryList(GzStockQueryParam param)
+    {
+        return normalizeTotalInfo(gzStockQueryMapper.sumInboundRefundEntryList(prepareInboundRefundParam(param)));
+    }
+
+    @Override
+    public List<GzStockQueryEntryVo> selectFollowEntryList(GzStockQueryParam param)
+    {
+        return gzStockQueryMapper.selectFollowEntryList(prepareFollowParam(param));
+    }
+
+    @Override
+    public long countFollowEntryList(GzStockQueryParam param)
+    {
+        return gzStockQueryMapper.countFollowEntryList(prepareFollowParam(param));
+    }
+
+    @Override
+    public TotalInfo sumFollowEntryList(GzStockQueryParam param)
+    {
+        return normalizeTotalInfo(gzStockQueryMapper.sumFollowEntryList(prepareFollowParam(param)));
+    }
+
     private GzStockQueryParam prepareOutboundRefundParam(GzStockQueryParam param)
     {
         if (param == null) {
             param = new GzStockQueryParam();
         }
-        normalizeBillKindScope(param);
+        normalizeOutboundBillKindScope(param);
         if (StringUtils.isEmpty(param.getTimeField())) {
             param.setTimeField("createTime");
         }
         normalizeDateRange(param);
         return param;
+    }
+
+    /** 入/退货默认按审核日期，与前端 timeField=auditDate 一致 */
+    private GzStockQueryParam prepareInboundRefundParam(GzStockQueryParam param)
+    {
+        if (param == null) {
+            param = new GzStockQueryParam();
+        }
+        normalizeInboundBillKindScope(param);
+        if (StringUtils.isEmpty(param.getTimeField())) {
+            param.setTimeField("auditDate");
+        }
+        normalizeDateRange(param);
+        return param;
+    }
+
+    /** 跟台默认按审核日期 */
+    private GzStockQueryParam prepareFollowParam(GzStockQueryParam param)
+    {
+        if (param == null) {
+            param = new GzStockQueryParam();
+        }
+        if (StringUtils.isEmpty(param.getTimeField())) {
+            param.setTimeField("auditDate");
+        }
+        normalizeDateRange(param);
+        return param;
+    }
+
+    private TotalInfo normalizeTotalInfo(TotalInfo info)
+    {
+        if (info == null) {
+            info = new TotalInfo();
+        }
+        if (info.getTotalQty() == null) {
+            info.setTotalQty(BigDecimal.ZERO);
+        }
+        if (info.getTotalAmt() == null) {
+            info.setTotalAmt(BigDecimal.ZERO);
+        }
+        return info;
     }
 
     /** 日期仅传 yyyy-MM-dd 时补全时分秒，便于走 create_time/audit_date 索引 */
@@ -191,7 +275,7 @@ public class GzStockQueryServiceImpl implements IGzStockQueryService
         gzDepotInventoryMapper.updateGzDepotInventory(wrongDepot);
     }
 
-    private void normalizeBillKindScope(GzStockQueryParam param)
+    private void normalizeOutboundBillKindScope(GzStockQueryParam param)
     {
         String orderNo = param.getOrderNo() != null ? param.getOrderNo().trim().toUpperCase() : "";
         if (StringUtils.isEmpty(orderNo)) {
@@ -201,6 +285,20 @@ public class GzStockQueryServiceImpl implements IGzStockQueryService
             param.setBillKindScope("shipment");
         } else if (orderNo.startsWith("GZTK")) {
             param.setBillKindScope("refundStock");
+        }
+    }
+
+    /** GZRK 只查验收，GZTH 只查退货 */
+    private void normalizeInboundBillKindScope(GzStockQueryParam param)
+    {
+        String orderNo = param.getOrderNo() != null ? param.getOrderNo().trim().toUpperCase() : "";
+        if (StringUtils.isEmpty(orderNo)) {
+            return;
+        }
+        if (orderNo.startsWith("GZRK")) {
+            param.setBillKindScope("acceptance");
+        } else if (orderNo.startsWith("GZTH")) {
+            param.setBillKindScope("refundGoods");
         }
     }
 }

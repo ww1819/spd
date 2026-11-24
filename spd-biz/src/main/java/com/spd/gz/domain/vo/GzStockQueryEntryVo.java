@@ -5,7 +5,7 @@ import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 /**
- * 高值库存查询 — 备货出/退库明细行
+ * 高值库存查询 — 备货入/退货、出/退库、跟台明细行
  */
 public class GzStockQueryEntryVo
 {
@@ -47,6 +47,7 @@ public class GzStockQueryEntryVo
     private Long departmentId;
     private String departmentName;
     private Long supplierId;
+    private String supplierName;
 
     public Long getEntryId() { return entryId; }
     public void setEntryId(Long entryId) { this.entryId = entryId; }
@@ -114,4 +115,6 @@ public class GzStockQueryEntryVo
     public void setDepartmentName(String departmentName) { this.departmentName = departmentName; }
     public Long getSupplierId() { return supplierId; }
     public void setSupplierId(Long supplierId) { this.supplierId = supplierId; }
+    public String getSupplierName() { return supplierName; }
+    public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
 }
