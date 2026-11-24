@@ -1,5 +1,7 @@
 package com.spd.foundation.controller;
 
+
+import com.spd.foundation.domain.FdFinanceCategoryChangeLog;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
@@ -346,4 +348,24 @@ public class FdFinanceCategoryController extends BaseController
         fdFinanceCategoryService.updateReferred(ids);
         return success("更新简码成功");
     }
+
+    /**
+     * FinanceCategory字段变更记录
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:financeCategory:list')")
+    @GetMapping("/changeLog/{financeCategoryId}")
+    public AjaxResult changeLog(@PathVariable("financeCategoryId") Long financeCategoryId)
+    {
+        if (financeCategoryId == null)
+        {
+            return error("id 无效");
+        }
+        if (fdFinanceCategoryService.selectFdFinanceCategoryByFinanceCategoryId(financeCategoryId) == null)
+        {
+            return error("记录不存在");
+        }
+        List<FdFinanceCategoryChangeLog> logs = fdFinanceCategoryService.selectFinanceCategoryChangeLog(financeCategoryId);
+        return success(logs);
+    }
+
 }

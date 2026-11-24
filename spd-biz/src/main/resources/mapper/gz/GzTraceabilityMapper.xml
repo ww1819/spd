@@ -484,7 +484,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier fs on fs.id = coalesce(te.supplier_id, gdi.supplier_id)
         left join his_charge_item_mirror hci on hci.tenant_id = t.tenant_id
             and hci.charge_item_id = m.his_charge_item_id
-            and (hci.deleted_flag is null or hci.deleted_flag != 1)
+            and (hci.deleted_flag is null or hci.deleted_flag != 1) and IFNULL(hci.is_deleted,0)=0 
         left join gz_depot_inventory gdep on gdep.in_hospital_code = te.in_hospital_code
             and gdep.batch_no = te.batch_no
             and IFNULL(gdep.del_flag, 0) != 1
@@ -686,7 +686,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier mfs on mfs.id = m.supplier_id
         left join his_charge_item_mirror hci on hci.tenant_id = t.tenant_id
             and hci.charge_item_id = m.his_charge_item_id
-            and (hci.deleted_flag is null or hci.deleted_flag != 1)
+            and (hci.deleted_flag is null or hci.deleted_flag != 1) and IFNULL(hci.is_deleted,0)=0 
         left join gz_depot_inventory gdep on gdep.in_hospital_code = te.in_hospital_code
             and gdep.batch_no = te.batch_no
             and IFNULL(gdep.del_flag, 0) != 1
@@ -795,7 +795,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier mfs on mfs.id = m.supplier_id
         left join his_charge_item_mirror hci on hci.tenant_id = t.tenant_id
             and hci.charge_item_id = m.his_charge_item_id
-            and (hci.deleted_flag is null or hci.deleted_flag != 1)
+            and (hci.deleted_flag is null or hci.deleted_flag != 1) and IFNULL(hci.is_deleted,0)=0 
         left join gz_depot_inventory gdep on gdep.in_hospital_code = te.in_hospital_code
             and gdep.batch_no = te.batch_no
             and IFNULL(gdep.del_flag, 0) != 1
@@ -902,7 +902,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier mfs on mfs.id = m.supplier_id
         left join his_charge_item_mirror hci on hci.tenant_id = t.tenant_id
             and hci.charge_item_id = m.his_charge_item_id
-            and (hci.deleted_flag is null or hci.deleted_flag != 1)
+            and (hci.deleted_flag is null or hci.deleted_flag != 1) and IFNULL(hci.is_deleted,0)=0 
         left join gz_depot_inventory gdep on gdep.in_hospital_code = te.in_hospital_code
             and gdep.batch_no = te.batch_no
             and IFNULL(gdep.del_flag, 0) != 1

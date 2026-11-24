@@ -15,7 +15,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</delete>
 	
 	<select id="countUserPostById" resultType="Integer">
-	    select count(1) from sys_user_post where post_id=#{postId}  
+	    select count(1) from sys_user_post where IFNULL(is_deleted,0)=0 AND post_id=#{postId}  
 	</select>
 	
 	<delete id="deleteUserPost" parameterType="Long">
@@ -26,9 +26,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  	</delete>
 	
 	<insert id="batchUserPost">
-		insert into sys_user_post(user_id, post_id, tenant_id) values
+		insert into sys_user_post(user_id, post_id, tenant_id, is_deleted) values
 		<foreach item="item" index="index" collection="list" separator=",">
-			(#{item.userId},#{item.postId},#{item.tenantId})
+			(#{item.userId},#{item.postId},#{item.tenantId},0)
 		</foreach>
 	</insert>
 
@@ -50,12 +50,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</update>
 
 	<select id="selectUserIdsByPostId" resultType="long">
-		select user_id from sys_user_post where post_id = #{postId}
+		select user_id from sys_user_post where IFNULL(is_deleted,0)=0 AND post_id = #{postId}
 	</select>
 
 	<select id="selectUserPostsByUserIds" resultMap="SysUserPostResult">
 		select user_id, post_id, tenant_id from sys_user_post
-		where user_id in
+		where IFNULL(is_deleted,0)=0 AND user_id in
 		<foreach collection="userIds" item="uid" open="(" separator="," close=")">
 			#{uid}
 		</foreach>

@@ -3,15 +3,13 @@
 <mapper namespace="com.spd.his.mapper.HisMirrorProcessLogMapper">
 
     <insert id="insert">
-        insert into his_mirror_process_log (
+        INSERT INTO his_mirror_process_log (
             id, tenant_id, visit_kind, mirror_row_id,
             operation, outcome, process_type, situation,
-            process_party, process_by, process_time, create_time
-        ) values (
+            process_party, process_by, process_time, create_time, is_deleted) VALUES (
             #{id}, #{tenantId}, #{visitKind}, #{mirrorRowId},
             #{operation}, #{outcome}, #{processType}, #{situation},
-            #{processParty}, #{processBy}, #{processTime}, #{createTime}
-        )
+            #{processParty}, #{processBy}, #{processTime}, #{createTime}, 0)
     </insert>
 
     <select id="selectByMirrorRow" resultType="com.spd.his.domain.dto.HisMirrorProcessLogVo">
@@ -19,9 +17,10 @@
                operation, outcome, process_type as processType, situation,
                process_party as processParty, process_by as processBy, process_time as processTime
         from his_mirror_process_log
-        where tenant_id = #{tenantId}
+        where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId}
           and visit_kind = #{visitKind}
           and mirror_row_id = #{mirrorRowId}
+        AND IFNULL(is_deleted,0)=0
         order by process_time desc, id desc
     </select>
 

@@ -16,11 +16,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	</delete>
 
 	<select id="countUserDepartmentById" resultType="Integer">
-	    select count(1) from sys_user_department where department_id=#{departmentId}
+	    select count(1) from sys_user_department where IFNULL(is_deleted,0)=0 AND department_id=#{departmentId}
 	</select>
 
 	<select id="selectDepartmentIdsByUserId" parameterType="Long" resultType="Long">
-		select department_id from sys_user_department where user_id = #{userId}
+		select department_id from sys_user_department where IFNULL(is_deleted,0)=0 AND user_id = #{userId}
 	</select>
 
 	<delete id="deleteUserDepartment" parameterType="Long">
@@ -31,9 +31,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  	</delete>
 
 	<insert id="batchUserDepartment">
-		insert into sys_user_department(department_id, user_id, status, tenant_id) values
+		insert into sys_user_department(department_id, user_id, status, tenant_id, is_deleted) values
 		<foreach item="item" index="index" collection="list" separator=",">
-			(#{item.departmentId},#{item.userId},#{item.status},#{item.tenantId})
+			(#{item.departmentId},#{item.userId},#{item.status},#{item.tenantId},0)
 		</foreach>
 	</insert>
 

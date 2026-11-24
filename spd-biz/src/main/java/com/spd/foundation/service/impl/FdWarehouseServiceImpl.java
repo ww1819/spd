@@ -1,5 +1,11 @@
 package com.spd.foundation.service.impl;
 
+
+
+
+import com.spd.common.utils.uuid.UUID7;
+import com.spd.foundation.mapper.FdWarehouseChangeLogMapper;
+import com.spd.foundation.domain.FdWarehouseChangeLog;
 import java.util.List;
 
 import com.spd.common.exception.ServiceException;
@@ -25,6 +31,9 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
 {
     @Autowired
     private FdWarehouseMapper fdWarehouseMapper;
+
+    @Autowired
+    private FdWarehouseChangeLogMapper fdWarehouseChangeLogMapper;
 
     @Autowired
     private FoundationArchiveDeleteGuardMapper foundationArchiveDeleteGuardMapper;
@@ -127,7 +136,11 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
             fdWarehouse.setSettlementType(existing.getSettlementType());
         }
         fdWarehouse.setUpdateTime(DateUtils.getNowDate());
-        return fdWarehouseMapper.updateFdWarehouse(fdWarehouse);
+        FdWarehouse before = existing;
+        int n = fdWarehouseMapper.updateFdWarehouse(fdWarehouse);
+        FdWarehouse after = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(fdWarehouse.getId()));
+        recordWarehouseFieldChanges(before, after, SecurityUtils.getUserIdStr());
+        return n;
     }
 
     /**
@@ -196,4 +209,68 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
 //    {
 //        return fdWarehouseMapper.deleteFdWarehouseById(id);
 //    }
+
+
+    public java.util.List<FdWarehouseChangeLog> selectWarehouseChangeLog(Long warehouseId)
+    {
+        if (warehouseId == null)
+        {
+            return java.util.Collections.emptyList();
+        }
+        return fdWarehouseChangeLogMapper.selectByEntityId(warehouseId);
+    }
+
+    private void recordWarehouseFieldChanges(FdWarehouse before, FdWarehouse after, String operator)
+    {
+        if (before == null || after == null || after.getId() == null)
+        {
+            return;
+        }
+        java.util.Date now = DateUtils.getNowDate();
+        String op = StringUtils.isNotEmpty(operator) ? operator : "";
+        pushChange(after.getId(), op, now, "code", "仓库编码", nzObj(before.getCode()), nzObj(after.getCode()));
+        pushChange(after.getId(), op, now, "name", "仓库名称", nzObj(before.getName()), nzObj(after.getName()));
+        pushChange(after.getId(), op, now, "warehouse_person", "负责人", nzObj(before.getWarehousePerson()), nzObj(after.getWarehousePerson()));
+        pushChange(after.getId(), op, now, "warehouse_phone", "电话", nzObj(before.getWarehousePhone()), nzObj(after.getWarehousePhone()));
+        pushChange(after.getId(), op, now, "warehouse_status", "状态", nzObj(before.getWarehouseStatus()), nzObj(after.getWarehouseStatus()));
+        pushChange(after.getId(), op, now, "warehouse_type", "仓库类型", nzObj(before.getWarehouseType()), nzObj(after.getWarehouseType()));
+        pushChange(after.getId(), op, now, "settlement_type", "结算类型", nzObj(before.getSettlementType()), nzObj(after.getSettlementType()));
+        pushChange(after.getId(), op, now, "his_id", "HIS仓库ID", nzObj(before.getHisId()), nzObj(after.getHisId()));
+        pushChange(after.getId(), op, now, "is_settlement_warehouse", "结算仓库", nzObj(before.getIsSettlementWarehouse()), nzObj(after.getIsSettlementWarehouse()));
+        pushChange(after.getId(), op, now, "lv_audit_gen_inhospital_in", "入库审核生成院内码", nzObj(before.getLvAuditGenInhospitalIn()), nzObj(after.getLvAuditGenInhospitalIn()));
+        pushChange(after.getId(), op, now, "lv_audit_gen_inhospital_out", "出库审核生成院内码", nzObj(before.getLvAuditGenInhospitalOut()), nzObj(after.getLvAuditGenInhospitalOut()));
+        pushChange(after.getId(), op, now, "require_produce_date", "必填生产日期", nzObj(before.getRequireProduceDate()), nzObj(after.getRequireProduceDate()));
+        pushChange(after.getId(), op, now, "require_expiry_date", "必填有效期", nzObj(before.getRequireExpiryDate()), nzObj(after.getRequireExpiryDate()));
+        pushChange(after.getId(), op, now, "require_batch_no", "必填批号", nzObj(before.getRequireBatchNo()), nzObj(after.getRequireBatchNo()));
+        pushChange(after.getId(), op, now, "inbound_expiry_warn_days", "效期临近天数", nzObj(before.getInboundExpiryWarnDays()), nzObj(after.getInboundExpiryWarnDays()));
+        pushChange(after.getId(), op, now, "remark", "备注", nzObj(before.getRemark()), nzObj(after.getRemark()));
+    }
+
+    private void pushChange(Long entityId, String operator, java.util.Date changeTime, String fieldName, String fieldLabel, String oldValue, String newValue)
+    {
+        if (java.util.Objects.equals(oldValue, newValue))
+        {
+            return;
+        }
+        FdWarehouseChangeLog rec = new FdWarehouseChangeLog();
+        rec.setId(UUID7.generateUUID7());
+        rec.setWarehouseId(entityId);
+        rec.setChangeTime(changeTime);
+        rec.setOperator(operator);
+        rec.setFieldName(fieldName);
+        rec.setFieldLabel(fieldLabel);
+        rec.setOldValue(oldValue);
+        rec.setNewValue(newValue);
+        fdWarehouseChangeLogMapper.insert(rec);
+    }
+
+    private static String nzObj(Object v)
+    {
+        if (v == null) { return ""; }
+        if (v instanceof java.math.BigDecimal) {
+            return ((java.math.BigDecimal) v).stripTrailingZeros().toPlainString();
+        }
+        return String.valueOf(v);
+    }
+
 }

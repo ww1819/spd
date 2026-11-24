@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FdLocationChangeLogMapper">
+
+    <resultMap id="FdLocationChangeLogResult" type="com.spd.foundation.domain.FdLocationChangeLog">
+        <result property="id" column="id"/>
+        <result property="locationId" column="location_id"/>
+        <result property="changeTime" column="change_time"/>
+        <result property="operator" column="operator"/>
+        <result property="fieldName" column="field_name"/>
+        <result property="fieldLabel" column="field_label"/>
+        <result property="oldValue" column="old_value"/>
+        <result property="newValue" column="new_value"/>
+        <result property="tenantId" column="tenant_id"/>
+            <result property="isDeleted" column="is_deleted"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.spd.foundation.domain.FdLocationChangeLog">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        INSERT INTO fd_location_change_log (id, location_id, change_time, operator, field_name, field_label, old_value, new_value, tenant_id, is_deleted)
+        VALUES (#{id}, #{locationId}, #{changeTime}, #{operator}, #{fieldName}, #{fieldLabel}, #{oldValue}, #{newValue}, #{scopedTenantId}, 0)
+    </insert>
+
+    <select id="selectByEntityId" resultMap="FdLocationChangeLogResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        SELECT id, location_id, change_time, operator, field_name, field_label, old_value, new_value, tenant_id
+        FROM fd_location_change_log
+        WHERE IFNULL(is_deleted,0)=0 AND location_id = #{locationId} and tenant_id = #{scopedTenantId}
+        AND IFNULL(is_deleted,0)=0
+        ORDER BY change_time DESC
+    </select>
+</mapper>

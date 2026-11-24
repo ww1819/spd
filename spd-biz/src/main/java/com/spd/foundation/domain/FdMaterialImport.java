@@ -49,6 +49,9 @@ public class FdMaterialImport extends BaseEntity {
     /** 导入操作人 */
     private String operator;
 
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
     public String getId() {
         return id;
     }
@@ -143,6 +146,16 @@ public class FdMaterialImport extends BaseEntity {
 
     public void setOperator(String operator) {
         this.operator = operator;
+    }
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
     }
 }
 

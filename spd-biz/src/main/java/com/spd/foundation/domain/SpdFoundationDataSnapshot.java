@@ -16,6 +16,9 @@ public class SpdFoundationDataSnapshot
     private String createBy;
     private Date createTime;
 
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
     public String getId()
     {
         return id;
@@ -94,5 +97,15 @@ public class SpdFoundationDataSnapshot
     public void setCreateTime(Date createTime)
     {
         this.createTime = createTime;
+    }
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
     }
 }

@@ -21,8 +21,7 @@
 
     <insert id="insertFdMaterialImport" parameterType="com.spd.foundation.domain.FdMaterialImport">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        INSERT INTO fd_material_import
-        (
+        INSERT INTO fd_material_import (
             id,
             code,
             name,
@@ -35,10 +34,8 @@
             raw_data,
             import_time,
             operator,
-            tenant_id
-        )
-        VALUES
-        (
+            tenant_id, is_deleted)
+        VALUES (
             #{id},
             #{code},
             #{name},
@@ -51,8 +48,7 @@
             #{rawData},
             #{importTime},
             #{operator},
-            #{scopedTenantId}
-        )
+            #{scopedTenantId}, 0)
     </insert>
 
 </mapper>

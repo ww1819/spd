@@ -31,22 +31,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <select id="selectById" parameterType="long" resultMap="SysDataBackupConfigResult">
-        <include refid="selectVo"/> where id = #{id}
+        <include refid="selectVo"/> where IFNULL(is_deleted,0)=0 AND id = #{id}
     </select>
 
     <select id="selectByTenantId" parameterType="string" resultMap="SysDataBackupConfigResult">
-        <include refid="selectVo"/> where tenant_id = #{tenantId}
+        <include refid="selectVo"/> where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId}
     </select>
 
     <insert id="insert" parameterType="com.spd.system.domain.SysDataBackupConfig" useGeneratedKeys="true" keyProperty="id">
-        insert into sys_data_backup_config (
+        INSERT INTO sys_data_backup_config (
             tenant_id, backup_path, mysqldump_path, backup_time, enabled, job_id, retain_days,
             last_backup_time, last_backup_status, last_backup_message,
-            create_by, create_time, remark
-        ) values (
+            create_by, create_time, remark, is_deleted) VALUES (
             #{tenantId}, #{backupPath}, #{mysqldumpPath}, #{backupTime}, #{enabled}, #{jobId}, #{retainDays},
             #{lastBackupTime}, #{lastBackupStatus}, #{lastBackupMessage},
-            #{createBy}, sysdate(), #{remark}
+            #{createBy}, sysdate(), #{remark}, 0
         )
     </insert>
 

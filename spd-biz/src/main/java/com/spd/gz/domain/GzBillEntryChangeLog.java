@@ -21,6 +21,9 @@ public class GzBillEntryChangeLog {
     private Date changeTime;
     private String tenantId;
 
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     public String getBillType() { return billType; }
@@ -43,4 +46,14 @@ public class GzBillEntryChangeLog {
     public void setChangeTime(Date changeTime) { this.changeTime = changeTime; }
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
+    }
 }

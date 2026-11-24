@@ -34,6 +34,9 @@ public class FdMaterialHisChargeBind
     /** 是否当前生效：Y/N */
     private String currentFlag;
 
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     public String getTenantId() { return tenantId; }
@@ -64,4 +67,14 @@ public class FdMaterialHisChargeBind
     public void setChargeItemName(String chargeItemName) { this.chargeItemName = chargeItemName; }
     public String getCurrentFlag() { return currentFlag; }
     public void setCurrentFlag(String currentFlag) { this.currentFlag = currentFlag; }
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
+    }
 }

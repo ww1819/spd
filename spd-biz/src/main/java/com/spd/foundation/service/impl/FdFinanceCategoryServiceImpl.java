@@ -1,5 +1,11 @@
 package com.spd.foundation.service.impl;
 
+
+
+
+import com.spd.common.utils.uuid.UUID7;
+import com.spd.foundation.mapper.FdFinanceCategoryChangeLogMapper;
+import com.spd.foundation.domain.FdFinanceCategoryChangeLog;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +40,9 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
 {
     @Autowired
     private FdFinanceCategoryMapper fdFinanceCategoryMapper;
+
+    @Autowired
+    private FdFinanceCategoryChangeLogMapper fdFinanceCategoryChangeLogMapper;
 
     @Autowired
     private FoundationSnapshotRecorder foundationSnapshotRecorder;
@@ -182,6 +191,7 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
             String logOp = StringUtils.isNotEmpty(fdFinanceCategory.getUpdateBy()) ? fdFinanceCategory.getUpdateBy() : SecurityUtils.getUserIdStr();
             foundationSnapshotRecorder.record(before.getTenantId(), "FINANCE_CATEGORY",
                 String.valueOf(fdFinanceCategory.getFinanceCategoryId()), before, after, logOp);
+            recordFinanceCategoryFieldChanges(before, after, logOp);
         }
         return n;
     }
@@ -606,4 +616,65 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
             }
         }
     }
+
+
+    public java.util.List<FdFinanceCategoryChangeLog> selectFinanceCategoryChangeLog(Long financeCategoryId)
+    {
+        if (financeCategoryId == null)
+        {
+            return java.util.Collections.emptyList();
+        }
+        return fdFinanceCategoryChangeLogMapper.selectByEntityId(financeCategoryId);
+    }
+
+    private void recordFinanceCategoryFieldChanges(FdFinanceCategory before, FdFinanceCategory after, String operator)
+    {
+        if (before == null || after == null || after.getFinanceCategoryId() == null)
+        {
+            return;
+        }
+        java.util.Date now = DateUtils.getNowDate();
+        String op = StringUtils.isNotEmpty(operator) ? operator : "";
+        pushChange(after.getFinanceCategoryId(), op, now, "parent_id", "上级分类ID", nzObj(before.getParentId()), nzObj(after.getParentId()));
+        pushChange(after.getFinanceCategoryId(), op, now, "finance_category_code", "财务分类编码", nzObj(before.getFinanceCategoryCode()), nzObj(after.getFinanceCategoryCode()));
+        pushChange(after.getFinanceCategoryId(), op, now, "finance_category_name", "财务分类名称", nzObj(before.getFinanceCategoryName()), nzObj(after.getFinanceCategoryName()));
+        pushChange(after.getFinanceCategoryId(), op, now, "referred_name", "简码", nzObj(before.getReferredName()), nzObj(after.getReferredName()));
+        pushChange(after.getFinanceCategoryId(), op, now, "finance_category_address", "地址", nzObj(before.getFinanceCategoryAddress()), nzObj(after.getFinanceCategoryAddress()));
+        pushChange(after.getFinanceCategoryId(), op, now, "finance_category_contact", "联系方式", nzObj(before.getFinanceCategoryContact()), nzObj(after.getFinanceCategoryContact()));
+        pushChange(after.getFinanceCategoryId(), op, now, "is_use", "使用状态", nzObj(before.getIsUse()), nzObj(after.getIsUse()));
+        pushChange(after.getFinanceCategoryId(), op, now, "his_id", "HIS系统ID", nzObj(before.getHisId()), nzObj(after.getHisId()));
+        pushChange(after.getFinanceCategoryId(), op, now, "remark", "备注", nzObj(before.getRemark()), nzObj(after.getRemark()));
+    }
+
+    private void pushChange(Long entityId, String operator, java.util.Date changeTime, String fieldName, String fieldLabel, String oldValue, String newValue)
+    {
+        if (java.util.Objects.equals(oldValue, newValue))
+        {
+            return;
+        }
+        FdFinanceCategoryChangeLog rec = new FdFinanceCategoryChangeLog();
+        rec.setId(UUID7.generateUUID7());
+        rec.setFinanceCategoryId(entityId);
+        rec.setChangeTime(changeTime);
+        rec.setOperator(operator);
+        rec.setFieldName(fieldName);
+        rec.setFieldLabel(fieldLabel);
+        rec.setOldValue(oldValue);
+        rec.setNewValue(newValue);
+        fdFinanceCategoryChangeLogMapper.insert(rec);
+    }
+
+    private static String nzObj(Object v)
+    {
+        if (v == null)
+        {
+            return "";
+        }
+        if (v instanceof java.math.BigDecimal)
+        {
+            return ((java.math.BigDecimal) v).stripTrailingZeros().toPlainString();
+        }
+        return String.valueOf(v);
+    }
+
 }

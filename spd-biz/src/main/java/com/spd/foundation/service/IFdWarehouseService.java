@@ -1,5 +1,7 @@
 package com.spd.foundation.service;
 
+
+import com.spd.foundation.domain.FdWarehouseChangeLog;
 import java.util.List;
 import com.spd.foundation.domain.FdWarehouse;
 
@@ -79,4 +81,10 @@ public interface IFdWarehouseService
      * @return
      */
     List<FdWarehouse> selectUserWarehouseAll(Long userId);
+
+    /**
+     * Warehouse字段变更记录
+     */
+    List<FdWarehouseChangeLog> selectWarehouseChangeLog(Long warehouseId);
+
 }

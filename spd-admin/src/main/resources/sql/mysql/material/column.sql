@@ -3773,3 +3773,1215 @@ DEALLOCATE PREPARE stmt_stk_io_bill_list;
 -- ========== WH-X-005 2026-11-07: scrap entry batch_number (生产批号) ==========
 CALL add_table_column('stk_scrap_bill_entry', 'batch_number', 'varchar(64)', 'batch number', NULL);
 /
+
+-- ========== SCHEMA-DIFF HS3 2026-11-24：库有脚本无（衡水三院 aspt）=====
+-- 对照：docs/sql/SCHEMA-DIFF-aspt-hs3-2026-11-24.json；SqlInitRunner 幂等
+/
+-- ----- 缺列（CALL add_table_column 幂等） -----
+CALL add_table_column('bas_apply', 'del_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('bas_apply', 'del_by', 'varchar(100)', '删除者', NULL);
+/
+CALL add_table_column('bas_apply_entry', 'del_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('bas_apply_entry', 'del_by', 'varchar(100)', '删除者', NULL);
+/
+CALL add_table_column('fd_factory', 'del_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('fd_factory', 'del_by', 'varchar(100)', '删除者', NULL);
+/
+CALL add_table_column('fd_finance_category', 'del_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('fd_finance_category', 'del_by', 'varchar(100)', '删除者', NULL);
+/
+CALL add_table_column('fd_supplier', 'del_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('fd_supplier', 'del_by', 'varchar(100)', '删除者', NULL);
+/
+CALL add_table_column('fd_warehouse_category', 'del_by', 'varchar(100)', '删除者', NULL);
+/
+CALL add_table_column('fd_warehouse_category', 'del_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('fin_invoice', 'title', 'varchar(255)', '发票抬头', NULL);
+/
+CALL add_table_column('fin_invoice', 'tax_no', 'varchar(64)', '纳税人识别号', NULL);
+/
+CALL add_table_column('fin_invoice', 'buyer_address_phone', 'varchar(512)', '购方地址电话', NULL);
+/
+CALL add_table_column('fin_invoice', 'buyer_bank_account', 'varchar(255)', '购方开户行及账号', NULL);
+/
+CALL add_table_column('fin_invoice', 'seller_address_phone', 'varchar(512)', '销方地址电话', NULL);
+/
+CALL add_table_column('fin_invoice', 'seller_bank_account', 'varchar(255)', '销方开户行及账号', NULL);
+/
+CALL add_table_column('new_product_apply', 'audit_date', 'date', '审核日期', NULL);
+/
+CALL add_table_column('new_product_apply', 'reason_and_benefit', 'varchar(2000)', '申请理由及效益分析', NULL);
+/
+CALL add_table_column('new_product_apply', 'medical_insurance', 'varchar(10)', '医保(是/否)', NULL);
+/
+CALL add_table_column('new_product_apply', 'centralized_procurement', 'varchar(10)', '集采(是/否)', NULL);
+/
+CALL add_table_column('new_product_apply', 'procurement_form', 'varchar(10)', '采购形式(长期/临采)', NULL);
+/
+CALL add_table_column('new_product_apply', 'platform_price', 'decimal(18,6)', '平台价格', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'similar_product', 'varchar(200)', '我院同类产品', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'speci', 'varchar(200)', '规格', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'model', 'varchar(100)', '型号', NULL);
+/
+CALL add_table_column('new_product_apply_entry', 'factory_name', 'varchar(200)', '生产厂家', NULL);
+/
+CALL add_table_column('new_product_apply_entry', 'supplier_name', 'varchar(200)', '供应商', NULL);
+/
+CALL add_table_column('new_product_apply_entry', 'brand_requirement', 'varchar(200)', '品牌要求', NULL);
+/
+CALL add_table_column('new_product_apply_entry', 'special_note', 'varchar(500)', '特殊说明', NULL);
+/
+CALL add_table_column('new_product_apply_entry', 'case_fee_category', 'varchar(200)', '病案费用类别', NULL);
+/
+CALL add_table_column('purchase_plan', 'pro_person', 'varchar(50)', '采购员', NULL);
+/
+CALL add_table_column('purchase_plan', 'telephone', 'varchar(20)', '联系电话', NULL);
+/
+CALL add_table_column('stk_initial_import_entry', 'third_party_detail_id', 'varchar(64)', '第三方系统库存明细ID', NULL);
+/
+CALL add_table_column('stk_io_bill', 'recipient_name', 'varchar(64)', '领用人姓名', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'del_time', 'datetime', '删除时间', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'del_by', 'varchar(100)', '删除者', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'del_time', 'date', '删除时间', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'del_by', 'varchar(100)', '删除者', NULL);
+/
+CALL add_table_column('supp_settlement_bill', 'invoice_id', 'varchar(36)', '关联发票ID（fin_invoice.id，UUID7）', NULL);
+/
+-- ----- 缺索引（幂等 ADD INDEX；仅脚本已管表） -----
+SET @idx_hs3_1 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'fd_location' AND index_name = 'idx_parent_id'
+);
+/
+SET @sql_idx_hs3_1 := IF(@idx_hs3_1 = 0,
+  'ALTER TABLE `fd_location` ADD INDEX `idx_parent_id` (`parent_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_1 FROM @sql_idx_hs3_1;
+/
+EXECUTE stmt_idx_hs3_1;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_1;
+/
+SET @idx_hs3_2 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'fd_location' AND index_name = 'idx_warehouse_id'
+);
+/
+SET @sql_idx_hs3_2 := IF(@idx_hs3_2 = 0,
+  'ALTER TABLE `fd_location` ADD INDEX `idx_warehouse_id` (`warehouse_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_2 FROM @sql_idx_hs3_2;
+/
+EXECUTE stmt_idx_hs3_2;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_2;
+/
+SET @idx_hs3_3 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'fd_warehouse_category' AND index_name = 'idx_parent_id'
+);
+/
+SET @sql_idx_hs3_3 := IF(@idx_hs3_3 = 0,
+  'ALTER TABLE `fd_warehouse_category` ADD INDEX `idx_parent_id` (`parent_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_3 FROM @sql_idx_hs3_3;
+/
+EXECUTE stmt_idx_hs3_3;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_3;
+/
+SET @idx_hs3_4 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'fin_invoice' AND index_name = 'idx_fin_invoice_no'
+);
+/
+SET @sql_idx_hs3_4 := IF(@idx_hs3_4 = 0,
+  'ALTER TABLE `fin_invoice` ADD INDEX `idx_fin_invoice_no` (`invoice_no`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_4 FROM @sql_idx_hs3_4;
+/
+EXECUTE stmt_idx_hs3_4;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_4;
+/
+SET @idx_hs3_5 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'gz_patient_info' AND index_name = 'idx_hospital_number'
+);
+/
+SET @sql_idx_hs3_5 := IF(@idx_hs3_5 = 0,
+  'ALTER TABLE `gz_patient_info` ADD INDEX `idx_hospital_number` (`hospital_number`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_5 FROM @sql_idx_hs3_5;
+/
+EXECUTE stmt_idx_hs3_5;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_5;
+/
+SET @idx_hs3_6 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'gz_patient_info' AND index_name = 'idx_name'
+);
+/
+SET @sql_idx_hs3_6 := IF(@idx_hs3_6 = 0,
+  'ALTER TABLE `gz_patient_info` ADD INDEX `idx_name` (`name`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_6 FROM @sql_idx_hs3_6;
+/
+EXECUTE stmt_idx_hs3_6;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_6;
+/
+SET @idx_hs3_7 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'gz_patient_info' AND index_name = 'uk_medical_record_no'
+);
+/
+SET @sql_idx_hs3_7 := IF(@idx_hs3_7 = 0,
+  'ALTER TABLE `gz_patient_info` ADD UNIQUE INDEX `uk_medical_record_no` (`medical_record_no`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_7 FROM @sql_idx_hs3_7;
+/
+EXECUTE stmt_idx_hs3_7;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_7;
+/
+SET @idx_hs3_8 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'gz_traceability' AND index_name = 'idx_hospital_number'
+);
+/
+SET @sql_idx_hs3_8 := IF(@idx_hs3_8 = 0,
+  'ALTER TABLE `gz_traceability` ADD INDEX `idx_hospital_number` (`hospital_number`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_8 FROM @sql_idx_hs3_8;
+/
+EXECUTE stmt_idx_hs3_8;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_8;
+/
+SET @idx_hs3_9 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'gz_traceability' AND index_name = 'idx_medical_record_no'
+);
+/
+SET @sql_idx_hs3_9 := IF(@idx_hs3_9 = 0,
+  'ALTER TABLE `gz_traceability` ADD INDEX `idx_medical_record_no` (`medical_record_no`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_9 FROM @sql_idx_hs3_9;
+/
+EXECUTE stmt_idx_hs3_9;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_9;
+/
+SET @idx_hs3_10 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'gz_traceability' AND index_name = 'idx_order_status'
+);
+/
+SET @sql_idx_hs3_10 := IF(@idx_hs3_10 = 0,
+  'ALTER TABLE `gz_traceability` ADD INDEX `idx_order_status` (`order_status`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_10 FROM @sql_idx_hs3_10;
+/
+EXECUTE stmt_idx_hs3_10;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_10;
+/
+SET @idx_hs3_11 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'gz_traceability' AND index_name = 'uk_trace_no'
+);
+/
+SET @sql_idx_hs3_11 := IF(@idx_hs3_11 = 0,
+  'ALTER TABLE `gz_traceability` ADD UNIQUE INDEX `uk_trace_no` (`trace_no`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_11 FROM @sql_idx_hs3_11;
+/
+EXECUTE stmt_idx_hs3_11;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_11;
+/
+SET @idx_hs3_12 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'gz_traceability_entry' AND index_name = 'idx_in_hospital_code'
+);
+/
+SET @sql_idx_hs3_12 := IF(@idx_hs3_12 = 0,
+  'ALTER TABLE `gz_traceability_entry` ADD INDEX `idx_in_hospital_code` (`in_hospital_code`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_12 FROM @sql_idx_hs3_12;
+/
+EXECUTE stmt_idx_hs3_12;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_12;
+/
+SET @idx_hs3_13 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'gz_traceability_entry' AND index_name = 'idx_material_id'
+);
+/
+SET @sql_idx_hs3_13 := IF(@idx_hs3_13 = 0,
+  'ALTER TABLE `gz_traceability_entry` ADD INDEX `idx_material_id` (`material_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_13 FROM @sql_idx_hs3_13;
+/
+EXECUTE stmt_idx_hs3_13;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_13;
+/
+SET @idx_hs3_14 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'gz_traceability_entry' AND index_name = 'idx_parent_id'
+);
+/
+SET @sql_idx_hs3_14 := IF(@idx_hs3_14 = 0,
+  'ALTER TABLE `gz_traceability_entry` ADD INDEX `idx_parent_id` (`parent_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_14 FROM @sql_idx_hs3_14;
+/
+EXECUTE stmt_idx_hs3_14;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_14;
+/
+SET @idx_hs3_15 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'new_product_apply' AND index_name = 'idx_apply_date'
+);
+/
+SET @sql_idx_hs3_15 := IF(@idx_hs3_15 = 0,
+  'ALTER TABLE `new_product_apply` ADD INDEX `idx_apply_date` (`apply_date`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_15 FROM @sql_idx_hs3_15;
+/
+EXECUTE stmt_idx_hs3_15;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_15;
+/
+SET @idx_hs3_16 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'new_product_apply' AND index_name = 'idx_apply_no'
+);
+/
+SET @sql_idx_hs3_16 := IF(@idx_hs3_16 = 0,
+  'ALTER TABLE `new_product_apply` ADD INDEX `idx_apply_no` (`apply_no`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_16 FROM @sql_idx_hs3_16;
+/
+EXECUTE stmt_idx_hs3_16;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_16;
+/
+SET @idx_hs3_17 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'new_product_apply' AND index_name = 'idx_apply_status'
+);
+/
+SET @sql_idx_hs3_17 := IF(@idx_hs3_17 = 0,
+  'ALTER TABLE `new_product_apply` ADD INDEX `idx_apply_status` (`apply_status`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_17 FROM @sql_idx_hs3_17;
+/
+EXECUTE stmt_idx_hs3_17;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_17;
+/
+SET @idx_hs3_18 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'new_product_apply' AND index_name = 'idx_department_id'
+);
+/
+SET @sql_idx_hs3_18 := IF(@idx_hs3_18 = 0,
+  'ALTER TABLE `new_product_apply` ADD INDEX `idx_department_id` (`department_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_18 FROM @sql_idx_hs3_18;
+/
+EXECUTE stmt_idx_hs3_18;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_18;
+/
+SET @idx_hs3_19 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'new_product_apply_detail' AND index_name = 'idx_parent_id'
+);
+/
+SET @sql_idx_hs3_19 := IF(@idx_hs3_19 = 0,
+  'ALTER TABLE `new_product_apply_detail` ADD INDEX `idx_parent_id` (`parent_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_19 FROM @sql_idx_hs3_19;
+/
+EXECUTE stmt_idx_hs3_19;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_19;
+/
+SET @idx_hs3_20 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'new_product_apply_entry' AND index_name = 'idx_material_id'
+);
+/
+SET @sql_idx_hs3_20 := IF(@idx_hs3_20 = 0,
+  'ALTER TABLE `new_product_apply_entry` ADD INDEX `idx_material_id` (`material_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_20 FROM @sql_idx_hs3_20;
+/
+EXECUTE stmt_idx_hs3_20;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_20;
+/
+SET @idx_hs3_21 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'new_product_apply_entry' AND index_name = 'idx_parent_id'
+);
+/
+SET @sql_idx_hs3_21 := IF(@idx_hs3_21 = 0,
+  'ALTER TABLE `new_product_apply_entry` ADD INDEX `idx_parent_id` (`parent_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_21 FROM @sql_idx_hs3_21;
+/
+EXECUTE stmt_idx_hs3_21;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_21;
+/
+SET @idx_hs3_22 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_order' AND index_name = 'idx_department_id'
+);
+/
+SET @sql_idx_hs3_22 := IF(@idx_hs3_22 = 0,
+  'ALTER TABLE `purchase_order` ADD INDEX `idx_department_id` (`department_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_22 FROM @sql_idx_hs3_22;
+/
+EXECUTE stmt_idx_hs3_22;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_22;
+/
+SET @idx_hs3_23 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_order' AND index_name = 'idx_order_date'
+);
+/
+SET @sql_idx_hs3_23 := IF(@idx_hs3_23 = 0,
+  'ALTER TABLE `purchase_order` ADD INDEX `idx_order_date` (`order_date`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_23 FROM @sql_idx_hs3_23;
+/
+EXECUTE stmt_idx_hs3_23;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_23;
+/
+SET @idx_hs3_24 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_order' AND index_name = 'idx_order_status'
+);
+/
+SET @sql_idx_hs3_24 := IF(@idx_hs3_24 = 0,
+  'ALTER TABLE `purchase_order` ADD INDEX `idx_order_status` (`order_status`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_24 FROM @sql_idx_hs3_24;
+/
+EXECUTE stmt_idx_hs3_24;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_24;
+/
+SET @idx_hs3_25 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_order' AND index_name = 'idx_plan_no'
+);
+/
+SET @sql_idx_hs3_25 := IF(@idx_hs3_25 = 0,
+  'ALTER TABLE `purchase_order` ADD INDEX `idx_plan_no` (`plan_no`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_25 FROM @sql_idx_hs3_25;
+/
+EXECUTE stmt_idx_hs3_25;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_25;
+/
+SET @idx_hs3_26 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_order' AND index_name = 'idx_supplier_id'
+);
+/
+SET @sql_idx_hs3_26 := IF(@idx_hs3_26 = 0,
+  'ALTER TABLE `purchase_order` ADD INDEX `idx_supplier_id` (`supplier_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_26 FROM @sql_idx_hs3_26;
+/
+EXECUTE stmt_idx_hs3_26;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_26;
+/
+SET @idx_hs3_27 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_order' AND index_name = 'idx_warehouse_id'
+);
+/
+SET @sql_idx_hs3_27 := IF(@idx_hs3_27 = 0,
+  'ALTER TABLE `purchase_order` ADD INDEX `idx_warehouse_id` (`warehouse_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_27 FROM @sql_idx_hs3_27;
+/
+EXECUTE stmt_idx_hs3_27;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_27;
+/
+SET @idx_hs3_28 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_order' AND index_name = 'uk_order_no'
+);
+/
+SET @sql_idx_hs3_28 := IF(@idx_hs3_28 = 0,
+  'ALTER TABLE `purchase_order` ADD UNIQUE INDEX `uk_order_no` (`order_no`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_28 FROM @sql_idx_hs3_28;
+/
+EXECUTE stmt_idx_hs3_28;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_28;
+/
+SET @idx_hs3_29 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_order_entry' AND index_name = 'idx_material_code'
+);
+/
+SET @sql_idx_hs3_29 := IF(@idx_hs3_29 = 0,
+  'ALTER TABLE `purchase_order_entry` ADD INDEX `idx_material_code` (`material_code`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_29 FROM @sql_idx_hs3_29;
+/
+EXECUTE stmt_idx_hs3_29;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_29;
+/
+SET @idx_hs3_30 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_order_entry' AND index_name = 'idx_material_id'
+);
+/
+SET @sql_idx_hs3_30 := IF(@idx_hs3_30 = 0,
+  'ALTER TABLE `purchase_order_entry` ADD INDEX `idx_material_id` (`material_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_30 FROM @sql_idx_hs3_30;
+/
+EXECUTE stmt_idx_hs3_30;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_30;
+/
+SET @idx_hs3_31 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_order_entry' AND index_name = 'idx_parent_id'
+);
+/
+SET @sql_idx_hs3_31 := IF(@idx_hs3_31 = 0,
+  'ALTER TABLE `purchase_order_entry` ADD INDEX `idx_parent_id` (`parent_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_31 FROM @sql_idx_hs3_31;
+/
+EXECUTE stmt_idx_hs3_31;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_31;
+/
+SET @idx_hs3_32 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_plan' AND index_name = 'idx_department_id'
+);
+/
+SET @sql_idx_hs3_32 := IF(@idx_hs3_32 = 0,
+  'ALTER TABLE `purchase_plan` ADD INDEX `idx_department_id` (`department_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_32 FROM @sql_idx_hs3_32;
+/
+EXECUTE stmt_idx_hs3_32;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_32;
+/
+SET @idx_hs3_33 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_plan' AND index_name = 'idx_plan_date'
+);
+/
+SET @sql_idx_hs3_33 := IF(@idx_hs3_33 = 0,
+  'ALTER TABLE `purchase_plan` ADD INDEX `idx_plan_date` (`plan_date`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_33 FROM @sql_idx_hs3_33;
+/
+EXECUTE stmt_idx_hs3_33;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_33;
+/
+SET @idx_hs3_34 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_plan' AND index_name = 'idx_plan_status'
+);
+/
+SET @sql_idx_hs3_34 := IF(@idx_hs3_34 = 0,
+  'ALTER TABLE `purchase_plan` ADD INDEX `idx_plan_status` (`plan_status`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_34 FROM @sql_idx_hs3_34;
+/
+EXECUTE stmt_idx_hs3_34;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_34;
+/
+SET @idx_hs3_35 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_plan' AND index_name = 'idx_supplier_id'
+);
+/
+SET @sql_idx_hs3_35 := IF(@idx_hs3_35 = 0,
+  'ALTER TABLE `purchase_plan` ADD INDEX `idx_supplier_id` (`supplier_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_35 FROM @sql_idx_hs3_35;
+/
+EXECUTE stmt_idx_hs3_35;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_35;
+/
+SET @idx_hs3_36 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_plan' AND index_name = 'idx_warehouse_id'
+);
+/
+SET @sql_idx_hs3_36 := IF(@idx_hs3_36 = 0,
+  'ALTER TABLE `purchase_plan` ADD INDEX `idx_warehouse_id` (`warehouse_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_36 FROM @sql_idx_hs3_36;
+/
+EXECUTE stmt_idx_hs3_36;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_36;
+/
+SET @idx_hs3_37 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_plan' AND index_name = 'uk_plan_no'
+);
+/
+SET @sql_idx_hs3_37 := IF(@idx_hs3_37 = 0,
+  'ALTER TABLE `purchase_plan` ADD UNIQUE INDEX `uk_plan_no` (`plan_no`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_37 FROM @sql_idx_hs3_37;
+/
+EXECUTE stmt_idx_hs3_37;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_37;
+/
+SET @idx_hs3_38 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_plan_entry' AND index_name = 'idx_material_id'
+);
+/
+SET @sql_idx_hs3_38 := IF(@idx_hs3_38 = 0,
+  'ALTER TABLE `purchase_plan_entry` ADD INDEX `idx_material_id` (`material_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_38 FROM @sql_idx_hs3_38;
+/
+EXECUTE stmt_idx_hs3_38;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_38;
+/
+SET @idx_hs3_39 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'purchase_plan_entry' AND index_name = 'idx_parent_id'
+);
+/
+SET @sql_idx_hs3_39 := IF(@idx_hs3_39 = 0,
+  'ALTER TABLE `purchase_plan_entry` ADD INDEX `idx_parent_id` (`parent_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_39 FROM @sql_idx_hs3_39;
+/
+EXECUTE stmt_idx_hs3_39;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_39;
+/
+SET @idx_hs3_40 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'stk_batch' AND index_name = 'idx_bill_id'
+);
+/
+SET @sql_idx_hs3_40 := IF(@idx_hs3_40 = 0,
+  'ALTER TABLE `stk_batch` ADD INDEX `idx_bill_id` (`bill_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_40 FROM @sql_idx_hs3_40;
+/
+EXECUTE stmt_idx_hs3_40;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_40;
+/
+SET @idx_hs3_41 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'stk_batch' AND index_name = 'idx_del_flag'
+);
+/
+SET @sql_idx_hs3_41 := IF(@idx_hs3_41 = 0,
+  'ALTER TABLE `stk_batch` ADD INDEX `idx_del_flag` (`del_flag`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_41 FROM @sql_idx_hs3_41;
+/
+EXECUTE stmt_idx_hs3_41;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_41;
+/
+SET @idx_hs3_42 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'stk_batch' AND index_name = 'idx_material_id'
+);
+/
+SET @sql_idx_hs3_42 := IF(@idx_hs3_42 = 0,
+  'ALTER TABLE `stk_batch` ADD INDEX `idx_material_id` (`material_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_42 FROM @sql_idx_hs3_42;
+/
+EXECUTE stmt_idx_hs3_42;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_42;
+/
+SET @idx_hs3_43 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'stk_batch' AND index_name = 'idx_warehouse_id'
+);
+/
+SET @sql_idx_hs3_43 := IF(@idx_hs3_43 = 0,
+  'ALTER TABLE `stk_batch` ADD INDEX `idx_warehouse_id` (`warehouse_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_43 FROM @sql_idx_hs3_43;
+/
+EXECUTE stmt_idx_hs3_43;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_43;
+/
+SET @idx_hs3_44 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'stk_batch' AND index_name = 'uk_batch_no'
+);
+/
+SET @sql_idx_hs3_44 := IF(@idx_hs3_44 = 0,
+  'ALTER TABLE `stk_batch` ADD UNIQUE INDEX `uk_batch_no` (`batch_no`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_44 FROM @sql_idx_hs3_44;
+/
+EXECUTE stmt_idx_hs3_44;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_44;
+/
+SET @idx_hs3_45 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'stk_inventory' AND index_name = 'idx_batch_id'
+);
+/
+SET @sql_idx_hs3_45 := IF(@idx_hs3_45 = 0,
+  'ALTER TABLE `stk_inventory` ADD INDEX `idx_batch_id` (`batch_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_45 FROM @sql_idx_hs3_45;
+/
+EXECUTE stmt_idx_hs3_45;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_45;
+/
+SET @idx_hs3_46 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'stk_io_profit_loss' AND index_name = 'idx_bill_status'
+);
+/
+SET @sql_idx_hs3_46 := IF(@idx_hs3_46 = 0,
+  'ALTER TABLE `stk_io_profit_loss` ADD INDEX `idx_bill_status` (`bill_status`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_46 FROM @sql_idx_hs3_46;
+/
+EXECUTE stmt_idx_hs3_46;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_46;
+/
+SET @idx_hs3_47 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'stk_io_profit_loss' AND index_name = 'idx_del_flag'
+);
+/
+SET @sql_idx_hs3_47 := IF(@idx_hs3_47 = 0,
+  'ALTER TABLE `stk_io_profit_loss` ADD INDEX `idx_del_flag` (`del_flag`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_47 FROM @sql_idx_hs3_47;
+/
+EXECUTE stmt_idx_hs3_47;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_47;
+/
+SET @idx_hs3_48 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'stk_io_profit_loss' AND index_name = 'idx_stocktaking_id'
+);
+/
+SET @sql_idx_hs3_48 := IF(@idx_hs3_48 = 0,
+  'ALTER TABLE `stk_io_profit_loss` ADD INDEX `idx_stocktaking_id` (`stocktaking_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_48 FROM @sql_idx_hs3_48;
+/
+EXECUTE stmt_idx_hs3_48;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_48;
+/
+SET @idx_hs3_49 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'stk_io_profit_loss' AND index_name = 'idx_warehouse_id'
+);
+/
+SET @sql_idx_hs3_49 := IF(@idx_hs3_49 = 0,
+  'ALTER TABLE `stk_io_profit_loss` ADD INDEX `idx_warehouse_id` (`warehouse_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_49 FROM @sql_idx_hs3_49;
+/
+EXECUTE stmt_idx_hs3_49;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_49;
+/
+SET @idx_hs3_50 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'stk_io_profit_loss_entry' AND index_name = 'idx_paren_id'
+);
+/
+SET @sql_idx_hs3_50 := IF(@idx_hs3_50 = 0,
+  'ALTER TABLE `stk_io_profit_loss_entry` ADD INDEX `idx_paren_id` (`paren_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_50 FROM @sql_idx_hs3_50;
+/
+EXECUTE stmt_idx_hs3_50;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_50;
+/
+SET @idx_hs3_51 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'stk_io_profit_loss_entry' AND index_name = 'idx_stocktaking_entry_id'
+);
+/
+SET @sql_idx_hs3_51 := IF(@idx_hs3_51 = 0,
+  'ALTER TABLE `stk_io_profit_loss_entry` ADD INDEX `idx_stocktaking_entry_id` (`stocktaking_entry_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_51 FROM @sql_idx_hs3_51;
+/
+EXECUTE stmt_idx_hs3_51;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_51;
+/
+SET @idx_hs3_52 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'supp_settlement_bill' AND index_name = 'idx_supp_settlement_invoice'
+);
+/
+SET @sql_idx_hs3_52 := IF(@idx_hs3_52 = 0,
+  'ALTER TABLE `supp_settlement_bill` ADD INDEX `idx_supp_settlement_invoice` (`invoice_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_52 FROM @sql_idx_hs3_52;
+/
+EXECUTE stmt_idx_hs3_52;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_52;
+/
+SET @idx_hs3_53 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ck_flow' AND index_name = 'idx_bill_id'
+);
+/
+SET @sql_idx_hs3_53 := IF(@idx_hs3_53 = 0,
+  'ALTER TABLE `t_hc_ck_flow` ADD INDEX `idx_bill_id` (`bill_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_53 FROM @sql_idx_hs3_53;
+/
+EXECUTE stmt_idx_hs3_53;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_53;
+/
+SET @idx_hs3_54 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ck_flow' AND index_name = 'idx_del_flag'
+);
+/
+SET @sql_idx_hs3_54 := IF(@idx_hs3_54 = 0,
+  'ALTER TABLE `t_hc_ck_flow` ADD INDEX `idx_del_flag` (`del_flag`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_54 FROM @sql_idx_hs3_54;
+/
+EXECUTE stmt_idx_hs3_54;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_54;
+/
+SET @idx_hs3_55 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ck_flow' AND index_name = 'idx_entry_id'
+);
+/
+SET @sql_idx_hs3_55 := IF(@idx_hs3_55 = 0,
+  'ALTER TABLE `t_hc_ck_flow` ADD INDEX `idx_entry_id` (`entry_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_55 FROM @sql_idx_hs3_55;
+/
+EXECUTE stmt_idx_hs3_55;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_55;
+/
+SET @idx_hs3_56 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ck_flow' AND index_name = 'idx_flow_time'
+);
+/
+SET @sql_idx_hs3_56 := IF(@idx_hs3_56 = 0,
+  'ALTER TABLE `t_hc_ck_flow` ADD INDEX `idx_flow_time` (`flow_time`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_56 FROM @sql_idx_hs3_56;
+/
+EXECUTE stmt_idx_hs3_56;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_56;
+/
+SET @idx_hs3_57 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ks_flow' AND index_name = 'idx_bill_id'
+);
+/
+SET @sql_idx_hs3_57 := IF(@idx_hs3_57 = 0,
+  'ALTER TABLE `t_hc_ks_flow` ADD INDEX `idx_bill_id` (`bill_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_57 FROM @sql_idx_hs3_57;
+/
+EXECUTE stmt_idx_hs3_57;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_57;
+/
+SET @idx_hs3_58 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ks_flow' AND index_name = 'idx_del_flag'
+);
+/
+SET @sql_idx_hs3_58 := IF(@idx_hs3_58 = 0,
+  'ALTER TABLE `t_hc_ks_flow` ADD INDEX `idx_del_flag` (`del_flag`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_58 FROM @sql_idx_hs3_58;
+/
+EXECUTE stmt_idx_hs3_58;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_58;
+/
+SET @idx_hs3_59 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ks_flow' AND index_name = 'idx_entry_id'
+);
+/
+SET @sql_idx_hs3_59 := IF(@idx_hs3_59 = 0,
+  'ALTER TABLE `t_hc_ks_flow` ADD INDEX `idx_entry_id` (`entry_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_59 FROM @sql_idx_hs3_59;
+/
+EXECUTE stmt_idx_hs3_59;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_59;
+/
+SET @idx_hs3_60 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ks_flow' AND index_name = 'idx_flow_time'
+);
+/
+SET @sql_idx_hs3_60 := IF(@idx_hs3_60 = 0,
+  'ALTER TABLE `t_hc_ks_flow` ADD INDEX `idx_flow_time` (`flow_time`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_60 FROM @sql_idx_hs3_60;
+/
+EXECUTE stmt_idx_hs3_60;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_60;
+/
+SET @idx_hs3_61 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ks_xh' AND index_name = 'idx_consume_bill_date'
+);
+/
+SET @sql_idx_hs3_61 := IF(@idx_hs3_61 = 0,
+  'ALTER TABLE `t_hc_ks_xh` ADD INDEX `idx_consume_bill_date` (`consume_bill_date`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_61 FROM @sql_idx_hs3_61;
+/
+EXECUTE stmt_idx_hs3_61;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_61;
+/
+SET @idx_hs3_62 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ks_xh' AND index_name = 'idx_consume_bill_no'
+);
+/
+SET @sql_idx_hs3_62 := IF(@idx_hs3_62 = 0,
+  'ALTER TABLE `t_hc_ks_xh` ADD INDEX `idx_consume_bill_no` (`consume_bill_no`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_62 FROM @sql_idx_hs3_62;
+/
+EXECUTE stmt_idx_hs3_62;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_62;
+/
+SET @idx_hs3_63 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ks_xh' AND index_name = 'idx_consume_bill_status'
+);
+/
+SET @sql_idx_hs3_63 := IF(@idx_hs3_63 = 0,
+  'ALTER TABLE `t_hc_ks_xh` ADD INDEX `idx_consume_bill_status` (`consume_bill_status`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_63 FROM @sql_idx_hs3_63;
+/
+EXECUTE stmt_idx_hs3_63;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_63;
+/
+SET @idx_hs3_64 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ks_xh' AND index_name = 'idx_del_flag'
+);
+/
+SET @sql_idx_hs3_64 := IF(@idx_hs3_64 = 0,
+  'ALTER TABLE `t_hc_ks_xh` ADD INDEX `idx_del_flag` (`del_flag`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_64 FROM @sql_idx_hs3_64;
+/
+EXECUTE stmt_idx_hs3_64;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_64;
+/
+SET @idx_hs3_65 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ks_xh' AND index_name = 'idx_department_id'
+);
+/
+SET @sql_idx_hs3_65 := IF(@idx_hs3_65 = 0,
+  'ALTER TABLE `t_hc_ks_xh` ADD INDEX `idx_department_id` (`department_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_65 FROM @sql_idx_hs3_65;
+/
+EXECUTE stmt_idx_hs3_65;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_65;
+/
+SET @idx_hs3_66 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ks_xh' AND index_name = 'idx_warehouse_id'
+);
+/
+SET @sql_idx_hs3_66 := IF(@idx_hs3_66 = 0,
+  'ALTER TABLE `t_hc_ks_xh` ADD INDEX `idx_warehouse_id` (`warehouse_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_66 FROM @sql_idx_hs3_66;
+/
+EXECUTE stmt_idx_hs3_66;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_66;
+/
+SET @idx_hs3_67 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ks_xh_entry' AND index_name = 'idx_del_flag'
+);
+/
+SET @sql_idx_hs3_67 := IF(@idx_hs3_67 = 0,
+  'ALTER TABLE `t_hc_ks_xh_entry` ADD INDEX `idx_del_flag` (`del_flag`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_67 FROM @sql_idx_hs3_67;
+/
+EXECUTE stmt_idx_hs3_67;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_67;
+/
+SET @idx_hs3_68 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ks_xh_entry' AND index_name = 'idx_material_id'
+);
+/
+SET @sql_idx_hs3_68 := IF(@idx_hs3_68 = 0,
+  'ALTER TABLE `t_hc_ks_xh_entry` ADD INDEX `idx_material_id` (`material_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_68 FROM @sql_idx_hs3_68;
+/
+EXECUTE stmt_idx_hs3_68;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_68;
+/
+SET @idx_hs3_69 := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 't_hc_ks_xh_entry' AND index_name = 'idx_paren_id'
+);
+/
+SET @sql_idx_hs3_69 := IF(@idx_hs3_69 = 0,
+  'ALTER TABLE `t_hc_ks_xh_entry` ADD INDEX `idx_paren_id` (`paren_id`)',
+  'SELECT 1');
+/
+PREPARE stmt_idx_hs3_69 FROM @sql_idx_hs3_69;
+/
+EXECUTE stmt_idx_hs3_69;
+/
+DEALLOCATE PREPARE stmt_idx_hs3_69;
+/
+
+-- ========== is_deleted backfill (tables missing del_flag/is_deleted) ==========
+-- Rule: if table has neither del_flag nor is_deleted, add is_deleted (convention §3).
+CALL add_table_column('fd_department_change_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('fd_supplier_change_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('fd_factory_change_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('fd_material_import', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('bas_apply_template_entry', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('fd_material_status_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('fd_material_change_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('fd_material_his_charge_bind', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('sys_user_department', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('sys_user_post', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('hc_user_permission_menu', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('hc_customer_menu', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('hc_customer_menu_status_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('hc_customer_menu_period_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('hc_customer_status_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('hc_customer_period_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('supp_settlement_invoice', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('stk_delivery_line_cap', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('t_hc_ks_xh_entry_ref', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('sys_print_setting', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('sys_license', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('gz_order_entry_code_ref', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('gz_shipment_entry_ref', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('gz_refund_goods_entry_ref', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('sys_data_backup_config', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('sys_his_external_db', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('his_inpatient_charge_mirror', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('his_outpatient_charge_mirror', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('his_patient_charge_mirror_unified', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('his_charge_fetch_batch', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('his_charge_item_mirror', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('his_mirror_process_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('sys_print_doc_rows', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('gz_bill_entry_change_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('stk_bill_entry_change_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('spd_foundation_data_snapshot', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('sys_user_home_pref', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('sys_user_menu_hit', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('fd_warehouse_change_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('fd_unit_change_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('fd_finance_category_change_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('fd_warehouse_category_change_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/
+CALL add_table_column('fd_location_change_log', 'is_deleted', 'tinyint NOT NULL', 'soft delete 0 normal 1 deleted', '0');
+/

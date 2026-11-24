@@ -25,22 +25,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectSysLicenseById" parameterType="Long" resultMap="SysLicenseResult">
         <include refid="selectSysLicenseVo"/>
-        where id = #{id}
+        where IFNULL(is_deleted,0)=0 AND id = #{id}
     </select>
 
     <insert id="insertSysLicense" parameterType="SysLicense">
-        insert into sys_license (
+        INSERT INTO sys_license (
             id, instance_id, expire_time, payload_json, signature,
-            create_by, create_time, update_by, update_time, remark
-        ) values (
+            create_by, create_time, update_by, update_time, remark, is_deleted) VALUES (
             #{id}, #{instanceId}, #{expireTime}, #{payloadJson}, #{signature},
-            #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}
-        )
+            #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}, 0)
     </insert>
 
-    <delete id="deleteSysLicenseById" parameterType="Long">
-        delete from sys_license where id = #{id}
-    </delete>
+    <update id="deleteSysLicenseById">
+        update sys_license set is_deleted = 1
+        where id = #{id}
+    </update>
 
     <update id="updateSysLicenseActivation" parameterType="SysLicense">
         update sys_license

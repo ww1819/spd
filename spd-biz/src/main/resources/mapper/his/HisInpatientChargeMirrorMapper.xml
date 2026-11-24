@@ -64,7 +64,7 @@
     <select id="selectFingerprintsByHisIds" resultType="com.spd.his.domain.dto.HisIdFingerprint">
         select his_inpatient_charge_id as hisChargeId, row_fingerprint as rowFingerprint
         from his_inpatient_charge_mirror
-        where tenant_id = #{tenantId}
+        where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId}
         and his_inpatient_charge_id in
         <foreach collection="hisIds" item="hid" open="(" separator="," close=")">#{hid}</foreach>
     </select>
@@ -73,7 +73,7 @@
         select 'INPATIENT' as visitType, patient_name as patientName, inpatient_no as visitNo,
                ifnull(dept_name,'') as deptName, count(*) as lineCount, ifnull(sum(total_amount),0) as sumAmount
         from his_inpatient_charge_mirror
-        where tenant_id = #{tenantId}
+        where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId}
         and date(charge_date) &gt;= date(#{beginChargeDate})
         and date(charge_date) &lt;= date(#{endChargeDate})
         group by patient_name, inpatient_no, ifnull(dept_name,'')
@@ -86,8 +86,8 @@
         from his_inpatient_charge_mirror m
         left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
             and trim(cim.charge_item_id) = trim(m.charge_item_id)
-            and (cim.deleted_flag is null or cim.deleted_flag = 0)
-        where m.tenant_id = #{tenantId} and m.fetch_batch_id = #{fetchBatchId}
+            and (cim.deleted_flag is null or cim.deleted_flag = 0) and IFNULL(cim.is_deleted,0)=0 
+        where IFNULL(m.is_deleted,0)=0 AND  m.tenant_id = #{tenantId} and m.fetch_batch_id = #{fetchBatchId}
         and m.process_status = 'PENDING_CONSUME'
         and (m.his_inpatient_charge_id_tf is null or trim(m.his_inpatient_charge_id_tf) = '')
         order by m.charge_date asc, m.id asc
@@ -99,8 +99,8 @@
         from his_inpatient_charge_mirror m
         left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
             and trim(cim.charge_item_id) = trim(m.charge_item_id)
-            and (cim.deleted_flag is null or cim.deleted_flag = 0)
-        where m.tenant_id = #{tenantId} and m.fetch_batch_id = #{fetchBatchId}
+            and (cim.deleted_flag is null or cim.deleted_flag = 0) and IFNULL(cim.is_deleted,0)=0 
+        where IFNULL(m.is_deleted,0)=0 AND  m.tenant_id = #{tenantId} and m.fetch_batch_id = #{fetchBatchId}
         and m.process_status = 'PENDING_CONSUME'
         and trim(ifnull(m.his_inpatient_charge_id_tf, '')) != ''
         order by m.charge_date asc, m.id asc
@@ -108,7 +108,7 @@
 
     <select id="countConsumedInFetchBatch" resultType="int">
         select count(*) from his_inpatient_charge_mirror
-        where tenant_id = #{tenantId} and fetch_batch_id = #{fetchBatchId}
+        where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId} and fetch_batch_id = #{fetchBatchId}
         and process_status = 'CONSUMED'
     </select>
 
@@ -152,12 +152,12 @@
 
     <select id="selectByIdAndTenant" resultMap="HisInpatientChargeMirrorResult">
         select * from his_inpatient_charge_mirror
-        where tenant_id = #{tenantId} and id = #{id} limit 1
+        where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId} and id = #{id} limit 1
     </select>
 
     <select id="selectMirrorIdByHisChargeId" resultType="java.lang.String">
         select id from his_inpatient_charge_mirror
-        where tenant_id = #{tenantId} and his_inpatient_charge_id = #{hisChargeId}
+        where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId} and his_inpatient_charge_id = #{hisChargeId}
         limit 1
     </select>
 
@@ -179,8 +179,8 @@
         from his_inpatient_charge_mirror m
         left join his_charge_item_mirror cim on cim.tenant_id = m.tenant_id
             and trim(cim.charge_item_id) = trim(m.charge_item_id)
-            and (cim.deleted_flag is null or cim.deleted_flag = 0)
-        where m.tenant_id = #{tenantId}
+            and (cim.deleted_flag is null or cim.deleted_flag = 0) and IFNULL(cim.is_deleted,0)=0 
+        where IFNULL(m.is_deleted,0)=0 AND  m.tenant_id = #{tenantId}
           and trim(ifnull(m.his_inpatient_charge_id_tf, '')) = trim(#{chargeIdTf})
           and m.process_status in ('CONSUMED', 'REFUNDED')
         order by m.charge_date asc, m.id asc

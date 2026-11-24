@@ -23,6 +23,9 @@ public class SuppSettlementInvoice {
     /** 关联查询：发票信息（非持久化） */
     private FinInvoice invoice;
 
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     public String getTenantId() { return tenantId; }
@@ -39,4 +42,14 @@ public class SuppSettlementInvoice {
     public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
     public FinInvoice getInvoice() { return invoice; }
     public void setInvoice(FinInvoice invoice) { this.invoice = invoice; }
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
+    }
 }

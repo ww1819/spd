@@ -32,6 +32,9 @@ public class FdMaterialStatusLog {
     /** 租户ID */
     private String tenantId;
 
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
     public String getId() {
         return id;
     }
@@ -86,5 +89,15 @@ public class FdMaterialStatusLog {
 
     public void setTenantId(String tenantId) {
         this.tenantId = tenantId;
+    }
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
     }
 }

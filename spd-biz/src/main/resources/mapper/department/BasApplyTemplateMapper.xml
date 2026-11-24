@@ -129,7 +129,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                fc.finance_category_id as mat_finance_id, fc.finance_category_name as mat_finance_name
         from bas_apply_template t
         left join fd_warehouse w on t.warehouse_id = w.id
-        left join bas_apply_template_entry e on e.paren_id = t.id and e.tenant_id = #{scopedTenantId} and (e.delete_time is null)
+        left join bas_apply_template_entry e on e.paren_id = t.id and e.tenant_id = #{scopedTenantId} and (e.delete_time is null) and IFNULL(e.is_deleted,0)=0 
         left join fd_warehouse ew on e.warehouse_id = ew.id
         left join fd_material m on e.material_id = m.id
         left join fd_unit u on m.unit_id = u.unit_id
@@ -193,14 +193,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 逻辑删除：表有 delete_by、delete_time，使用更新代替物理删除 -->
     <update id="deleteEntryByParenId">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update bas_apply_template_entry set delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId} and (delete_time is null)
+        update bas_apply_template_entry set is_deleted = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId} and (delete_time is null)
     </update>
 
     <insert id="batchInsertEntry">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        insert into bas_apply_template_entry(paren_id, material_id, warehouse_id, qty, sort_order, tenant_id) values
+        insert into bas_apply_template_entry(paren_id, material_id, warehouse_id, qty, sort_order, tenant_id, is_deleted) values
         <foreach item="item" collection="list" separator=",">
-            (#{item.parenId}, #{item.materialId}, #{item.warehouseId}, #{item.qty}, #{item.sortOrder}, #{scopedTenantId})
+            (#{item.parenId}, #{item.materialId}, #{item.warehouseId}, #{item.qty}, #{item.sortOrder}, #{scopedTenantId}, 0)
         </foreach>
     </insert>
 </mapper>

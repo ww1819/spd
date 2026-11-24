@@ -3,13 +3,11 @@
 <mapper namespace="com.spd.foundation.mapper.FdMaterialHisChargeBindMapper">
 
     <insert id="insert">
-        insert into fd_material_his_charge_bind (
+        INSERT INTO fd_material_his_charge_bind (
             id, tenant_id, material_id, charge_item_id,
-            effective_from, effective_to, bind_by, unbind_by, create_time, update_time
-        ) values (
+            effective_from, effective_to, bind_by, unbind_by, create_time, update_time, is_deleted) VALUES (
             #{id}, #{tenantId}, #{materialId}, #{chargeItemId},
-            #{effectiveFrom}, #{effectiveTo}, #{bindBy}, #{unbindBy}, #{createTime}, #{updateTime}
-        )
+            #{effectiveFrom}, #{effectiveTo}, #{bindBy}, #{unbindBy}, #{createTime}, #{updateTime}, 0)
     </insert>
 
     <update id="closeOpenByMaterialId">

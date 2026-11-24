@@ -23,6 +23,9 @@ public class HisExternalDb
 
     private Date createTime;
 
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
     public Date getCreateTime()
     {
         return createTime;
@@ -131,5 +134,15 @@ public class HisExternalDb
     public void setRemark(String remark)
     {
         this.remark = remark;
+    }
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
     }
 }

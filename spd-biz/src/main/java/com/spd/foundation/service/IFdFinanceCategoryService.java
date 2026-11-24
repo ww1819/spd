@@ -1,5 +1,7 @@
 package com.spd.foundation.service;
 
+
+import com.spd.foundation.domain.FdFinanceCategoryChangeLog;
 import java.util.List;
 import java.util.Map;
 
@@ -77,4 +79,10 @@ public interface IFdFinanceCategoryService
      * 财务分类 Excel 导入：确认后落库
      */
     String importFinanceCategory(List<FdFinanceCategory> list, Boolean isUpdateSupport, String operName, boolean confirmed);
+
+    /**
+     * FinanceCategory字段变更记录
+     */
+    List<FdFinanceCategoryChangeLog> selectFinanceCategoryChangeLog(Long financeCategoryId);
+
 }

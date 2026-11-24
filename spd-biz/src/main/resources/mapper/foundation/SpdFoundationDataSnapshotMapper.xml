@@ -3,15 +3,15 @@
 <mapper namespace="com.spd.foundation.mapper.SpdFoundationDataSnapshotMapper">
 
     <insert id="insert">
-        insert into spd_foundation_data_snapshot(id, tenant_id, entity_type, entity_id, before_json, after_json, create_by, create_time)
-        values (#{id}, #{tenantId}, #{entityType}, #{entityId}, #{beforeJson}, #{afterJson}, #{createBy}, now())
+        INSERT INTO spd_foundation_data_snapshot (id, tenant_id, entity_type, entity_id, before_json, after_json, create_by, create_time, is_deleted)
+        VALUES (#{id}, #{tenantId}, #{entityType}, #{entityId}, #{beforeJson}, #{afterJson}, #{createBy}, now(), 0)
     </insert>
 
     <select id="selectList" resultType="com.spd.foundation.domain.SpdFoundationDataSnapshot">
         select id, tenant_id as tenantId, entity_type as entityType, entity_id as entityId,
                before_json as beforeJson, after_json as afterJson, create_by as createBy, create_time as createTime
         from spd_foundation_data_snapshot
-        where tenant_id = #{tenantId}
+        where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId}
         <if test="entityType != null and entityType != ''">and entity_type = #{entityType}</if>
         <if test="entityId != null and entityId != ''">and entity_id = #{entityId}</if>
         order by create_time desc

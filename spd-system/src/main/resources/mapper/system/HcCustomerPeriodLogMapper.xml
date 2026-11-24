@@ -10,20 +10,23 @@
     <result property="endTime" column="end_time"/>
     <result property="createBy" column="create_by"/>
     <result property="createTime" column="create_time"/>
-  </resultMap>
+          <result property="isDeleted" column="is_deleted"/>
+    </resultMap>
 
   <select id="selectByTenantId" resultMap="Result">
     select period_id, tenant_id, period_type, start_time, end_time, create_by, create_time
     from hc_customer_period_log
-    where tenant_id = #{tenantId}
-    order by start_time desc
+    where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId}
+    AND IFNULL(is_deleted,0)=0
+        order by start_time desc
   </select>
 
   <select id="selectLastWithNullEnd" resultMap="Result">
     select period_id, tenant_id, period_type, start_time, end_time, create_by, create_time
     from hc_customer_period_log
-    where tenant_id = #{tenantId} and period_type = #{periodType} and end_time is null
-    order by start_time desc limit 1
+    where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId} and period_type = #{periodType} and end_time is null
+    AND IFNULL(is_deleted,0)=0
+        order by start_time desc limit 1
   </select>
 
   <update id="updateEndTime">
@@ -31,7 +34,7 @@
   </update>
 
   <insert id="insert" parameterType="com.spd.system.domain.hc.HcCustomerPeriodLog">
-    insert into hc_customer_period_log (period_id, tenant_id, period_type, start_time, end_time, create_by, create_time)
-    values (#{periodId}, #{tenantId}, #{periodType}, #{startTime}, #{endTime}, #{createBy}, #{createTime})
+    INSERT INTO hc_customer_period_log (period_id, tenant_id, period_type, start_time, end_time, create_by, create_time, is_deleted)
+    VALUES (#{periodId}, #{tenantId}, #{periodType}, #{startTime}, #{endTime}, #{createBy}, #{createTime}, 0)
   </insert>
 </mapper>

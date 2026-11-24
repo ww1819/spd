@@ -13,19 +13,19 @@
     </resultMap>
 
     <insert id="insert" parameterType="com.spd.finance.domain.SuppSettlementInvoice">
-        insert into supp_settlement_invoice (id, tenant_id, supp_settlement_id, invoice_id, create_time, delete_by, delete_time)
-        values (#{id}, #{tenantId}, #{suppSettlementId}, #{invoiceId}, now(), null, null)
+        INSERT INTO supp_settlement_invoice (id, tenant_id, supp_settlement_id, invoice_id, create_time, delete_by, delete_time, is_deleted)
+        VALUES (#{id}, #{tenantId}, #{suppSettlementId}, #{invoiceId}, now(), null, null, 0)
     </insert>
 
     <update id="logicalDeleteBySuppSettlementAndInvoice">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update supp_settlement_invoice set delete_by = #{deleteBy}, delete_time = now()
+        update supp_settlement_invoice set is_deleted = 1, delete_by = #{deleteBy}, delete_time = now()
         where supp_settlement_id = #{suppSettlementId} and invoice_id = #{invoiceId} and tenant_id = #{scopedTenantId} and (delete_by is null or delete_by = '')
     </update>
 
     <select id="selectBySuppSettlementId" resultMap="SuppSettlementInvoiceResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select id, tenant_id, supp_settlement_id, invoice_id, create_time, delete_by, delete_time
-        from supp_settlement_invoice where supp_settlement_id = #{suppSettlementId} and tenant_id = #{scopedTenantId} and (delete_by is null or delete_by = '') order by create_time
+        from supp_settlement_invoice where IFNULL(is_deleted,0)=0 AND supp_settlement_id = #{suppSettlementId} and tenant_id = #{scopedTenantId} and (delete_by is null or delete_by = '') order by create_time
     </select>
 </mapper>

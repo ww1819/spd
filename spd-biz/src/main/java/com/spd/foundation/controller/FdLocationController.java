@@ -1,5 +1,7 @@
 package com.spd.foundation.controller;
 
+
+import com.spd.foundation.domain.FdLocationChangeLog;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -121,5 +123,25 @@ public class FdLocationController extends BaseController
     {
         return toAjax(fdLocationService.deleteFdLocationByLocationIds(locationIds));
     }
+
+    /**
+     * Location字段变更记录
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:location:list')")
+    @GetMapping("/changeLog/{locationId}")
+    public AjaxResult changeLog(@PathVariable("locationId") Long locationId)
+    {
+        if (locationId == null)
+        {
+            return error("id 无效");
+        }
+        if (fdLocationService.selectFdLocationByLocationId(locationId) == null)
+        {
+            return error("记录不存在");
+        }
+        List<FdLocationChangeLog> logs = fdLocationService.selectLocationChangeLog(locationId);
+        return success(logs);
+    }
+
 }
 
