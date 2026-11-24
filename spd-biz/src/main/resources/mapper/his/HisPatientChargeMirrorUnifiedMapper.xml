@@ -125,7 +125,8 @@
         m.create_by, m.create_time, m.update_by, m.update_time
     </sql>
 
-    <sql id="unifiedListWhere">
+    <!-- 公共 WHERE（不含 HIGH/LOW/valueLevel 模式过滤；HIGH 由双分支 UNION 单独加） -->
+    <sql id="unifiedListWhereBase">
         where m.tenant_id = #{tenantId}
         <if test="visitKind != null and visitKind != ''"> and m.visit_kind = #{visitKind}</if>
         <if test="patientName != null and patientName != ''">
@@ -247,26 +248,6 @@
         <if test="endChargeDate != null"> and m.charge_at &lt;= #{endChargeDate}</if>
         <if test="beginProcessTime != null"> and m.process_time &gt;= #{beginProcessTime}</if>
         <if test="endProcessTime != null"> and m.process_time &lt;= #{endProcessTime}</if>
-        <if test="chargeListMode != null and chargeListMode == 'HIGH'"> and <include refid="highValueLevelFilter"/></if>
-        <if test="chargeListMode != null and chargeListMode == 'LOW'"> and <include refid="lowValueLevelFilter"/></if>
-        <if test="chargeListMode == null or chargeListMode == ''">
-            <if test='valueLevel != null and valueLevel.toString() == "1"'> and <include refid="highValueLevelFilter"/></if>
-            <if test='valueLevel != null and valueLevel.toString() == "2"'> and <include refid="lowValueLevelFilter"/></if>
-            <if test='valueLevel != null and (valueLevel.toString() == "0" or valueLevel.toString() == "UNSET")'>
-                and <include refid="unsetValueLevelFilter"/>
-            </if>
-        </if>
-        <if test="valueLevelIn != null and valueLevelIn.size() &gt; 0">
-            and (
-            <foreach collection="valueLevelIn" item="vl" separator=" or ">
-                <choose>
-                    <when test='vl != null and vl.toString() == "1"'><include refid="highValueLevelFilter"/></when>
-                    <when test='vl != null and vl.toString() == "2"'><include refid="lowValueLevelFilter"/></when>
-                    <otherwise><include refid="unsetValueLevelFilter"/></otherwise>
-                </choose>
-            </foreach>
-            )
-        </if>
         <if test='materialBound != null and materialBound == "Y"'>
             and <include refid="materialBoundExistsExpr"/>
         </if>
@@ -347,6 +328,102 @@
             and m.item_name like concat('%', #{itemNameLike}, '%')
         </if>
         <include refid="unifiedDepartmentScopeFilter"/>
+    </sql>
+
+    <!-- 非 HIGH 路径：base + 高低值模式过滤（仍用 OR 写法） -->
+    <sql id="unifiedListWhere">
+        <include refid="unifiedListWhereBase"/>
+        <if test="chargeListMode != null and chargeListMode == 'HIGH'"> and <include refid="highValueLevelFilter"/></if>
+        <if test="chargeListMode != null and chargeListMode == 'LOW'"> and <include refid="lowValueLevelFilter"/></if>
+        <if test="chargeListMode == null or chargeListMode == ''">
+            <if test='valueLevel != null and valueLevel.toString() == "1"'> and <include refid="highValueLevelFilter"/></if>
+            <if test='valueLevel != null and valueLevel.toString() == "2"'> and <include refid="lowValueLevelFilter"/></if>
+            <if test='valueLevel != null and (valueLevel.toString() == "0" or valueLevel.toString() == "UNSET")'>
+                and <include refid="unsetValueLevelFilter"/>
+            </if>
+        </if>
+        <if test="valueLevelIn != null and valueLevelIn.size() &gt; 0">
+            and (
+            <foreach collection="valueLevelIn" item="vl" separator=" or ">
+                <choose>
+                    <when test='vl != null and vl.toString() == "1"'><include refid="highValueLevelFilter"/></when>
+                    <when test='vl != null and vl.toString() == "2"'><include refid="lowValueLevelFilter"/></when>
+                    <otherwise><include refid="unsetValueLevelFilter"/></otherwise>
+                </choose>
+            </foreach>
+            )
+        </if>
+    </sql>
+
+    <!-- HIGH 双分支：有计费日上下界时引导索引 -->
+    <sql id="highForceIndexTenantAt">
+        <if test="beginChargeDate != null and endChargeDate != null">
+            FORCE INDEX (idx_hpcm_unified_tenant_at)
+        </if>
+    </sql>
+    <sql id="highForceIndexTenantVlAt">
+        <if test="beginChargeDate != null and endChargeDate != null">
+            FORCE INDEX (idx_hpcm_unified_tenant_vl_at)
+        </if>
+    </sql>
+    <sql id="highBranchPendingFrom">
+        from his_patient_charge_mirror_unified m
+        <include refid="highForceIndexTenantAt"/>
+        inner join his_charge_item_mirror cim_vl
+          on cim_vl.tenant_id = m.tenant_id
+         and cim_vl.charge_item_id = m.charge_item_id
+         and (cim_vl.deleted_flag is null or cim_vl.deleted_flag != 1)
+    </sql>
+    <sql id="highBranchSnapshotFrom">
+        from his_patient_charge_mirror_unified m
+        <include refid="highForceIndexTenantVlAt"/>
+        left join his_charge_item_mirror cim_vl
+          on cim_vl.tenant_id = m.tenant_id
+         and cim_vl.charge_item_id = m.charge_item_id
+         and (cim_vl.deleted_flag is null or cim_vl.deleted_flag != 1)
+    </sql>
+    <sql id="highBranchPendingWhere">
+        <include refid="unifiedListWhereBase"/>
+        and m.process_status in ('PENDING_CONSUME', 'CONSUMING')
+        and cim_vl.value_level = '1'
+    </sql>
+    <sql id="highBranchSnapshotWhere">
+        <include refid="unifiedListWhereBase"/>
+        and (m.process_status is null or m.process_status not in ('PENDING_CONSUME', 'CONSUMING'))
+        and m.value_level = '1'
+    </sql>
+    <!-- 外层排序：列名无表别名（UNION 子查询之后） -->
+    <sql id="unifiedListOrderByOuter">
+        <choose>
+            <when test="sortField == 'visitNo'">
+                order by coalesce(nullif(trim(inpatient_no), ''), nullif(trim(outpatient_no), ''))
+                ${sortOrder == 'asc' ? 'asc' : 'desc'}, id desc
+            </when>
+            <when test="sortField == 'inpatientNo'">
+                order by inpatient_no ${sortOrder == 'asc' ? 'asc' : 'desc'}, id desc
+            </when>
+            <when test="sortField == 'outpatientNo'">
+                order by outpatient_no ${sortOrder == 'asc' ? 'asc' : 'desc'}, id desc
+            </when>
+            <when test="sortField == 'patientName'">
+                order by patient_name ${sortOrder == 'asc' ? 'asc' : 'desc'}, id desc
+            </when>
+            <when test="sortField == 'chargeItemId'">
+                order by charge_item_id ${sortOrder == 'asc' ? 'asc' : 'desc'}, id desc
+            </when>
+            <when test="sortField == 'itemName'">
+                order by item_name ${sortOrder == 'asc' ? 'asc' : 'desc'}, id desc
+            </when>
+            <when test="sortField == 'specModel'">
+                order by spec_model ${sortOrder == 'asc' ? 'asc' : 'desc'}, id desc
+            </when>
+            <when test="sortField == 'totalAmount'">
+                order by total_amount ${sortOrder == 'asc' ? 'asc' : 'desc'}, id desc
+            </when>
+            <otherwise>
+                order by charge_at desc, id desc
+            </otherwise>
+        </choose>
     </sql>
 
     <resultMap type="com.spd.his.domain.HisPatientChargeMirrorUnified" id="UnifiedResult">
@@ -571,9 +648,25 @@
     </update>
 
     <select id="countList" resultType="long">
-        select count(*)
-        <include refid="unifiedListFrom"/>
-        <include refid="unifiedListWhere"/>
+        <choose>
+            <!-- 高值扫描核销：双分支分别 count 再相加，避免 OR+JOIN 拖垮计划 -->
+            <when test='chargeListMode != null and chargeListMode == "HIGH"'>
+                select (
+                    select count(*)
+                    <include refid="highBranchPendingFrom"/>
+                    <include refid="highBranchPendingWhere"/>
+                ) + (
+                    select count(*)
+                    <include refid="highBranchSnapshotFrom"/>
+                    <include refid="highBranchSnapshotWhere"/>
+                )
+            </when>
+            <otherwise>
+                select count(*)
+                <include refid="unifiedListFrom"/>
+                <include refid="unifiedListWhere"/>
+            </otherwise>
+        </choose>
     </select>
 
     <update id="updateInpatientExecDeptIfMissing">
@@ -629,11 +722,29 @@
     </update>
 
     <select id="selectList" resultMap="UnifiedResult">
-        select
-            <include refid="unifiedSelectColumns"/>
-        <include refid="unifiedListFrom"/>
-        <include refid="unifiedListWhere"/>
-        <include refid="unifiedListOrderBy"/>
+        <choose>
+            <when test='chargeListMode != null and chargeListMode == "HIGH"'>
+                select * from (
+                    select
+                        <include refid="unifiedSelectColumns"/>
+                    <include refid="highBranchPendingFrom"/>
+                    <include refid="highBranchPendingWhere"/>
+                    union all
+                    select
+                        <include refid="unifiedSelectColumns"/>
+                    <include refid="highBranchSnapshotFrom"/>
+                    <include refid="highBranchSnapshotWhere"/>
+                ) high_u
+                <include refid="unifiedListOrderByOuter"/>
+            </when>
+            <otherwise>
+                select
+                    <include refid="unifiedSelectColumns"/>
+                <include refid="unifiedListFrom"/>
+                <include refid="unifiedListWhere"/>
+                <include refid="unifiedListOrderBy"/>
+            </otherwise>
+        </choose>
     </select>
 
     <!-- 消息提醒：科室销提醒（待处理低值计费镜像；高低值口径与列表一致） -->

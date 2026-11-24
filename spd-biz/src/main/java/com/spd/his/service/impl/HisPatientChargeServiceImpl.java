@@ -1961,6 +1961,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     {
         HisPatientChargeMirrorUnifiedSupport.normalizeListQueryKeywords(uq);
         applyPatientChargeDepartmentScopeIfNeeded(uq);
+        // HIGH 列表为 UNION ALL 子查询；关闭 PageHelper 自动 count，由 countList 双分支相加
         PageUtils.startPage(false);
         List<HisPatientChargeMirrorUnified> rows = hisPatientChargeMirrorUnifiedMapper.selectList(uq);
         long total = hisPatientChargeMirrorUnifiedMapper.countList(uq);
