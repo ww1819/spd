@@ -1,5 +1,6 @@
 -- 科室管理 / 科室采购：申购单审核后增加「科室采购表」
 -- 菜单 3990；挂目录 3950；order_num=3（申购 1 / 审核 2 / 采购表 3）
+-- 【启动补全】已并入 mysql/material/menu.sql（SqlInitRunner 重启自动执行）；本文件保留作手工对照
 
 SET @dept_purchase := 3950;
 SET @purchase_audit := 1572;

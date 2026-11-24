@@ -3744,6 +3744,32 @@ CALL add_table_column('purchase_price_adjust', 'adjust_reason', 'varchar(500)', 
 /
 UPDATE bas_apply_template SET template_type = 'SL' WHERE template_type IS NULL OR template_type = '';
 /
+-- 仓库入库开关/临近天数缺省回填（与 *_public.sql 一致，可重复执行）
+UPDATE fd_warehouse
+SET require_produce_date = COALESCE(require_produce_date, 1),
+    require_expiry_date = COALESCE(require_expiry_date, 1),
+    require_batch_no = COALESCE(require_batch_no, 1),
+    inbound_expiry_warn_days = COALESCE(inbound_expiry_warn_days, 60)
+WHERE del_flag IS NULL OR del_flag != 1;
+/
+
+-- 出入库列表复合索引（tenant+bill_type+del_flag+bill_date；与 fix_stk_io_bill_list_indexes.sql 对齐，SqlInitRunner 幂等）
+SET @idx_stk_io_bill_list := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'stk_io_bill' AND index_name = 'idx_stk_io_bill_list'
+);
+/
+SET @sql_stk_io_bill_list := IF(@idx_stk_io_bill_list = 0,
+  'ALTER TABLE stk_io_bill ADD INDEX idx_stk_io_bill_list (tenant_id, bill_type, del_flag, bill_date)',
+  'SELECT 1');
+/
+PREPARE stmt_stk_io_bill_list FROM @sql_stk_io_bill_list;
+/
+EXECUTE stmt_stk_io_bill_list;
+/
+DEALLOCATE PREPARE stmt_stk_io_bill_list;
+/
+
 -- ========== WH-X-005 2026-11-07: scrap entry batch_number (生产批号) ==========
 CALL add_table_column('stk_scrap_bill_entry', 'batch_number', 'varchar(64)', 'batch number', NULL);
 /

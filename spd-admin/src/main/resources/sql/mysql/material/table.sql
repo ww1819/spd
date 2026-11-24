@@ -1497,7 +1497,8 @@ CREATE TABLE IF NOT EXISTS `gz_traceability` (
   PRIMARY KEY (`id`),
   KEY `idx_gz_trace_no` (`trace_no`),
   KEY `idx_gz_trace_tenant` (`tenant_id`),
-  KEY `idx_gz_trace_mirror` (`tenant_id`,`trace_source`,`mirror_row_id`)
+  KEY `idx_gz_trace_mirror` (`tenant_id`,`trace_source`,`mirror_row_id`),
+  KEY `idx_gz_tr_list_ctime` (`tenant_id`, `trace_source`, `order_status`, `del_flag`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值追溯主表';
 /
 
@@ -1671,7 +1672,8 @@ CREATE TABLE IF NOT EXISTS `stk_io_bill` (
   KEY `idx_stk_io_bill_type` (`bill_type`),
   KEY `idx_stk_io_bill_wh` (`warehouse_id`),
   KEY `idx_stk_io_bill_tenant` (`tenant_id`),
-  KEY `idx_stk_io_bill_suppler` (`suppler_id`)
+  KEY `idx_stk_io_bill_suppler` (`suppler_id`),
+  KEY `idx_stk_io_bill_list` (`tenant_id`, `bill_type`, `del_flag`, `bill_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='出入库主表';
 /
 
@@ -3014,7 +3016,9 @@ CREATE TABLE IF NOT EXISTS `his_mirror_consume_link` (
   KEY `idx_hmcl_dep_inv` (`tenant_id`,`dep_inventory_id`),
   KEY `idx_hmcl_tenant_del` (`tenant_id`,`del_flag`),
   KEY `idx_hmcl_confirm` (`tenant_id`,`confirm_status`),
-  KEY `idx_hmcl_trace_id` (`tenant_id`,`traceability_id`)
+  KEY `idx_hmcl_trace_id` (`tenant_id`,`traceability_id`),
+  KEY `idx_hmcl_tenant_confirm_trace` (`tenant_id`, `confirm_status`, `del_flag`, `gz_dep_inventory_id`, `traceability_id`),
+  KEY `idx_hmcl_tenant_confirm_legacy` (`tenant_id`, `confirm_status`, `del_flag`, `gz_dep_inventory_id`, `dept_batch_consume_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费镜像与科室消耗明细关联（含退费返还累计与库存行快照）';
 /
 
