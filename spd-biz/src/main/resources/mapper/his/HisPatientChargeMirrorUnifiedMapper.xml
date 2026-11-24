@@ -59,8 +59,9 @@
     </sql>
 
     <!--
-      列表 WHERE 专用：拆成可走索引的 OR，禁止对 CASE 表达式 = '1'/'2'（生产 count 易超时）。
-      口径与 resolvedValueLevelExpr 一致：待核销/核销中跟收费项；其余跟行快照。
+      列表 WHERE：只按行快照 m.value_level 过滤，可走 idx_hpcm_unified_tenant_vl_at。
+      待核销口径「跟收费项」：查询前 syncPendingValueLevelFromChargeItem 把项标志刷进行快照。
+      展示列仍用 resolvedValueLevelExpr（待核销跟项、已核销跟快照）。
     -->
     <sql id="pendingOrConsumingStatus">
         m.process_status in ('PENDING_CONSUME', 'CONSUMING')
@@ -69,24 +70,13 @@
         (m.process_status is null or m.process_status not in ('PENDING_CONSUME', 'CONSUMING'))
     </sql>
     <sql id="highValueLevelFilter">
-        (
-            (<include refid="pendingOrConsumingStatus"/> and cim_vl.value_level = '1')
-            or (<include refid="notPendingOrConsumingStatus"/> and m.value_level = '1')
-        )
+        m.value_level = '1'
     </sql>
     <sql id="lowValueLevelFilter">
-        (
-            (<include refid="pendingOrConsumingStatus"/> and cim_vl.value_level = '2')
-            or (<include refid="notPendingOrConsumingStatus"/> and m.value_level = '2')
-        )
+        m.value_level = '2'
     </sql>
     <sql id="unsetValueLevelFilter">
-        (
-            (<include refid="pendingOrConsumingStatus"/>
-                and (cim_vl.value_level is null or cim_vl.value_level = '' or cim_vl.value_level = '0'))
-            or (<include refid="notPendingOrConsumingStatus"/>
-                and (m.value_level is null or nullif(trim(m.value_level), '') is null or m.value_level = '0'))
-        )
+        (m.value_level is null or nullif(trim(m.value_level), '') is null or m.value_level = '0')
     </sql>
 
     <sql id="unifiedListFrom">
@@ -125,7 +115,8 @@
         m.create_by, m.create_time, m.update_by, m.update_time
     </sql>
 
-    <sql id="unifiedListWhere">
+    <!-- 不含高低值条件；HIGH/LOW 拆分支 count/list 复用 -->
+    <sql id="unifiedListWhereBase">
         where m.tenant_id = #{tenantId}
         <if test="visitKind != null and visitKind != ''"> and m.visit_kind = #{visitKind}</if>
         <if test="patientName != null and patientName != ''">
@@ -247,26 +238,7 @@
         <if test="endChargeDate != null"> and m.charge_at &lt;= #{endChargeDate}</if>
         <if test="beginProcessTime != null"> and m.process_time &gt;= #{beginProcessTime}</if>
         <if test="endProcessTime != null"> and m.process_time &lt;= #{endProcessTime}</if>
-        <if test="chargeListMode != null and chargeListMode == 'HIGH'"> and <include refid="highValueLevelFilter"/></if>
-        <if test="chargeListMode != null and chargeListMode == 'LOW'"> and <include refid="lowValueLevelFilter"/></if>
-        <if test="chargeListMode == null or chargeListMode == ''">
-            <if test='valueLevel != null and valueLevel.toString() == "1"'> and <include refid="highValueLevelFilter"/></if>
-            <if test='valueLevel != null and valueLevel.toString() == "2"'> and <include refid="lowValueLevelFilter"/></if>
-            <if test='valueLevel != null and (valueLevel.toString() == "0" or valueLevel.toString() == "UNSET")'>
-                and <include refid="unsetValueLevelFilter"/>
-            </if>
-        </if>
-        <if test="valueLevelIn != null and valueLevelIn.size() &gt; 0">
-            and (
-            <foreach collection="valueLevelIn" item="vl" separator=" or ">
-                <choose>
-                    <when test='vl != null and vl.toString() == "1"'><include refid="highValueLevelFilter"/></when>
-                    <when test='vl != null and vl.toString() == "2"'><include refid="lowValueLevelFilter"/></when>
-                    <otherwise><include refid="unsetValueLevelFilter"/></otherwise>
-                </choose>
-            </foreach>
-            )
-        </if>
+        <!-- 高低值过滤见 unifiedValueLevelFilters；拆分支 count/list 时不带本段 -->
         <if test='materialBound != null and materialBound == "Y"'>
             and <include refid="materialBoundExistsExpr"/>
         </if>
@@ -347,6 +319,34 @@
             and m.item_name like concat('%', #{itemNameLike}, '%')
         </if>
         <include refid="unifiedDepartmentScopeFilter"/>
+    </sql>
+
+    <sql id="unifiedValueLevelFilters">
+        <if test="chargeListMode != null and chargeListMode == 'HIGH'"> and <include refid="highValueLevelFilter"/></if>
+        <if test="chargeListMode != null and chargeListMode == 'LOW'"> and <include refid="lowValueLevelFilter"/></if>
+        <if test="chargeListMode == null or chargeListMode == ''">
+            <if test='valueLevel != null and valueLevel.toString() == "1"'> and <include refid="highValueLevelFilter"/></if>
+            <if test='valueLevel != null and valueLevel.toString() == "2"'> and <include refid="lowValueLevelFilter"/></if>
+            <if test='valueLevel != null and (valueLevel.toString() == "0" or valueLevel.toString() == "UNSET")'>
+                and <include refid="unsetValueLevelFilter"/>
+            </if>
+        </if>
+        <if test="valueLevelIn != null and valueLevelIn.size() &gt; 0">
+            and (
+            <foreach collection="valueLevelIn" item="vl" separator=" or ">
+                <choose>
+                    <when test='vl != null and vl.toString() == "1"'><include refid="highValueLevelFilter"/></when>
+                    <when test='vl != null and vl.toString() == "2"'><include refid="lowValueLevelFilter"/></when>
+                    <otherwise><include refid="unsetValueLevelFilter"/></otherwise>
+                </choose>
+            </foreach>
+            )
+        </if>
+    </sql>
+
+    <sql id="unifiedListWhere">
+        <include refid="unifiedListWhereBase"/>
+        <include refid="unifiedValueLevelFilters"/>
     </sql>
 
     <resultMap type="com.spd.his.domain.HisPatientChargeMirrorUnified" id="UnifiedResult">
@@ -546,6 +546,37 @@
         <foreach collection="ids" item="rid" open="(" separator="," close=")">#{rid}</foreach>
     </update>
 
+    <!--
+      列表前轻量补齐：只刷「快照为空」的待核销行，且最多 800 条，避免生产大范围 JOIN UPDATE 打满 socketTimeout。
+      已有快照与收费项不一致时，靠收费项/档案维护时的 refreshPending，不在列表请求内全量对齐。
+    -->
+    <update id="syncPendingValueLevelFromChargeItem">
+        update his_patient_charge_mirror_unified m
+        inner join his_charge_item_mirror cim
+          on cim.tenant_id = m.tenant_id
+         and cim.charge_item_id = m.charge_item_id
+         and (cim.deleted_flag is null or cim.deleted_flag != 1)
+        set m.value_level = case
+                when nullif(trim(cim.value_level), '') = '1' then '1'
+                when nullif(trim(cim.value_level), '') = '2' then '2'
+                else '0'
+            end,
+            m.update_time = now()
+        where m.id in (
+            select id from (
+                select m2.id
+                from his_patient_charge_mirror_unified m2
+                where m2.tenant_id = #{tenantId}
+                  and m2.process_status in ('PENDING_CONSUME', 'CONSUMING')
+                  <if test="beginChargeDate != null"> and m2.charge_at &gt;= #{beginChargeDate}</if>
+                  <if test="endChargeDate != null"> and m2.charge_at &lt;= #{endChargeDate}</if>
+                  and (m2.value_level is null or nullif(trim(m2.value_level), '') is null)
+                order by m2.charge_at desc
+                limit 800
+            ) t
+        )
+    </update>
+
     <update id="claimMirrorProcessPending">
         update his_patient_charge_mirror_unified set
             process_status = 'CONSUMING',
@@ -636,7 +667,7 @@
         <include refid="unifiedListOrderBy"/>
     </select>
 
-    <!-- 消息提醒：科室销提醒（待处理低值计费镜像；高低值口径与列表一致） -->
+    <!-- 消息提醒：科室销提醒（待处理低值；查询前会 sync 待核销 value_level） -->
     <select id="selectDepartmentConsumeReminderList" parameterType="com.spd.his.domain.dto.HisPatientChargeMirrorUnifiedQuery"
             resultType="com.spd.department.vo.DepartmentConsumeReminderRowVo">
         select

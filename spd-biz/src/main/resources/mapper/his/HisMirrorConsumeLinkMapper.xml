@@ -86,6 +86,39 @@
           )
     </select>
 
+    <select id="sumActiveNetAllocQtyForMirrorRows" resultType="java.util.HashMap">
+        select l.mirror_row_id as mirrorRowId,
+               coalesce(sum(<include refid="linkNetAllocQtyExpr"/>), 0) as qty
+        from his_mirror_consume_link l
+        where l.tenant_id = #{tenantId}
+          and l.visit_kind = #{visitKind}
+          and l.mirror_row_id in
+          <foreach collection="mirrorRowIds" item="rid" open="(" separator="," close=")">#{rid}</foreach>
+          and ifnull(l.del_flag, 0) = 0
+          and (
+            (
+              l.traceability_id is not null
+              and exists (
+                select 1 from gz_traceability t
+                where t.id = l.traceability_id
+                  and t.tenant_id = l.tenant_id
+                  and ifnull(t.del_flag, 0) = 0
+              )
+            )
+            or
+            (
+              l.dept_batch_consume_id is not null
+              and exists (
+                select 1 from t_hc_ks_xh h
+                where h.id = l.dept_batch_consume_id
+                  and h.tenant_id = l.tenant_id
+                  and ifnull(h.del_flag, 0) = 0
+              )
+            )
+          )
+        group by l.mirror_row_id
+    </select>
+
     <select id="selectDistinctBillSourcesForMirror" resultType="java.lang.String">
         select distinct ifnull(h.bill_source, '')
         from his_mirror_consume_link l
