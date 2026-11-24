@@ -8458,17 +8458,20 @@ WHERE (
   );
 /
 -- 8) 清理库房根下重复的空「报损管理」占位（如 3992 path=1），避免分栏底部再出现「库房管理/报损管理」
--- 子查询包一层，避免 MySQL ER_UPDATE_TABLE_USED
+-- 派生表必须再包一层，否则 MySQL 报 ER_UPDATE_TABLE_USED（Can't specify target table 'm' for update in FROM clause）
 UPDATE sys_menu m
 JOIN (
-  SELECT x.menu_id
-  FROM sys_menu x
-  WHERE x.parent_id = @wh_root
-    AND x.menu_id <> @scrap_dir
-    AND x.menu_name IN ('报损管理', '报损管理(废弃占位)', '报废管理', '报废管理(废弃占位)')
-    AND (x.path IS NULL OR x.path IN ('', '1') OR x.component IS NULL OR x.component = '')
-    AND x.menu_type = 'M'
-    AND NOT EXISTS (SELECT 1 FROM sys_menu c WHERE c.parent_id = x.menu_id)
+  SELECT z.menu_id
+  FROM (
+    SELECT x.menu_id
+    FROM sys_menu x
+    WHERE x.parent_id = @wh_root
+      AND x.menu_id <> @scrap_dir
+      AND x.menu_name IN ('报损管理', '报损管理(废弃占位)', '报废管理', '报废管理(废弃占位)')
+      AND (x.path IS NULL OR x.path IN ('', '1') OR x.component IS NULL OR x.component = '')
+      AND x.menu_type = 'M'
+      AND NOT EXISTS (SELECT 1 FROM sys_menu c WHERE c.parent_id = x.menu_id)
+  ) z
 ) d ON m.menu_id = d.menu_id
 SET m.visible = '1',
     m.status = '1',

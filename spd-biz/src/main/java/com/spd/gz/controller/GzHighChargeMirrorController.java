@@ -45,6 +45,18 @@ public class GzHighChargeMirrorController extends BaseController
     @Autowired
     private IGzHighValueWriteOffService gzHighValueWriteOffService;
 
+    /**
+     * 进页访问日志：前端上报分段耗时，落 sys_oper_log（title=高值扫描核销-进页）。
+     * 分析卡顿以 body 内 listMs/statusMs/totalMs 为准。
+     */
+    @PreAuthorize("@ss.hasPermi('gz:highChargeScan:list')")
+    @Log(title = "高值扫描核销-进页", businessType = BusinessType.OTHER, isSaveResponseData = false)
+    @PostMapping("/mirror/pageAccess")
+    public AjaxResult pageAccess(@RequestBody(required = false) Map<String, Object> body)
+    {
+        return success();
+    }
+
     @PreAuthorize("@ss.hasPermi('gz:highChargeScan:list')")
     @GetMapping("/mirror/inpatient/list")
     public TableDataInfo inpatientMirrorList(HisInpatientChargeMirror query)
@@ -121,6 +133,18 @@ public class GzHighChargeMirrorController extends BaseController
     {
         Map<String, HisMirrorHighWriteOffStatusVo> map = hisPatientChargeService.listHighChargeMirrorWriteOffStatus(body);
         return success(map);
+    }
+
+    /**
+     * 进页访问日志：前端首屏分段耗时上报，经 @Log 落入 sys_oper_log（title=高值扫描核销-进页）。
+     * 分析卡顿以 body 内 listMs/statusMs/totalMs 为准；本接口本身应很快。
+     */
+    @PreAuthorize("@ss.hasPermi('gz:highChargeScan:list')")
+    @Log(title = "高值扫描核销-进页", businessType = BusinessType.OTHER, isSaveResponseData = false)
+    @PostMapping("/mirror/pageAccess")
+    public AjaxResult pageAccess(@RequestBody(required = false) Map<String, Object> body)
+    {
+        return success();
     }
 
     /** 整单冲销当前有效核销单：仅整单全部未确认可在本页冲销，否则须库房在即入即出页冲销 */

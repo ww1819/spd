@@ -649,6 +649,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     @Override
     public List<HisInpatientChargeMirror> selectHighChargeInpatientMirrorList(HisInpatientChargeMirror query)
     {
+        long t0 = System.currentTimeMillis();
         if (query == null || StringUtils.isEmpty(query.getTenantId()))
         {
             query = query == null ? new HisInpatientChargeMirror() : query;
@@ -664,12 +665,16 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             out.add(HisPatientChargeMirrorUnifiedSupport.toInpatientMirror(u));
         }
-        return wrapAsPage(out, slice);
+        List<HisInpatientChargeMirror> page = wrapAsPage(out, slice);
+        logHighChargeQueryCost("inpatient", customerId, t0, out.size(), query.getBeginChargeDate(),
+            query.getEndChargeDate());
+        return page;
     }
 
     @Override
     public List<HisOutpatientChargeMirror> selectHighChargeOutpatientMirrorList(HisOutpatientChargeMirror query)
     {
+        long t0 = System.currentTimeMillis();
         if (query == null || StringUtils.isEmpty(query.getTenantId()))
         {
             query = query == null ? new HisOutpatientChargeMirror() : query;
@@ -685,12 +690,16 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             out.add(HisPatientChargeMirrorUnifiedSupport.toOutpatientMirror(u));
         }
-        return wrapAsPage(out, slice);
+        List<HisOutpatientChargeMirror> page = wrapAsPage(out, slice);
+        logHighChargeQueryCost("outpatient", customerId, t0, out.size(), query.getBeginChargeDate(),
+            query.getEndChargeDate());
+        return page;
     }
 
     @Override
     public List<HisPatientChargeDetailRow> selectHighChargeAllMirrorList(HisPatientChargeAllQuery query)
     {
+        long t0 = System.currentTimeMillis();
         HisPatientChargeAllQuery q = query == null ? new HisPatientChargeAllQuery() : query;
         if (StringUtils.isEmpty(q.getTenantId()))
         {
@@ -706,7 +715,9 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             out.add(HisPatientChargeMirrorUnifiedSupport.toDetailRow(u));
         }
-        return wrapAsPage(out, slice);
+        List<HisPatientChargeDetailRow> page = wrapAsPage(out, slice);
+        logHighChargeQueryCost("all", customerId, t0, out.size(), q.getBeginChargeDate(), q.getEndChargeDate());
+        return page;
     }
 
     @Override
@@ -807,6 +818,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     public Map<String, com.spd.his.domain.dto.HisMirrorHighWriteOffStatusVo> listHighChargeMirrorWriteOffStatus(
         com.spd.his.domain.dto.HisMirrorHighStatusQueryBody body)
     {
+        long t0 = System.currentTimeMillis();
         assertTenantAllowed();
         String tenantId = SecurityUtils.getCustomerId();
         Map<String, com.spd.his.domain.dto.HisMirrorHighWriteOffStatusVo> out = new LinkedHashMap<>();
@@ -816,7 +828,34 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         }
         collectHighWriteOffStatus(tenantId, "INPATIENT", body.getInpatientRowIds(), out);
         collectHighWriteOffStatus(tenantId, "OUTPATIENT", body.getOutpatientRowIds(), out);
+        int inN = body.getInpatientRowIds() == null ? 0 : body.getInpatientRowIds().size();
+        int outN = body.getOutpatientRowIds() == null ? 0 : body.getOutpatientRowIds().size();
+        logHighChargeQueryCost("writeOffStatus", tenantId, t0, out.size(), null, null,
+            "inIds=" + inN + ",outIds=" + outN);
         return out;
+    }
+
+    /** 高值扫描核销 list/status 耗时：≥3s warn，否则 info（不落 oper_log） */
+    private void logHighChargeQueryCost(String api, String tenantId, long startMs, int rowCount,
+        Date beginChargeDate, Date endChargeDate)
+    {
+        logHighChargeQueryCost(api, tenantId, startMs, rowCount, beginChargeDate, endChargeDate, null);
+    }
+
+    private void logHighChargeQueryCost(String api, String tenantId, long startMs, int rowCount,
+        Date beginChargeDate, Date endChargeDate, String extra)
+    {
+        long costMs = System.currentTimeMillis() - startMs;
+        String msg = "highChargeMirror {} tenant={} rows={} costMs={} begin={} end={}{}";
+        Object extraPart = StringUtils.isBlank(extra) ? "" : (" " + extra);
+        if (costMs >= 3000L)
+        {
+            log.warn(msg, api, tenantId, rowCount, costMs, beginChargeDate, endChargeDate, extraPart);
+        }
+        else
+        {
+            log.info(msg, api, tenantId, rowCount, costMs, beginChargeDate, endChargeDate, extraPart);
+        }
     }
 
     private void collectHighWriteOffStatus(String tenantId, String vk, List<String> rowIds,
