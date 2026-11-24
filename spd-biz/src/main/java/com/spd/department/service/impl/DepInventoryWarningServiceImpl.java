@@ -65,6 +65,7 @@ public class DepInventoryWarningServiceImpl implements IDepInventoryWarningServi
         depInventoryWarning.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(depInventoryWarning.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             depInventoryWarning.setCreateBy(SecurityUtils.getUserIdStr());
+            depInventoryWarning.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (StringUtils.isEmpty(depInventoryWarning.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             depInventoryWarning.setTenantId(SecurityUtils.getCustomerId());
@@ -85,6 +86,7 @@ public class DepInventoryWarningServiceImpl implements IDepInventoryWarningServi
         depInventoryWarning.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(depInventoryWarning.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             depInventoryWarning.setUpdateBy(SecurityUtils.getUserIdStr());
+            depInventoryWarning.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         return depInventoryWarningMapper.updateDepInventoryWarning(depInventoryWarning);
     }

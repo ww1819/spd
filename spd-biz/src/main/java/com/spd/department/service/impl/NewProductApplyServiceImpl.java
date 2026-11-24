@@ -78,6 +78,7 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
         newProductApply.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(newProductApply.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             newProductApply.setCreateBy(SecurityUtils.getUserIdStr());
+            newProductApply.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (StringUtils.isEmpty(newProductApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             newProductApply.setTenantId(SecurityUtils.getCustomerId());
@@ -102,6 +103,7 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
             newProductApply.getApplyEntryList(), NewProductApplyEntry::getMaterialId, "新品申购");
         newProductApply.setUpdateTime(DateUtils.getNowDate());
         newProductApply.setUpdateBy(SecurityUtils.getUserIdStr());
+            newProductApply.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         
         String deleteBy = com.spd.common.utils.SecurityUtils.getUserIdStr();
         newProductApplyMapper.deleteNewProductApplyEntryByParentId(newProductApply.getId(), deleteBy);
@@ -169,6 +171,7 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
                 newProductApplyEntry.setParentId(id);
                 newProductApplyEntry.setCreateTime(DateUtils.getNowDate());
                 newProductApplyEntry.setCreateBy(SecurityUtils.getUserIdStr());
+            newProductApplyEntry.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                 list.add(newProductApplyEntry);
             }
             if (list.size() > 0)
@@ -200,6 +203,7 @@ public class NewProductApplyServiceImpl implements INewProductApplyService
                     newProductApplyDetail.setParentId(id);
                     newProductApplyDetail.setCreateTime(DateUtils.getNowDate());
                     newProductApplyDetail.setCreateBy(SecurityUtils.getUserIdStr());
+            newProductApplyDetail.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     list.add(newProductApplyDetail);
                 }
             }

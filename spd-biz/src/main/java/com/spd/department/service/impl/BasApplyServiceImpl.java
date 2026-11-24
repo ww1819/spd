@@ -392,8 +392,10 @@ public class BasApplyServiceImpl implements IBasApplyService
         if (basApply.getBillType() != null && basApply.getBillType() == 1) {
             basApply.setWarehouseId(null);
             basApply.setCreateBy(SecurityUtils.getUserIdStr());
+            basApply.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         } else if (StringUtils.isEmpty(basApply.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             basApply.setCreateBy(SecurityUtils.getUserIdStr());
+            basApply.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         basApply.setApplyBillNo(getNumber(basApply.getBillType()));
         int rows = basApplyMapper.insertBasApply(basApply);
@@ -476,6 +478,7 @@ public class BasApplyServiceImpl implements IBasApplyService
         basApply.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(basApply.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             basApply.setUpdateBy(SecurityUtils.getUserIdStr());
+            basApply.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         // 禁止客户端回写审核态（防并发审核后保存把 apply_bill_status 打回未审）
         basApply.setApplyBillStatus(null);
@@ -825,6 +828,7 @@ public class BasApplyServiceImpl implements IBasApplyService
         flow.setDelFlag(0);
         flow.setCreateTime(new Date());
         flow.setCreateBy(SecurityUtils.getUserIdStr());
+            flow.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         flow.setTenantId(StringUtils.isNotEmpty(basApply.getTenantId()) ? basApply.getTenantId() : SecurityUtils.getCustomerId());
         InventoryMaterialSnapshotHelper.enrichHcKsFlowBasApply(flow, basApply, entry, fdMaterialMapper);
         hcKsFlowMapper.insertHcKsFlow(flow);
@@ -850,6 +854,7 @@ public class BasApplyServiceImpl implements IBasApplyService
         }
         basApply.setRejectReason(rejectReason);
         basApply.setUpdateBy(SecurityUtils.getUserIdStr());
+            basApply.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         basApply.setAuditBy(String.valueOf(SecurityUtils.getUserId()));
         basApply.setAuditDate(new Date());
         basApply.setUpdateTime(new Date());

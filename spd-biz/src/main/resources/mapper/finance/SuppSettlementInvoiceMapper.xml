@@ -18,8 +18,10 @@
     </insert>
 
     <update id="logicalDeleteBySuppSettlementAndInvoice">
+        <bind name="auditDeleteBy" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
+        <bind name="auditDeleteByName" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update supp_settlement_invoice set is_deleted = 1, delete_by = #{deleteBy}, delete_time = now()
+        update supp_settlement_invoice set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{auditDeleteByName}, delete_time = now()
         where supp_settlement_id = #{suppSettlementId} and invoice_id = #{invoiceId} and tenant_id = #{scopedTenantId} and (delete_by is null or delete_by = '')
     </update>
 

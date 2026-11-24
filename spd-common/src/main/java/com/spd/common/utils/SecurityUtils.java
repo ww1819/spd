@@ -48,6 +48,21 @@ public class SecurityUtils
     }
 
     /**
+     * 当前用户登录名快照（用于 create_by_name/update_by_name/delete_by_name/operator_name 等冗余可读列）
+     */
+    public static String getUsernameSafe()
+    {
+        try
+        {
+            return getUsername();
+        }
+        catch (Exception e)
+        {
+            return "";
+        }
+    }
+
+    /**
      * 获取当前登录态中的租户 ID（仅 LoginUser 快照值，不做任何兜底）
      */
     public static String getLoginCustomerId()

@@ -100,6 +100,7 @@ public class FdCategory68ServiceImpl implements IFdCategory68Service
         fdCategory68.setDelFlag(1);
         fdCategory68.setUpdateTime(new Date());
         fdCategory68.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdCategory68.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         return fdCategory68Mapper.updateFdCategory68(fdCategory68);
     }
 }

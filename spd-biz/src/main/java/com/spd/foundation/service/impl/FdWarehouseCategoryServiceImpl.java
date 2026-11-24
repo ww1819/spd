@@ -110,6 +110,7 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
         }
         if (StringUtils.isEmpty(fdWarehouseCategory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdWarehouseCategory.setCreateBy(SecurityUtils.getUserIdStr());
+            fdWarehouseCategory.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (StringUtils.isEmpty(fdWarehouseCategory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             fdWarehouseCategory.setTenantId(SecurityUtils.getCustomerId());
@@ -176,6 +177,7 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
         fdWarehouseCategory.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdWarehouseCategory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdWarehouseCategory.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdWarehouseCategory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         int n = fdWarehouseCategoryMapper.updateFdWarehouseCategory(fdWarehouseCategory);
         if (n > 0)
@@ -205,9 +207,11 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
         SecurityUtils.ensureTenantAccess(fdWarehouseCategory.getTenantId());
         fdWarehouseCategory.setDelFlag(1);
         fdWarehouseCategory.setDeleteBy(SecurityUtils.getUserIdStr());
+            fdWarehouseCategory.setDeleteByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         fdWarehouseCategory.setDeleteTime(DateUtils.getNowDate());
         fdWarehouseCategory.setUpdateTime(new Date());
         fdWarehouseCategory.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdWarehouseCategory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         return fdWarehouseCategoryMapper.updateFdWarehouseCategory(fdWarehouseCategory);
     }
 
@@ -646,6 +650,7 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
         rec.setWarehouseCategoryId(entityId);
         rec.setChangeTime(changeTime);
         rec.setOperator(operator);
+        rec.setOperatorName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         rec.setFieldName(fieldName);
         rec.setFieldLabel(fieldLabel);
         rec.setOldValue(oldValue);

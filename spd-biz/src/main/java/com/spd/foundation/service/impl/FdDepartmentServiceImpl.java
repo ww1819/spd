@@ -180,6 +180,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         }
         if (StringUtils.isEmpty(fdDepartment.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdDepartment.setCreateBy(SecurityUtils.getUserIdStr());
+            fdDepartment.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (fdDepartment.getDelFlag() == null) {
             fdDepartment.setDelFlag(0);
@@ -488,6 +489,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
         rec.setDepartmentId(departmentId);
         rec.setChangeTime(changeTime);
         rec.setOperator(operator);
+        rec.setOperatorName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         rec.setFieldName(fieldName);
         rec.setFieldLabel(fieldLabel);
         rec.setOldValue(oldValue);

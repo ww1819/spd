@@ -10,7 +10,8 @@
     <result property="operateTime" column="operate_time"/>
     <result property="operateBy" column="operate_by"/>
     <result property="reason" column="reason"/>
-          <result property="isDeleted" column="is_deleted"/>
+          <result property="operatorName" column="operator_name"/>
+        <result property="isDeleted" column="is_deleted"/>
     </resultMap>
 
   <select id="selectByTenantIdAndMenuId" resultMap="Result">

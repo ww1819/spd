@@ -21,15 +21,21 @@ public class BaseEntity implements Serializable
     @JsonIgnore
     private String searchValue;
 
-    /** 创建者 */
+    /** 创建者（存 sys_user.user_id） */
     private String createBy;
+
+    /** 创建者登录名快照（可读冗余） */
+    private String createByName;
 
     /** 创建时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
 
-    /** 更新者 */
+    /** 更新者（存 sys_user.user_id） */
     private String updateBy;
+
+    /** 更新者登录名快照（可读冗余） */
+    private String updateByName;
 
     /** 更新时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -38,15 +44,21 @@ public class BaseEntity implements Serializable
     /** 备注 */
     private String remark;
 
-    /** 删除者 */
+    /** 删除者（存 sys_user.user_id） */
     private String deleteBy;
+
+    /** 删除者登录名快照（可读冗余） */
+    private String deleteByName;
 
     /** 删除时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date deleteTime;
 
-    /** 审核人 */
+    /** 审核人（存 sys_user.user_id） */
     private String auditBy;
+
+    /** 审核人登录名快照（可读冗余） */
+    private String auditByName;
 
     /** 审核时间 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -76,6 +88,16 @@ public class BaseEntity implements Serializable
         this.createBy = createBy;
     }
 
+    public String getCreateByName()
+    {
+        return createByName;
+    }
+
+    public void setCreateByName(String createByName)
+    {
+        this.createByName = createByName;
+    }
+
     public Date getCreateTime()
     {
         return createTime;
@@ -94,6 +116,16 @@ public class BaseEntity implements Serializable
     public void setUpdateBy(String updateBy)
     {
         this.updateBy = updateBy;
+    }
+
+    public String getUpdateByName()
+    {
+        return updateByName;
+    }
+
+    public void setUpdateByName(String updateByName)
+    {
+        this.updateByName = updateByName;
     }
 
     public Date getUpdateTime()
@@ -126,6 +158,16 @@ public class BaseEntity implements Serializable
         this.deleteBy = deleteBy;
     }
 
+    public String getDeleteByName()
+    {
+        return deleteByName;
+    }
+
+    public void setDeleteByName(String deleteByName)
+    {
+        this.deleteByName = deleteByName;
+    }
+
     public Date getDeleteTime()
     {
         return deleteTime;
@@ -156,6 +198,14 @@ public class BaseEntity implements Serializable
 
     public void setAuditBy(String auditBy) {
         this.auditBy = auditBy;
+    }
+
+    public String getAuditByName() {
+        return auditByName;
+    }
+
+    public void setAuditByName(String auditByName) {
+        this.auditByName = auditByName;
     }
 
     public Date getAuditDate() {

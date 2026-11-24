@@ -214,6 +214,7 @@ public class GzStockQueryServiceImpl implements IGzStockQueryService
 
         wrongDep.setInHospitalCode(code);
         wrongDep.setUpdateBy(SecurityUtils.getUserIdStr());
+            wrongDep.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         wrongDep.setUpdateTime(DateUtils.getNowDate());
         gzDepInventoryMapper.updateGzDepInventory(wrongDep);
 
@@ -222,6 +223,7 @@ public class GzStockQueryServiceImpl implements IGzStockQueryService
         entry.setParenId(candidate.getShipmentId());
         entry.setInHospitalCode(code);
         entry.setUpdateBy(SecurityUtils.getUserIdStr());
+            entry.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         entry.setUpdateTime(DateUtils.getNowDate());
         int entryRows = gzShipmentMapper.updateGzShipmentEntryById(entry);
         if (entryRows <= 0) {
@@ -263,6 +265,7 @@ public class GzStockQueryServiceImpl implements IGzStockQueryService
         correctDepot.setQty(BigDecimal.ZERO);
         correctDepot.setAmt(BigDecimal.ZERO);
         correctDepot.setUpdateBy(SecurityUtils.getUserIdStr());
+            correctDepot.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         correctDepot.setUpdateTime(DateUtils.getNowDate());
         gzDepotInventoryMapper.updateGzDepotInventory(correctDepot);
 
@@ -271,6 +274,7 @@ public class GzStockQueryServiceImpl implements IGzStockQueryService
             wrongDepot.setAmt(wrongDepot.getUnitPrice().multiply(moveQty));
         }
         wrongDepot.setUpdateBy(SecurityUtils.getUserIdStr());
+            wrongDepot.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         wrongDepot.setUpdateTime(DateUtils.getNowDate());
         gzDepotInventoryMapper.updateGzDepotInventory(wrongDepot);
     }

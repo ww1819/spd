@@ -447,6 +447,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         fdMaterial.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdMaterial.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdMaterial.setCreateBy(SecurityUtils.getUserIdStr());
+            fdMaterial.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         // 高低值以收费项手工维护为准：新增档案不静默回写收费项标志
         return fdMaterialMapper.insertFdMaterial(fdMaterial);
@@ -965,6 +966,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         material.setIsUse("2");
         material.setUpdateTime(DateUtils.getNowDate());
         material.setUpdateBy(SecurityUtils.getUserIdStr());
+            material.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         fdMaterialMapper.updateFdMaterial(material);
         FdMaterialStatusLog logRecord = new FdMaterialStatusLog();
         logRecord.setId(UUID7.generateUUID7());
@@ -991,6 +993,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         material.setIsUse("1");
         material.setUpdateTime(DateUtils.getNowDate());
         material.setUpdateBy(SecurityUtils.getUserIdStr());
+            material.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         fdMaterialMapper.updateFdMaterial(material);
         FdMaterialStatusLog logRecord = new FdMaterialStatusLog();
         logRecord.setId(UUID7.generateUUID7());
@@ -1099,6 +1102,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
                 changeLog.setMaterialId(materialId);
                 changeLog.setChangeTime(changeTime);
                 changeLog.setOperator(operator);
+            changeLog.setOperatorName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                 changeLog.setFieldName(fieldName);
                 changeLog.setFieldLabel(fieldLabel);
                 changeLog.setOldValue(oldVal.length() > 500 ? oldVal.substring(0, 500) + "..." : oldVal);
@@ -1447,6 +1451,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
                 logRecord.setAction(action);
                 logRecord.setActionTime(now);
                 logRecord.setOperator(operator);
+        logRecord.setOperatorName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                 logRecord.setReason("批量修改");
                 logRecord.setTenantId(tenantId);
                 logs.add(logRecord);

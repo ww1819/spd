@@ -14,6 +14,7 @@
         <result property="beforeJson" column="before_json"/>
         <result property="afterJson" column="after_json"/>
         <result property="operator" column="operator"/>
+        <result property="operatorName" column="operator_name"/>
         <result property="changeTime" column="change_time"/>
         <result property="tenantId" column="tenant_id"/>
             <result property="isDeleted" column="is_deleted"/>
@@ -22,14 +23,14 @@
     <insert id="insert" parameterType="GzBillEntryChangeLog">
         INSERT INTO stk_bill_entry_change_log (
             id, bill_type, bill_id, entry_type, entry_id, action_type,
-            before_json, after_json, operator, change_time, tenant_id, is_deleted) VALUES (
+            before_json, after_json, operator, operator_name, change_time, tenant_id, is_deleted) VALUES (
             #{id}, #{billType}, #{billId}, #{entryType}, #{entryId}, #{actionType},
-            #{beforeJson}, #{afterJson}, #{operator}, #{changeTime}, #{tenantId}, 0)
+            #{beforeJson}, #{afterJson}, #{operator}, #{operatorName}, #{changeTime}, #{tenantId}, 0)
     </insert>
 
     <select id="selectByBill" resultMap="GzBillEntryChangeLogMap">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select id, bill_type, bill_id, entry_type, entry_id, action_type, before_json, after_json, operator, change_time, tenant_id
+        select id, bill_type, bill_id, entry_type, entry_id, action_type, before_json, after_json, operator, operator_name, change_time, tenant_id
         from stk_bill_entry_change_log
         where IFNULL(is_deleted,0)=0 AND bill_type = #{billType}
           and bill_id = #{billId}

@@ -54,6 +54,7 @@ public class SysDataBackupConfigServiceImpl implements ISysDataBackupConfigServi
         ins.setRetainDays(7);
         ins.setJobId(null);
         ins.setCreateBy(SecurityUtils.getUserIdStr());
+            ins.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         ins.setRemark("数据备份默认配置");
         dataBackupConfigMapper.insert(ins);
         return dataBackupConfigMapper.selectByTenantId(tid);
@@ -88,6 +89,7 @@ public class SysDataBackupConfigServiceImpl implements ISysDataBackupConfigServi
         db.setRetainDays(config.getRetainDays() == null ? 7 : config.getRetainDays());
         db.setRemark(config.getRemark());
         db.setUpdateBy(SecurityUtils.getUserIdStr());
+            db.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         dataBackupConfigMapper.update(db);
 
         syncSysJob(db, cron);
@@ -104,6 +106,7 @@ public class SysDataBackupConfigServiceImpl implements ISysDataBackupConfigServi
             throw new ServiceException("启用备份前请填写备份目录并保存");
         }
         db.setUpdateBy(SecurityUtils.getUserIdStr());
+            db.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         dataBackupConfigMapper.update(db);
         if (db.getJobId() == null)
         {
@@ -153,6 +156,7 @@ public class SysDataBackupConfigServiceImpl implements ISysDataBackupConfigServi
             job.setMisfirePolicy(ScheduleConstants.MISFIRE_DEFAULT);
             job.setConcurrent("1");
             job.setCreateBy(SecurityUtils.getUserIdStr());
+            job.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
             job.setRemark("数据备份调度");
             sysJobService.insertJob(job);
             cfg.setJobId(job.getJobId());
@@ -176,6 +180,7 @@ public class SysDataBackupConfigServiceImpl implements ISysDataBackupConfigServi
             job.setMisfirePolicy(ScheduleConstants.MISFIRE_DEFAULT);
             job.setConcurrent("1");
             job.setUpdateBy(SecurityUtils.getUserIdStr());
+            job.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
             sysJobService.updateJob(job);
             SysJob latest = sysJobService.selectJobById(cfg.getJobId());
             if ("1".equals(cfg.getEnabled()))

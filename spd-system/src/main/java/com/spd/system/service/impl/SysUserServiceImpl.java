@@ -561,6 +561,7 @@ public class SysUserServiceImpl implements ISysUserService
         role.setStatus("0");
         role.setRoleSort(2);
         role.setCreateBy(SecurityUtils.getUserIdStr());
+            role.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         role.setUpdateTime(new Date());
         roleMapper.insertRole(role);
     }

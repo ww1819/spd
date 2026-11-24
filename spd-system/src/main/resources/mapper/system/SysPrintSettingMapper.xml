@@ -196,12 +196,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
     
     <update id="deleteSysPrintSettingById">
-        update sys_print_setting set is_deleted = 1
+        <bind name="auditDeleteBy" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
+        <bind name="auditDeleteByName" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
+        update sys_print_setting set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{auditDeleteByName}, delete_time = now()
         where id = #{id}
     </update>
     
     <update id="deleteSysPrintSettingByIds">
-        update sys_print_setting set is_deleted = 1
+        <bind name="auditDeleteBy" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
+        <bind name="auditDeleteByName" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
+        update sys_print_setting set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{auditDeleteByName}, delete_time = now()
         where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}

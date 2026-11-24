@@ -320,6 +320,7 @@ public class HisMirrorConsumeWriteOffServiceImpl implements IHisMirrorConsumeWri
         e.setSubBarcode(inv.getSubBarcode());
         e.setRemark("HIS冲销撤销退费:" + mirrorRowId);
         e.setCreateBy(SecurityUtils.getUserIdStr());
+            e.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         return e;
     }
 

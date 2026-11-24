@@ -69,6 +69,7 @@ public class FdUnitServiceImpl implements IFdUnitService
         if (StringUtils.isEmpty(fdUnit.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
         {
             fdUnit.setCreateBy(SecurityUtils.getUserIdStr());
+            fdUnit.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (fdUnit.getDelFlag() == null)
         {
@@ -147,6 +148,7 @@ public class FdUnitServiceImpl implements IFdUnitService
         if (StringUtils.isEmpty(fdUnit.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
         {
             fdUnit.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdUnit.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         int n = fdUnitMapper.updateFdUnit(fdUnit);
         FdUnit after = fdUnitMapper.selectFdUnitByUnitId(fdUnit.getUnitId());
@@ -165,8 +167,10 @@ public class FdUnitServiceImpl implements IFdUnitService
         SecurityUtils.ensureTenantAccess(fdUnit.getTenantId());
         fdUnit.setDelFlag(1);
         fdUnit.setDeleteBy(SecurityUtils.getUserIdStr());
+            fdUnit.setDeleteByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         fdUnit.setDeleteTime(DateUtils.getNowDate());
         fdUnit.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdUnit.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         fdUnit.setUpdateTime(DateUtils.getNowDate());
         return fdUnitMapper.updateFdUnit(fdUnit);
     }
@@ -195,6 +199,7 @@ public class FdUnitServiceImpl implements IFdUnitService
         rec.setUnitId(entityId);
         rec.setChangeTime(changeTime);
         rec.setOperator(operator);
+        rec.setOperatorName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         rec.setFieldName(fieldName);
         rec.setFieldLabel(fieldLabel);
         rec.setOldValue(oldValue);

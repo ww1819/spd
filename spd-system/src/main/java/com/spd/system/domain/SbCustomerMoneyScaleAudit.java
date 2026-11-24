@@ -23,10 +23,14 @@ public class SbCustomerMoneyScaleAudit extends BaseEntity {
   private String moneyRoundMode;
   /** 0待审 1通过 2驳回 */
   private String auditStatus;
+  /** 申请人 user_id */
   private String applyBy;
+  /** 申请人 user_name 快照 */
+  private String applyByName;
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
   private Date applyTime;
   private String applyRemark;
+  /** 审核人 user_id（另有 BaseEntity.auditByName 存 user_name） */
   private String auditBy;
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
   private Date auditTime;
@@ -92,6 +96,14 @@ public class SbCustomerMoneyScaleAudit extends BaseEntity {
 
   public void setApplyBy(String applyBy) {
     this.applyBy = applyBy;
+  }
+
+  public String getApplyByName() {
+    return applyByName;
+  }
+
+  public void setApplyByName(String applyByName) {
+    this.applyByName = applyByName;
   }
 
   public Date getApplyTime() {

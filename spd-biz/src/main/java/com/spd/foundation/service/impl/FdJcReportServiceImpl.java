@@ -77,6 +77,7 @@ public class FdJcReportServiceImpl implements IFdJcReportService
             existing.setReportQty(row.getReportQty());
             existing.setRemark(row.getRemark());
             existing.setUpdateBy(SecurityUtils.getUserIdStr());
+            existing.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
             existing.setUpdateTime(DateUtils.getNowDate());
             return fdJcReportMapper.updateFdJcReport(existing);
         }
@@ -84,6 +85,7 @@ public class FdJcReportServiceImpl implements IFdJcReportService
         row.setReportMode(mode);
         row.setDelFlag(0);
         row.setCreateBy(SecurityUtils.getUserIdStr());
+            row.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         row.setCreateTime(DateUtils.getNowDate());
         // PRODUCT：类型从产品带出仅作展示，报量行不落 jc_type_id，避免与 TYPE 唯一语义混淆
         if (JcConstants.MODE_PRODUCT.equals(mode))
@@ -121,6 +123,7 @@ public class FdJcReportServiceImpl implements IFdJcReportService
         existing.setReportQty(row.getReportQty());
         existing.setRemark(row.getRemark());
         existing.setUpdateBy(SecurityUtils.getUserIdStr());
+            existing.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         existing.setUpdateTime(DateUtils.getNowDate());
         return fdJcReportMapper.updateFdJcReport(existing);
     }

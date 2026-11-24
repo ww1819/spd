@@ -10,9 +10,11 @@
     <result property="moneyRoundMode" column="money_round_mode"/>
     <result property="auditStatus" column="audit_status"/>
     <result property="applyBy" column="apply_by"/>
+    <result property="applyByName" column="apply_by_name"/>
     <result property="applyTime" column="apply_time"/>
     <result property="applyRemark" column="apply_remark"/>
     <result property="auditBy" column="audit_by"/>
+    <result property="auditByName" column="audit_by_name"/>
     <result property="auditTime" column="audit_time"/>
     <result property="auditRemark" column="audit_remark"/>
     <result property="oldPriceDecimalPlaces" column="old_price_decimal_places"/>
@@ -23,8 +25,8 @@
 
   <sql id="selectVo">
     select a.audit_id, a.customer_id, a.price_decimal_places, a.amount_decimal_places, a.money_round_mode,
-           a.audit_status, a.apply_by, a.apply_time, a.apply_remark,
-           a.audit_by, a.audit_time, a.audit_remark,
+           a.audit_status, a.apply_by, a.apply_by_name, a.apply_time, a.apply_remark,
+           a.audit_by, a.audit_by_name, a.audit_time, a.audit_remark,
            a.old_price_decimal_places, a.old_amount_decimal_places, a.old_money_round_mode,
            c.customer_name
     from sb_customer_money_scale_audit a
@@ -52,11 +54,11 @@
   <insert id="insert" parameterType="com.spd.system.domain.SbCustomerMoneyScaleAudit">
     insert into sb_customer_money_scale_audit (
       audit_id, customer_id, price_decimal_places, amount_decimal_places, money_round_mode,
-      audit_status, apply_by, apply_time, apply_remark,
+      audit_status, apply_by, apply_by_name, apply_time, apply_remark,
       old_price_decimal_places, old_amount_decimal_places, old_money_round_mode
     ) values (
       #{auditId}, #{customerId}, #{priceDecimalPlaces}, #{amountDecimalPlaces}, #{moneyRoundMode},
-      #{auditStatus}, #{applyBy}, #{applyTime}, #{applyRemark},
+      #{auditStatus}, #{applyBy}, #{applyByName}, #{applyTime}, #{applyRemark},
       #{oldPriceDecimalPlaces}, #{oldAmountDecimalPlaces}, #{oldMoneyRoundMode}
     )
   </insert>
@@ -65,6 +67,7 @@
     update sb_customer_money_scale_audit
     set audit_status = #{auditStatus},
         audit_by = #{auditBy},
+        audit_by_name = #{auditByName},
         audit_time = #{auditTime},
         audit_remark = #{auditRemark}
     where audit_id = #{auditId}

@@ -126,7 +126,9 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         stkIoStocktaking.setUpdateTime(now);
         // 制单人存用户ID（varchar），避免前端误传 nickName 到 create_by
         stkIoStocktaking.setCreateBy(SecurityUtils.getUserIdStr());
+            stkIoStocktaking.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
+            stkIoStocktaking.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         Long opUserId = SecurityUtils.getUserId();
         if (opUserId != null) {
             stkIoStocktaking.setUserId(opUserId);
@@ -171,6 +173,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         lockAndAssertDeptStocktakingVersion(parenId, expectedClient);
         stkIoStocktaking.setUpdateTime(new Date());
         stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
+            stkIoStocktaking.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         StkIoStocktaking oldBill = deptStocktakingMapper.selectDeptStocktakingById(parenId);
         ensureDeptStocktakingEditable(oldBill);
         if (oldBill != null && oldBill.getStkIoStocktakingEntryList() != null
@@ -251,6 +254,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         }
         head.setUpdateTime(new Date());
         head.setUpdateBy(SecurityUtils.getUserIdStr());
+            head.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         head.setWarehouseId(null);
         deptStocktakingMapper.updateDeptStocktaking(head);
 
@@ -458,6 +462,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         stkIoStocktaking.setAuditDate(new Date());
         stkIoStocktaking.setStockStatus(2);
         stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
+            stkIoStocktaking.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         stkIoStocktaking.setUpdateTime(new Date());
 
         int res = deptStocktakingMapper.updateDeptStocktaking(stkIoStocktaking);
@@ -510,6 +515,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 depInventory.setBatchId(batch.getId());
                 depInventory.setUpdateTime(new Date());
                 depInventory.setUpdateBy(SecurityUtils.getUserIdStr());
+            depInventory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                 stkDepInventoryMapper.updateStkDepInventory(depInventory);
             }
         }
@@ -546,6 +552,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         stkIoStocktaking.setStockStatus(3); // 驳回状态
         stkIoStocktaking.setRejectReason(rejectReason);
         stkIoStocktaking.setUpdateBy(SecurityUtils.getUserIdStr());
+            stkIoStocktaking.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         stkIoStocktaking.setUpdateTime(new Date());
 
         int res = deptStocktakingMapper.updateDeptStocktaking(stkIoStocktaking);
@@ -623,6 +630,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                     stkIoStocktaking.getTenantId());
                 stkDepInventory.setCreateTime(new Date());
                 stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
+            stkDepInventory.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
 
                 stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
                 if (stkDepInventory.getId() != null && entry.getQty() != null
@@ -759,6 +767,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
                 }
                 depInventory.setUpdateTime(new Date());
                 depInventory.setUpdateBy(SecurityUtils.getUserIdStr());
+            depInventory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
 
                 stkDepInventoryMapper.updateStkDepInventory(depInventory);
 
@@ -871,6 +880,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         applyDeptStocktakingSurplusInventoryRemark(stkDepInventory);
         stkDepInventory.setCreateTime(new Date());
         stkDepInventory.setCreateBy(SecurityUtils.getUserIdStr());
+            stkDepInventory.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         stkDepInventoryMapper.insertStkDepInventory(stkDepInventory);
         return stkDepInventory;
     }
@@ -1403,8 +1413,10 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         b.setDelFlag(0);
         b.setCreateTime(new Date());
         b.setCreateBy(SecurityUtils.getUserIdStr());
+            b.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         b.setUpdateTime(new Date());
         b.setUpdateBy(SecurityUtils.getUserIdStr());
+            b.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         b.setTenantId(SecurityUtils.getCustomerId());
 
         stkBatchMapper.insertStkBatch(b);
@@ -1555,6 +1567,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         insertStkIoStocktakingEntry(head);
         head.setUpdateTime(new Date());
         head.setUpdateBy(SecurityUtils.getUserIdStr());
+            head.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         deptStocktakingMapper.updateDeptStocktaking(head);
         return selectDeptStocktakingById(billId);
     }
@@ -1687,6 +1700,7 @@ public class DeptStocktakingServiceImpl implements IDeptStocktakingService
         }
         head.setUpdateTime(new Date());
         head.setUpdateBy(SecurityUtils.getUserIdStr());
+            head.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         deptStocktakingMapper.updateDeptStocktaking(head);
         return clean.size();
     }

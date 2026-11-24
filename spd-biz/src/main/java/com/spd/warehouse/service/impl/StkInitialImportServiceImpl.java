@@ -583,6 +583,7 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         m.setFinanceCategoryId(resolveFinanceCategoryId(row.getFinanceCategory()));
         m.setDelFlag(0);
         m.setCreateBy(SecurityUtils.getUserIdStr());
+            m.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         m.setCreateTime(new Date());
         return m;
     }
@@ -698,6 +699,7 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         }
         if (need) {
             patch.setUpdateBy(SecurityUtils.getUserIdStr());
+            patch.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
             patch.setUpdateTime(new Date());
             fdMaterialMapper.updateFdMaterial(patch);
         }

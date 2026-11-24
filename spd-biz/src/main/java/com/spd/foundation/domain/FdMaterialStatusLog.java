@@ -27,6 +27,9 @@ public class FdMaterialStatusLog {
     /** 操作人 */
     private String operator;
 
+    /** 操作人登录名快照 */
+    private String operatorName;
+
     /** 启用/停用原因 */
     private String reason;
     /** 租户ID */
@@ -99,5 +102,15 @@ public class FdMaterialStatusLog {
     public void setIsDeleted(Integer isDeleted)
     {
         this.isDeleted = isDeleted;
+    }
+
+    public String getOperatorName()
+    {
+        return operatorName;
+    }
+
+    public void setOperatorName(String operatorName)
+    {
+        this.operatorName = operatorName;
     }
 }

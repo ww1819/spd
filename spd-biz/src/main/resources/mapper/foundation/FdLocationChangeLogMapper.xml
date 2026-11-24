@@ -7,6 +7,7 @@
         <result property="locationId" column="location_id"/>
         <result property="changeTime" column="change_time"/>
         <result property="operator" column="operator"/>
+        <result property="operatorName" column="operator_name"/>
         <result property="fieldName" column="field_name"/>
         <result property="fieldLabel" column="field_label"/>
         <result property="oldValue" column="old_value"/>
@@ -17,13 +18,13 @@
 
     <insert id="insert" parameterType="com.spd.foundation.domain.FdLocationChangeLog">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        INSERT INTO fd_location_change_log (id, location_id, change_time, operator, field_name, field_label, old_value, new_value, tenant_id, is_deleted)
-        VALUES (#{id}, #{locationId}, #{changeTime}, #{operator}, #{fieldName}, #{fieldLabel}, #{oldValue}, #{newValue}, #{scopedTenantId}, 0)
+        INSERT INTO fd_location_change_log (id, location_id, change_time, operator, operator_name, field_name, field_label, old_value, new_value, tenant_id, is_deleted)
+        VALUES (#{id}, #{locationId}, #{changeTime}, #{operator}, #{operatorName}, #{fieldName}, #{fieldLabel}, #{oldValue}, #{newValue}, #{scopedTenantId}, 0)
     </insert>
 
     <select id="selectByEntityId" resultMap="FdLocationChangeLogResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        SELECT id, location_id, change_time, operator, field_name, field_label, old_value, new_value, tenant_id
+        SELECT id, location_id, change_time, operator, operator_name, field_name, field_label, old_value, new_value, tenant_id
         FROM fd_location_change_log
         WHERE IFNULL(is_deleted,0)=0 AND location_id = #{locationId} and tenant_id = #{scopedTenantId}
         AND IFNULL(is_deleted,0)=0

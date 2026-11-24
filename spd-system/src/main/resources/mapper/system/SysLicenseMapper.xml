@@ -37,7 +37,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="deleteSysLicenseById">
-        update sys_license set is_deleted = 1
+        <bind name="auditDeleteBy" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
+        <bind name="auditDeleteByName" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
+        update sys_license set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{auditDeleteByName}, delete_time = now()
         where id = #{id}
     </update>
 

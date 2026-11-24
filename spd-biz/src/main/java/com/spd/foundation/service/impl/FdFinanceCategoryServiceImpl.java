@@ -104,6 +104,7 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
         if (StringUtils.isEmpty(fdFinanceCategory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
         {
             fdFinanceCategory.setCreateBy(SecurityUtils.getUserIdStr());
+            fdFinanceCategory.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (StringUtils.isEmpty(fdFinanceCategory.getTenantId()))
         {
@@ -183,6 +184,7 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
         if (StringUtils.isEmpty(fdFinanceCategory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
         {
             fdFinanceCategory.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdFinanceCategory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         int n = fdFinanceCategoryMapper.updateFdFinanceCategory(fdFinanceCategory);
         if (n > 0)
@@ -225,9 +227,11 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
         SecurityUtils.ensureTenantAccess(fdFinanceCategory.getTenantId());
         fdFinanceCategory.setDelFlag(1);
         fdFinanceCategory.setDeleteBy(SecurityUtils.getUserIdStr());
+            fdFinanceCategory.setDeleteByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         fdFinanceCategory.setDeleteTime(DateUtils.getNowDate());
         fdFinanceCategory.setUpdateTime(DateUtils.getNowDate());
         fdFinanceCategory.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdFinanceCategory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         return fdFinanceCategoryMapper.updateFdFinanceCategory(fdFinanceCategory);
     }
 
@@ -657,6 +661,7 @@ public class FdFinanceCategoryServiceImpl implements IFdFinanceCategoryService
         rec.setFinanceCategoryId(entityId);
         rec.setChangeTime(changeTime);
         rec.setOperator(operator);
+        rec.setOperatorName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         rec.setFieldName(fieldName);
         rec.setFieldLabel(fieldLabel);
         rec.setOldValue(oldValue);

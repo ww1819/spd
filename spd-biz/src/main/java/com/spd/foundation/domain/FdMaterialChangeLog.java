@@ -24,6 +24,9 @@ public class FdMaterialChangeLog {
     /** 操作人 */
     private String operator;
 
+    /** 操作人登录名快照 */
+    private String operatorName;
+
     /** 字段名（英文） */
     private String fieldName;
 
@@ -121,5 +124,15 @@ public class FdMaterialChangeLog {
     public void setIsDeleted(Integer isDeleted)
     {
         this.isDeleted = isDeleted;
+    }
+
+    public String getOperatorName()
+    {
+        return operatorName;
+    }
+
+    public void setOperatorName(String operatorName)
+    {
+        this.operatorName = operatorName;
     }
 }

@@ -22,7 +22,9 @@
   </select>
 
   <update id="deleteByTenantId">
-        update hc_customer_menu set is_deleted = 1
+        <bind name="auditDeleteBy" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
+        <bind name="auditDeleteByName" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
+        update hc_customer_menu set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{auditDeleteByName}, delete_time = now()
         where tenant_id = #{tenantId}
     </update>
 

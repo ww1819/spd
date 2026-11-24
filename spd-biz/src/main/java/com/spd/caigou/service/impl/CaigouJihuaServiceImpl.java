@@ -295,6 +295,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     stkInventory.setReceiptOrderNo(stkIoBill.getBillNo());
                     stkInventory.setCreateTime(new Date());
                     stkInventory.setCreateBy(SecurityUtils.getUserIdStr());
+            stkInventory.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     if (StringUtils.isEmpty(stkInventory.getTenantId())) {
                         stkInventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     }
@@ -327,6 +328,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     rkFlow.setDelFlag(0);
                     rkFlow.setCreateTime(new Date());
                     rkFlow.setCreateBy(SecurityUtils.getUserIdStr());
+            rkFlow.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     if (StringUtils.isEmpty(rkFlow.getTenantId())) {
                         rkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     }
@@ -355,6 +357,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     inventory.setAmt(subQty.multiply(unitPrice));
                     inventory.setUpdateTime(new Date());
                     inventory.setUpdateBy(SecurityUtils.getUserIdStr());
+            inventory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     //更新库存明细表
                     stkInventoryMapper.updateStkInventory(inventory);
 
@@ -385,6 +388,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     ckFlow.setDelFlag(0);
                     ckFlow.setCreateTime(new Date());
                     ckFlow.setCreateBy(SecurityUtils.getUserIdStr());
+            ckFlow.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     if (StringUtils.isEmpty(ckFlow.getTenantId())) {
                         ckFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     }
@@ -410,6 +414,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                         inventory.setAmt(subQty.multiply(unitPrice));
                         inventory.setUpdateTime(new Date());
                         inventory.setUpdateBy(SecurityUtils.getUserIdStr());
+            inventory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                         //更新库存明细表
                         stkInventoryMapper.updateStkInventory(inventory);
                         HcCkFlow thFlow = new HcCkFlow();
@@ -436,6 +441,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                         thFlow.setDelFlag(0);
                         thFlow.setCreateTime(new Date());
                         thFlow.setCreateBy(SecurityUtils.getUserIdStr());
+            thFlow.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                         if (StringUtils.isEmpty(thFlow.getTenantId())) {
                             thFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                         }
@@ -500,6 +506,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     stkDepInventory.setAmt(depUnitPrice != null ? depNewQty.multiply(depUnitPrice) : BigDecimal.ZERO);
                     stkDepInventory.setUpdateTime(new Date());
                     stkDepInventory.setUpdateBy(SecurityUtils.getUserIdStr());
+            stkDepInventory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     stkDepInventoryMapper.updateStkDepInventory(stkDepInventory);
 
                     //更新库存数量
@@ -533,6 +540,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                         inventory.setBatchNumber(entry.getBatchNumber());
                         inventory.setCreateTime(new Date());
                         inventory.setCreateBy(SecurityUtils.getUserIdStr());
+            inventory.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                         if (StringUtils.isEmpty(inventory.getTenantId())) {
                             inventory.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                         }
@@ -550,6 +558,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     inventory.setAmt(inventoryQty.multiply(unitPrice));
                     inventory.setUpdateTime(new Date());
                     inventory.setUpdateBy(SecurityUtils.getUserIdStr());
+            inventory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     stkInventoryMapper.updateStkInventory(inventory);
 
                     BigDecimal unitPriceTk = inventory.getUnitPrice() != null ? inventory.getUnitPrice() : BigDecimal.ZERO;
@@ -582,6 +591,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     tkFlow.setDelFlag(0);
                     tkFlow.setCreateTime(new Date());
                     tkFlow.setCreateBy(SecurityUtils.getUserIdStr());
+            tkFlow.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     if (StringUtils.isEmpty(tkFlow.getTenantId())) {
                         tkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     }
@@ -614,6 +624,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
                     ksTkFlow.setDelFlag(0);
                     ksTkFlow.setCreateTime(new Date());
                     ksTkFlow.setCreateBy(SecurityUtils.getUserIdStr());
+            ksTkFlow.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     if (StringUtils.isEmpty(ksTkFlow.getTenantId())) {
                         ksTkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
                     }
@@ -1131,6 +1142,7 @@ public class CaigouJihuaServiceImpl implements CaigouJihuaService
         rec.setBeforeJson(before == null ? null : JSON.toJSONString(before));
         rec.setAfterJson(after == null ? null : JSON.toJSONString(after));
         rec.setOperator(operator);
+        rec.setOperatorName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         rec.setChangeTime(DateUtils.getNowDate());
         rec.setTenantId(StringUtils.isNotEmpty(tenantId) ? tenantId : SecurityUtils.requiredScopedTenantIdForSql());
         stkBillEntryChangeLogMapper.insert(rec);

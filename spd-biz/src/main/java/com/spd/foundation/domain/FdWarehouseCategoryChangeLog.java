@@ -17,6 +17,9 @@ public class FdWarehouseCategoryChangeLog {
     private Date changeTime;
 
     private String operator;
+
+    /** 操作人登录名快照 */
+    private String operatorName;
     private String fieldName;
     private String fieldLabel;
     private String oldValue;
@@ -52,5 +55,15 @@ public class FdWarehouseCategoryChangeLog {
     public void setIsDeleted(Integer isDeleted)
     {
         this.isDeleted = isDeleted;
+    }
+
+    public String getOperatorName()
+    {
+        return operatorName;
+    }
+
+    public void setOperatorName(String operatorName)
+    {
+        this.operatorName = operatorName;
     }
 }

@@ -257,6 +257,7 @@ public class FdWarehouseServiceImpl implements IFdWarehouseService
         rec.setWarehouseId(entityId);
         rec.setChangeTime(changeTime);
         rec.setOperator(operator);
+        rec.setOperatorName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         rec.setFieldName(fieldName);
         rec.setFieldLabel(fieldLabel);
         rec.setOldValue(oldValue);

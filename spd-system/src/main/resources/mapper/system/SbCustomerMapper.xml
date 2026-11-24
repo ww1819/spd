@@ -129,17 +129,20 @@
   </update>
 
   <update id="updateEffectiveMoneyScale">
+    <bind name="auditUpdateByName" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
     update sb_customer
     set price_decimal_places = #{priceDecimalPlaces},
         amount_decimal_places = #{amountDecimalPlaces},
         money_round_mode = #{moneyRoundMode},
         update_by = #{updateBy},
+        update_by_name = #{auditUpdateByName},
         update_time = sysdate()
     where customer_id = #{customerId}
       and delete_time is null
   </update>
 
   <update id="deleteSbCustomerById">
-    update sb_customer set delete_by = #{deleteBy}, delete_time = sysdate() where customer_id = #{customerId}
+    <bind name="auditDeleteByName" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
+    update sb_customer set delete_by = #{deleteBy}, delete_by_name = #{auditDeleteByName}, delete_time = sysdate() where customer_id = #{customerId}
   </update>
 </mapper>

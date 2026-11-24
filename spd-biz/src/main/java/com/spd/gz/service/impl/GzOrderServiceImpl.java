@@ -249,6 +249,7 @@ public class GzOrderServiceImpl implements IGzOrderService
         MasterDetailValidateUtil.assertEntryListNotEmpty(gzOrder.getGzOrderEntryList(), gzOrderDocLabel(gzOrder));
         assertWarehouseEnabledForStockInbound(gzOrder);
         gzOrder.setCreateBy(SecurityUtils.getUserIdStr());
+            gzOrder.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         gzOrder.setOrderNo(getOrderNo(gzOrder.getOrderType()));
         gzOrder.setCreateTime(DateUtils.getNowDate());
         int rows = gzOrderMapper.insertGzOrder(gzOrder);
@@ -293,6 +294,7 @@ public class GzOrderServiceImpl implements IGzOrderService
     public int updateGzOrder(GzOrder gzOrder)
     {
         gzOrder.setUpdateBy(SecurityUtils.getUserIdStr());
+            gzOrder.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         gzOrder.setUpdateTime(DateUtils.getNowDate());
         GzOrder existing = gzOrder.getId() != null ? gzOrderMapper.selectGzOrderById(gzOrder.getId()) : null;
         if (existing != null && existing.getOrderStatus() != null && existing.getOrderStatus() == 2) {
@@ -304,6 +306,7 @@ public class GzOrderServiceImpl implements IGzOrderService
         boolean pending = st != null && Integer.valueOf(1).equals(st);
         if (pending) {
             gzOrder.setCreateBy(SecurityUtils.getUserIdStr());
+            gzOrder.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         } else {
             gzOrder.setCreateBy(null);
         }
@@ -417,7 +420,9 @@ public class GzOrderServiceImpl implements IGzOrderService
 
         gzOrder.setOrderStatus(2);
         gzOrder.setAuditBy(SecurityUtils.getUserIdStr());
+            gzOrder.setAuditByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         gzOrder.setUpdateBy(SecurityUtils.getUserIdStr());
+            gzOrder.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         gzOrder.setAuditDate(new Date());
         int res = gzOrderMapper.updateGzOrder(gzOrder);
         return res;
@@ -715,6 +720,7 @@ public class GzOrderServiceImpl implements IGzOrderService
         rec.setBeforeJson(before == null ? null : JSON.toJSONString(before));
         rec.setAfterJson(after == null ? null : JSON.toJSONString(after));
         rec.setOperator(operator);
+        rec.setOperatorName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         rec.setChangeTime(DateUtils.getNowDate());
         rec.setTenantId(StringUtils.isNotEmpty(tenantId) ? tenantId : SecurityUtils.requiredScopedTenantIdForSql());
         gzBillEntryChangeLogMapper.insert(rec);

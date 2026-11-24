@@ -103,6 +103,7 @@ public class StkInventoryServiceImpl implements IStkInventoryService
         }
         if (StringUtils.isEmpty(stkInventory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             stkInventory.setCreateBy(SecurityUtils.getUserIdStr());
+            stkInventory.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         return stkInventoryMapper.insertStkInventory(stkInventory);
     }
@@ -129,6 +130,7 @@ public class StkInventoryServiceImpl implements IStkInventoryService
         }
         if (StringUtils.isEmpty(stkInventory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             stkInventory.setUpdateBy(SecurityUtils.getUserIdStr());
+            stkInventory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         return stkInventoryMapper.updateStkInventory(stkInventory);
     }

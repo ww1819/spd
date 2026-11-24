@@ -114,6 +114,7 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         gzTraceability.setDelFlag("0");
         gzTraceability.setCreateTime(DateUtils.getNowDate());
         gzTraceability.setCreateBy(SecurityUtils.getUserIdStr());
+            gzTraceability.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         
         int rows = gzTraceabilityMapper.insertGzTraceability(gzTraceability);
         insertGzTraceabilityEntry(gzTraceability);
@@ -345,6 +346,7 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         }
         gzTraceability.setUpdateTime(DateUtils.getNowDate());
         gzTraceability.setUpdateBy(SecurityUtils.getUserIdStr());
+            gzTraceability.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         gzTraceabilityMapper.deleteGzTraceabilityEntryByParentId(gzTraceability.getId(), SecurityUtils.getUserIdStr());
         insertGzTraceabilityEntry(gzTraceability);
         
@@ -459,8 +461,10 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         gzTraceability.setOrderStatus(2); // 已审核
         gzTraceability.setAuditDate(DateUtils.getNowDate());
         gzTraceability.setAuditBy(SecurityUtils.getUserIdStr());
+            gzTraceability.setAuditByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         gzTraceability.setUpdateTime(DateUtils.getNowDate());
         gzTraceability.setUpdateBy(SecurityUtils.getUserIdStr());
+            gzTraceability.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         return gzTraceabilityMapper.updateGzTraceability(gzTraceability);
     }
 
@@ -483,6 +487,7 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         gzTraceability.setOrderStatus(1); // 未审核
         gzTraceability.setUpdateTime(DateUtils.getNowDate());
         gzTraceability.setUpdateBy(SecurityUtils.getUserIdStr());
+            gzTraceability.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         return gzTraceabilityMapper.updateGzTraceability(gzTraceability);
     }
 

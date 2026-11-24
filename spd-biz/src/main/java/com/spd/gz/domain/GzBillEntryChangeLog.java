@@ -17,6 +17,9 @@ public class GzBillEntryChangeLog {
     private String beforeJson;
     private String afterJson;
     private String operator;
+
+    /** 操作人登录名快照 */
+    private String operatorName;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date changeTime;
     private String tenantId;
@@ -55,5 +58,15 @@ public class GzBillEntryChangeLog {
     public void setIsDeleted(Integer isDeleted)
     {
         this.isDeleted = isDeleted;
+    }
+
+    public String getOperatorName()
+    {
+        return operatorName;
+    }
+
+    public void setOperatorName(String operatorName)
+    {
+        this.operatorName = operatorName;
     }
 }

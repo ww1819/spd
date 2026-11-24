@@ -15,13 +15,13 @@
 
     <insert id="insert" parameterType="com.spd.foundation.domain.FdMaterialStatusLog">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        INSERT INTO fd_material_status_log (id, material_id, action, action_time, operator, reason, tenant_id, is_deleted)
-        VALUES (#{id}, #{materialId}, #{action}, #{actionTime}, #{operator}, #{reason}, #{scopedTenantId}, 0)
+        INSERT INTO fd_material_status_log (id, material_id, action, action_time, operator, operator_name, reason, tenant_id, is_deleted)
+        VALUES (#{id}, #{materialId}, #{action}, #{actionTime}, #{operator}, #{operatorName}, #{reason}, #{scopedTenantId}, 0)
     </insert>
 
     <select id="selectByMaterialId" resultMap="FdMaterialStatusLogResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        SELECT id, material_id, action, action_time, operator, reason, tenant_id
+        SELECT id, material_id, action, action_time, operator, operator_name, reason, tenant_id
         FROM fd_material_status_log
         WHERE IFNULL(is_deleted,0)=0 AND material_id = #{materialId} and tenant_id = #{scopedTenantId}
         AND IFNULL(is_deleted,0)=0

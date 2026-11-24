@@ -75,6 +75,7 @@ public class FdLocationServiceImpl implements IFdLocationService
         if (StringUtils.isEmpty(fdLocation.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
         {
             fdLocation.setCreateBy(SecurityUtils.getUserIdStr());
+            fdLocation.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         fdLocation.setCreateTime(DateUtils.getNowDate());
         if (fdLocation.getParentId() == null)
@@ -106,6 +107,7 @@ public class FdLocationServiceImpl implements IFdLocationService
         if (StringUtils.isEmpty(fdLocation.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
         {
             fdLocation.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdLocation.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         FdLocation beforeSnap = fdLocationMapper.selectFdLocationByLocationId(fdLocation.getLocationId());
         int n = fdLocationMapper.updateFdLocation(fdLocation);
@@ -125,9 +127,11 @@ public class FdLocationServiceImpl implements IFdLocationService
         SecurityUtils.ensureTenantAccess(fdLocation.getTenantId());
         fdLocation.setDelFlag(1);
         fdLocation.setDeleteBy(SecurityUtils.getUserIdStr());
+            fdLocation.setDeleteByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         fdLocation.setDeleteTime(DateUtils.getNowDate());
         fdLocation.setUpdateTime(DateUtils.getNowDate());
         fdLocation.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdLocation.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         return fdLocationMapper.updateFdLocation(fdLocation);
     }
 
@@ -166,6 +170,7 @@ public class FdLocationServiceImpl implements IFdLocationService
         rec.setLocationId(entityId);
         rec.setChangeTime(changeTime);
         rec.setOperator(operator);
+        rec.setOperatorName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         rec.setFieldName(fieldName);
         rec.setFieldLabel(fieldLabel);
         rec.setOldValue(oldValue);
