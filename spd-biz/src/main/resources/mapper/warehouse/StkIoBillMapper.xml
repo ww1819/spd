@@ -31,6 +31,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="remark"    column="remark"    />
         <result property="delPerson"    column="del_person"    />
         <result property="telephone"    column="telephone"    />
+        <result property="recipientName"    column="recipient_name"    />
         <result property="totalAmount"    column="total_amount"    />
         <result property="invoiceNumber"    column="invoice_number"    />
         <result property="invoiceAmount"    column="invoice_amount"    />
@@ -250,7 +251,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectStkIoBillVo">
         select stk.id, stk.bill_no, stk.ref_bill_no, stk.suppler_id stkSupplierId, stk.bill_date, stk.warehouse_id, stk.department_id,
 				stk.bill_status, stk.user_id stk_user_id, stk.bill_type, stk.del_flag, stk.tenant_id, stk.delete_by, stk.delete_time, stk.settlement_type, stk.audit_date, stk.create_by, stk.create_time,
-				stk.update_by, stk.update_time, stk.remark,stk.del_person,stk.telephone,stk.total_amount,stk.invoice_number,stk.invoice_amount,
+				stk.update_by, stk.update_time, stk.remark,stk.del_person,stk.telephone,stk.recipient_name,stk.total_amount,stk.invoice_number,stk.invoice_amount,
 				stk.invoice_time,stk.pro_person,stk.return_reason,stk.is_month_init,stk.receipt_confirm_status,stk.audit_by,
 				stk.his_push_status,stk.his_push_msg,stk.his_push_time,stk.print_date,stk.print_person,
 				stk.d_apply_id,stk.wh_warehouse_apply_id,stk.wh_warehouse_apply_bill_no,
@@ -1263,7 +1264,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 a.dep_purchase_apply_id, a.dep_purchase_apply_bill_no, a.recipient_name,
                 a.delivery_ref_warehouse_id, a.delivery_ref_warehouse_name, a.delivery_ref_supplier_id,
                 a.delivery_ref_supplier_name, a.delivery_ref_dept_id, a.delivery_ref_dept_name,
-                a.del_person,a.telephone,a.total_amount,a.invoice_number,a.invoice_amount,
+                a.del_person,a.telephone,a.recipient_name,a.total_amount,a.invoice_number,a.invoice_amount,
 				a.invoice_time,a.pro_person,a.return_reason,a.is_month_init,a.receipt_confirm_status,a.audit_by,
                 a.his_push_status,a.his_push_msg,a.his_push_time,
                 b.id as sub_id, b.paren_id as sub_paren_id, b.bill_no as sub_bill_no, b.commodity_id as sub_commodity_id, b.material_id as sub_material_id,
@@ -1335,6 +1336,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">remark,</if>
             <if test="delPerson != null">del_person,</if>
             <if test="telephone != null">telephone,</if>
+            <if test="recipientName != null">recipient_name,</if>
             <if test="totalAmount != null">total_amount,</if>
             <if test="invoiceNumber != null">invoice_number,</if>
             <if test="invoiceAmount != null">invoice_amount,</if>
@@ -1378,6 +1380,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">#{remark},</if>
             <if test="delPerson != null">#{delPerson},</if>
             <if test="telephone != null">#{telephone},</if>
+            <if test="recipientName != null">#{recipientName},</if>
             <if test="totalAmount != null">#{totalAmount},</if>
             <if test="invoiceNumber != null">#{invoiceNumber},</if>
             <if test="invoiceAmount != null">#{invoiceAmount},</if>
@@ -1426,6 +1429,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">remark = #{remark},</if>
             <if test="delPerson != null">del_person = #{delPerson},</if>
             <if test="telephone != null">telephone = #{telephone},</if>
+            <if test="recipientName != null">recipient_name = #{recipientName},</if>
             <if test="totalAmount != null">total_amount = #{totalAmount},</if>
             <if test="invoiceNumber != null">invoice_number = #{invoiceNumber},</if>
             <if test="invoiceAmount != null">invoice_amount = #{invoiceAmount},</if>

@@ -98,4 +98,17 @@ public class HisOutpatientChargeMirror extends BaseEntity
     /** 列表排序字段（白名单，不走 PageHelper orderByColumn） */
     private String sortField;
     private String sortOrder;
+
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
+    }
 }

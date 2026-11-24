@@ -672,7 +672,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material m on stk.material_id = m.id
         left join his_charge_item_mirror hci on hci.tenant_id = stk.tenant_id
             and hci.charge_item_id = m.his_charge_item_id
-            and (hci.deleted_flag is null or hci.deleted_flag != 1)
+            and (hci.deleted_flag is null or hci.deleted_flag != 1) and IFNULL(hci.is_deleted,0)=0 
         left join fd_unit u on u.unit_id = m.unit_id
         left join fd_factory ff on ff.factory_id = m.factory_id
         left join fd_supplier msup on msup.id = m.supplier_id

@@ -308,6 +308,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
             gzShipment.setTenantId(SecurityUtils.getCustomerId());
         }
         gzShipment.setCreateBy(SecurityUtils.getUserIdStr());
+            gzShipment.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         gzShipment.setShipmentNo(getShipmentNo());
         gzShipment.setCreateTime(DateUtils.getNowDate());
         MasterDetailValidateUtil.assertEntryListNotEmpty(gzShipment.getGzShipmentEntryList(), "高值出库");
@@ -349,6 +350,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
             gzShipment.setTenantId(SecurityUtils.getCustomerId());
         }
         gzShipment.setUpdateBy(SecurityUtils.getUserIdStr());
+            gzShipment.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         gzShipment.setUpdateTime(DateUtils.getNowDate());
         GzShipment existing = gzShipmentMapper.selectGzShipmentById(gzShipment.getId());
         if (existing == null)
@@ -426,7 +428,9 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         gzShipment.setShipmentStatus(2);
         gzShipment.setAuditDate(new Date());
         gzShipment.setAuditBy(SecurityUtils.getUserIdStr());
+            gzShipment.setAuditByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         gzShipment.setUpdateBy(SecurityUtils.getUserIdStr());
+            gzShipment.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         gzShipment.setUpdateTime(new Date());
         int res = gzShipmentMapper.updateGzShipment(gzShipment);
         System.out.println("审核出库单 - id: " + id + ", shipmentStatus: " + gzShipment.getShipmentStatus() + ", 更新结果: " + res);
@@ -570,6 +574,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
             inventory.setTenantId(SecurityUtils.getCustomerId());
         }
         inventory.setUpdateBy(SecurityUtils.getUserIdStr());
+            inventory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         inventory.setUpdateTime(DateUtils.getNowDate());
     }
 
@@ -769,6 +774,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                     existingDepInventory.setAmt(baseAmt.add(unitPrice.multiply(addQty)));
                     existingDepInventory.setUnitPrice(unitPrice);
                     existingDepInventory.setUpdateBy(SecurityUtils.getUserIdStr());
+            existingDepInventory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     existingDepInventory.setUpdateTime(DateUtils.getNowDate());
                     gzDepInventoryMapper.updateGzDepInventory(existingDepInventory);
                     hcBarcodeLifecycleService.onGzShipmentDepInventoryInserted(gzShipment, shipmentEntry, existingDepInventory, depotInventory);
@@ -955,6 +961,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         rec.setBeforeJson(before == null ? null : JSON.toJSONString(before));
         rec.setAfterJson(after == null ? null : JSON.toJSONString(after));
         rec.setOperator(operator);
+        rec.setOperatorName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         rec.setChangeTime(DateUtils.getNowDate());
         rec.setTenantId(StringUtils.isNotEmpty(tenantId) ? tenantId : SecurityUtils.requiredScopedTenantIdForSql());
         gzBillEntryChangeLogMapper.insert(rec);

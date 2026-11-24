@@ -64,6 +64,7 @@ public class FdFocus18ServiceImpl implements IFdFocus18Service
         if (StringUtils.isEmpty(row.getCreateBy()))
         {
             row.setCreateBy(SecurityUtils.getUserIdStr());
+            row.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (row.getDelFlag() == null)
         {
@@ -86,6 +87,7 @@ public class FdFocus18ServiceImpl implements IFdFocus18Service
         }
         normalize(row);
         row.setUpdateBy(SecurityUtils.getUserIdStr());
+            row.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         row.setUpdateTime(DateUtils.getNowDate());
         return fdFocus18Mapper.updateFdFocus18(row);
     }

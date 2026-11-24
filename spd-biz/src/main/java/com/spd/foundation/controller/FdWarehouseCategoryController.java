@@ -1,5 +1,7 @@
 package com.spd.foundation.controller;
 
+
+import com.spd.foundation.domain.FdWarehouseCategoryChangeLog;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
@@ -356,4 +358,24 @@ public class FdWarehouseCategoryController extends BaseController
         fdWarehouseCategoryService.updateReferred(ids);
         return success("更新简码成功");
     }
+
+    /**
+     * WarehouseCategory字段变更记录
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:warehouseCategory:list')")
+    @GetMapping("/changeLog/{warehouseCategoryId}")
+    public AjaxResult changeLog(@PathVariable("warehouseCategoryId") Long warehouseCategoryId)
+    {
+        if (warehouseCategoryId == null)
+        {
+            return error("id 无效");
+        }
+        if (fdWarehouseCategoryService.selectFdWarehouseCategoryByWarehouseCategoryId(warehouseCategoryId) == null)
+        {
+            return error("记录不存在");
+        }
+        List<FdWarehouseCategoryChangeLog> logs = fdWarehouseCategoryService.selectWarehouseCategoryChangeLog(warehouseCategoryId);
+        return success(logs);
+    }
+
 }

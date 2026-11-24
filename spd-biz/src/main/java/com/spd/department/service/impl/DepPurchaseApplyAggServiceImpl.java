@@ -412,6 +412,7 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         }
         if (StringUtils.isEmpty(row.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             row.setCreateBy(SecurityUtils.getUserIdStr());
+            row.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (StringUtils.isEmpty(row.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             row.setTenantId(SecurityUtils.getCustomerId());
@@ -457,6 +458,7 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         validateEntryWarehouse(row.getEntryList());
         validateEntryIsGz(row.getEntryList());
         row.setUpdateBy(SecurityUtils.getUserIdStr());
+            row.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         row.setUpdateTime(DateUtils.getNowDate());
         List<DepPurchaseApplyAggEntry> active = saveAggEntryListIncremental(
             row.getId(), existing.getTenantId(), row.getEntryList(), existing.getEntryList());
@@ -637,6 +639,7 @@ public class DepPurchaseApplyAggServiceImpl implements IDepPurchaseApplyAggServi
         agg.setPurchaseBillStatus(3);
         agg.setRejectReason(rejectReason);
         agg.setUpdateBy(SecurityUtils.getUserIdStr());
+            agg.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         agg.setUpdateTime(new Date());
         return depPurchaseApplyAggMapper.updateDepPurchaseApplyAgg(agg);
     }

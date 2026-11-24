@@ -24,6 +24,9 @@ public class SysPrintDocRows extends BaseEntity
     @NotNull(message = "rowsPerPage不能为空")
     private Integer rowsPerPage;
 
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
     public Long getId()
     {
         return id;
@@ -67,5 +70,15 @@ public class SysPrintDocRows extends BaseEntity
             .append("updateTime", getUpdateTime())
             .append("remark", getRemark())
             .toString();
+    }
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
     }
 }

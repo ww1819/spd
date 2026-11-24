@@ -1,5 +1,7 @@
 package com.spd.foundation.service;
 
+
+import com.spd.foundation.domain.FdLocationChangeLog;
 import java.util.List;
 import com.spd.foundation.domain.FdLocation;
 
@@ -57,5 +59,11 @@ public interface IFdLocationService
      * @return 结果
      */
     public int deleteFdLocationByLocationIds(Long locationIds);
+
+    /**
+     * Location字段变更记录
+     */
+    List<FdLocationChangeLog> selectLocationChangeLog(Long locationId);
+
 }
 

@@ -103,6 +103,7 @@ public class FdEquipmentDictServiceImpl implements IFdEquipmentDictService
         fdEquipmentDict.setUpdateTime(DateUtils.getNowDate());
         fdEquipmentDict.setDelFlag(1);//1:已删除
         fdEquipmentDict.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdEquipmentDict.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         return fdEquipmentDictMapper.updateFdEquipmentDict(fdEquipmentDict);
     }
 

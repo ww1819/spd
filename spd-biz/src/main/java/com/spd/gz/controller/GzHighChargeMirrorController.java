@@ -45,6 +45,18 @@ public class GzHighChargeMirrorController extends BaseController
     @Autowired
     private IGzHighValueWriteOffService gzHighValueWriteOffService;
 
+    /**
+     * 进页访问日志：前端上报分段耗时，落 sys_oper_log（title=高值扫描核销-进页）。
+     * 分析卡顿以 body 内 listMs/statusMs/totalMs 为准。
+     */
+    @PreAuthorize("@ss.hasPermi('gz:highChargeScan:list')")
+    @Log(title = "高值扫描核销-进页", businessType = BusinessType.OTHER, isSaveResponseData = false)
+    @PostMapping("/mirror/pageAccess")
+    public AjaxResult pageAccess(@RequestBody(required = false) Map<String, Object> body)
+    {
+        return success();
+    }
+
     @PreAuthorize("@ss.hasPermi('gz:highChargeScan:list')")
     @GetMapping("/mirror/inpatient/list")
     public TableDataInfo inpatientMirrorList(HisInpatientChargeMirror query)

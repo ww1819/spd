@@ -162,6 +162,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
         }
         if (StringUtils.isEmpty(purchaseOrder.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             purchaseOrder.setCreateBy(SecurityUtils.getUserIdStr());
+            purchaseOrder.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (StringUtils.isEmpty(purchaseOrder.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             purchaseOrder.setTenantId(SecurityUtils.getCustomerId());
@@ -209,6 +210,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             purchaseOrder.getPurchaseOrderEntryList(), PurchaseOrderEntry::getMaterialId, "采购订单");
         if (StringUtils.isEmpty(purchaseOrder.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             purchaseOrder.setUpdateBy(SecurityUtils.getUserIdStr());
+            purchaseOrder.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         // 计算总金额
         if (purchaseOrder.getPurchaseOrderEntryList() != null && !purchaseOrder.getPurchaseOrderEntryList().isEmpty()) {
@@ -448,6 +450,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
             purchaseOrder.setUrgencyLevel("2"); // 中等紧急程度
             purchaseOrder.setDelFlag("0");
             purchaseOrder.setCreateBy(SecurityUtils.getUserIdStr());
+            purchaseOrder.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
             purchaseOrder.setCreateTime(new Date());
             if (StringUtils.isEmpty(purchaseOrder.getTenantId())) {
                 purchaseOrder.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
@@ -482,6 +485,7 @@ public class PurchaseOrderServiceImpl implements IPurchaseOrderService
                 orderEntry.setOrderNo(purchaseOrder.getOrderNo());
                 orderEntry.setTenantId(purchaseOrder.getTenantId());
                 orderEntry.setCreateBy(SecurityUtils.getUserIdStr());
+            orderEntry.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                 orderEntry.setCreateTime(new Date());
                 
                 orderEntryList.add(orderEntry);

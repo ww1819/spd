@@ -6,15 +6,15 @@
         select id, tenant_id as tenantId, delivery_no as deliveryNo, line_sign as lineSign,
                qty_cap as qtyCap, create_time as createTime, update_time as updateTime
         from stk_delivery_line_cap
-        where tenant_id = #{tenantId}
+        where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId}
           and delivery_no = #{deliveryNo}
           and line_sign = #{lineSign}
         limit 1
     </select>
 
     <insert id="upsertMaxCap">
-        insert into stk_delivery_line_cap (id, tenant_id, delivery_no, line_sign, qty_cap)
-        values (#{id}, #{tenantId}, #{deliveryNo}, #{lineSign}, #{qtyCap})
+        INSERT INTO stk_delivery_line_cap (id, tenant_id, delivery_no, line_sign, qty_cap, is_deleted)
+        VALUES (#{id}, #{tenantId}, #{deliveryNo}, #{lineSign}, #{qtyCap}, 0)
         on duplicate key update
             qty_cap = greatest(qty_cap, #{qtyCap})
     </insert>

@@ -7,24 +7,27 @@
         <result property="supplierId" column="supplier_id"/>
         <result property="changeTime" column="change_time"/>
         <result property="operator" column="operator"/>
+        <result property="operatorName" column="operator_name"/>
         <result property="fieldName" column="field_name"/>
         <result property="fieldLabel" column="field_label"/>
         <result property="oldValue" column="old_value"/>
         <result property="newValue" column="new_value"/>
         <result property="tenantId" column="tenant_id"/>
+            <result property="isDeleted" column="is_deleted"/>
     </resultMap>
 
     <insert id="insert" parameterType="com.spd.foundation.domain.FdSupplierChangeLog">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        INSERT INTO fd_supplier_change_log (id, supplier_id, change_time, operator, field_name, field_label, old_value, new_value, tenant_id)
-        VALUES (#{id}, #{supplierId}, #{changeTime}, #{operator}, #{fieldName}, #{fieldLabel}, #{oldValue}, #{newValue}, #{scopedTenantId})
+        INSERT INTO fd_supplier_change_log (id, supplier_id, change_time, operator, operator_name, field_name, field_label, old_value, new_value, tenant_id, is_deleted)
+        VALUES (#{id}, #{supplierId}, #{changeTime}, #{operator}, #{operatorName}, #{fieldName}, #{fieldLabel}, #{oldValue}, #{newValue}, #{scopedTenantId}, 0)
     </insert>
 
     <select id="selectBySupplierId" resultMap="FdSupplierChangeLogResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        SELECT id, supplier_id, change_time, operator, field_name, field_label, old_value, new_value, tenant_id
+        SELECT id, supplier_id, change_time, operator, operator_name, field_name, field_label, old_value, new_value, tenant_id
         FROM fd_supplier_change_log
-        WHERE supplier_id = #{supplierId} and tenant_id = #{scopedTenantId}
+        WHERE IFNULL(is_deleted,0)=0 AND supplier_id = #{supplierId} and tenant_id = #{scopedTenantId}
+        AND IFNULL(is_deleted,0)=0
         ORDER BY change_time DESC
     </select>
 </mapper>

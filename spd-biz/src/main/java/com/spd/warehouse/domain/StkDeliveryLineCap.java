@@ -16,6 +16,9 @@ public class StkDeliveryLineCap {
     private Date createTime;
     private Date updateTime;
 
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
     public String getId() {
         return id;
     }
@@ -70,5 +73,15 @@ public class StkDeliveryLineCap {
 
     public void setUpdateTime(Date updateTime) {
         this.updateTime = updateTime;
+    }
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
     }
 }

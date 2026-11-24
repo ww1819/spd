@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.spd.foundation.mapper.FdUnitChangeLogMapper">
+
+    <resultMap id="FdUnitChangeLogResult" type="com.spd.foundation.domain.FdUnitChangeLog">
+        <result property="id" column="id"/>
+        <result property="unitId" column="unit_id"/>
+        <result property="changeTime" column="change_time"/>
+        <result property="operator" column="operator"/>
+        <result property="operatorName" column="operator_name"/>
+        <result property="fieldName" column="field_name"/>
+        <result property="fieldLabel" column="field_label"/>
+        <result property="oldValue" column="old_value"/>
+        <result property="newValue" column="new_value"/>
+        <result property="tenantId" column="tenant_id"/>
+            <result property="isDeleted" column="is_deleted"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.spd.foundation.domain.FdUnitChangeLog">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        INSERT INTO fd_unit_change_log (id, unit_id, change_time, operator, operator_name, field_name, field_label, old_value, new_value, tenant_id, is_deleted)
+        VALUES (#{id}, #{unitId}, #{changeTime}, #{operator}, #{operatorName}, #{fieldName}, #{fieldLabel}, #{oldValue}, #{newValue}, #{scopedTenantId}, 0)
+    </insert>
+
+    <select id="selectByEntityId" resultMap="FdUnitChangeLogResult">
+        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        SELECT id, unit_id, change_time, operator, operator_name, field_name, field_label, old_value, new_value, tenant_id
+        FROM fd_unit_change_log
+        WHERE IFNULL(is_deleted,0)=0 AND unit_id = #{unitId} and tenant_id = #{scopedTenantId}
+        AND IFNULL(is_deleted,0)=0
+        ORDER BY change_time DESC
+    </select>
+</mapper>

@@ -5,21 +5,21 @@
     <select id="selectHomeView" resultType="java.lang.String">
         select home_view
         from sys_user_home_pref
-        where user_id = #{userId} and tenant_id = #{tenantId}
+        where IFNULL(is_deleted,0)=0 AND user_id = #{userId} and tenant_id = #{tenantId}
         limit 1
     </select>
 
     <insert id="upsertHomeView">
-        insert into sys_user_home_pref (id, user_id, tenant_id, home_view, create_time, update_time)
-        values (#{id}, #{userId}, #{tenantId}, #{homeView}, now(), now())
+        INSERT INTO sys_user_home_pref (id, user_id, tenant_id, home_view, create_time, update_time, is_deleted)
+        VALUES (#{id}, #{userId}, #{tenantId}, #{homeView}, now(), now(), 0)
         on duplicate key update
             home_view = values(home_view),
             update_time = now()
     </insert>
 
     <insert id="upsertMenuHit">
-        insert into sys_user_menu_hit (id, user_id, tenant_id, path, title, hit_count, last_hit_time, create_time, update_time)
-        values (#{id}, #{userId}, #{tenantId}, #{path}, #{title}, 1, now(), now(), now())
+        INSERT INTO sys_user_menu_hit (id, user_id, tenant_id, path, title, hit_count, last_hit_time, create_time, update_time, is_deleted)
+        VALUES (#{id}, #{userId}, #{tenantId}, #{path}, #{title}, 1, now(), now(), now(), 0)
         on duplicate key update
             hit_count = hit_count + 1,
             title = if(values(title) is null or values(title) = '', title, values(title)),
@@ -30,7 +30,7 @@
     <select id="selectTopMenus" resultType="java.util.HashMap">
         select path, title, hit_count as hitCount
         from sys_user_menu_hit
-        where user_id = #{userId} and tenant_id = #{tenantId}
+        where IFNULL(is_deleted,0)=0 AND user_id = #{userId} and tenant_id = #{tenantId}
         order by hit_count desc, last_hit_time desc
         limit #{limit}
     </select>

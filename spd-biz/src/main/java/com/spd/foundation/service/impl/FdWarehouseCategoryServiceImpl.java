@@ -1,5 +1,11 @@
 package com.spd.foundation.service.impl;
 
+
+
+
+import com.spd.common.utils.uuid.UUID7;
+import com.spd.foundation.mapper.FdWarehouseCategoryChangeLogMapper;
+import com.spd.foundation.domain.FdWarehouseCategoryChangeLog;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -35,6 +41,9 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
 {
     @Autowired
     private FdWarehouseCategoryMapper fdWarehouseCategoryMapper;
+
+    @Autowired
+    private FdWarehouseCategoryChangeLogMapper fdWarehouseCategoryChangeLogMapper;
 
     @Autowired
     private FoundationSnapshotRecorder foundationSnapshotRecorder;
@@ -101,6 +110,7 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
         }
         if (StringUtils.isEmpty(fdWarehouseCategory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdWarehouseCategory.setCreateBy(SecurityUtils.getUserIdStr());
+            fdWarehouseCategory.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (StringUtils.isEmpty(fdWarehouseCategory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             fdWarehouseCategory.setTenantId(SecurityUtils.getCustomerId());
@@ -167,6 +177,7 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
         fdWarehouseCategory.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdWarehouseCategory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdWarehouseCategory.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdWarehouseCategory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         int n = fdWarehouseCategoryMapper.updateFdWarehouseCategory(fdWarehouseCategory);
         if (n > 0)
@@ -175,6 +186,7 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
             String logOp = StringUtils.isNotEmpty(fdWarehouseCategory.getUpdateBy()) ? fdWarehouseCategory.getUpdateBy() : SecurityUtils.getUserIdStr();
             foundationSnapshotRecorder.record(before.getTenantId(), "WAREHOUSE_CATEGORY",
                 String.valueOf(fdWarehouseCategory.getWarehouseCategoryId()), before, after, logOp);
+            recordWarehouseCategoryFieldChanges(before, after, logOp);
         }
         return n;
     }
@@ -195,9 +207,11 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
         SecurityUtils.ensureTenantAccess(fdWarehouseCategory.getTenantId());
         fdWarehouseCategory.setDelFlag(1);
         fdWarehouseCategory.setDeleteBy(SecurityUtils.getUserIdStr());
+            fdWarehouseCategory.setDeleteByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         fdWarehouseCategory.setDeleteTime(DateUtils.getNowDate());
         fdWarehouseCategory.setUpdateTime(new Date());
         fdWarehouseCategory.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdWarehouseCategory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         return fdWarehouseCategoryMapper.updateFdWarehouseCategory(fdWarehouseCategory);
     }
 
@@ -598,4 +612,63 @@ public class FdWarehouseCategoryServiceImpl implements IFdWarehouseCategoryServi
 //    {
 //        return fdWarehouseCategoryMapper.deleteFdWarehouseCategoryByWarehouseCategoryId(warehouseCategoryId);
 //    }
+
+
+    public java.util.List<FdWarehouseCategoryChangeLog> selectWarehouseCategoryChangeLog(Long warehouseCategoryId)
+    {
+        if (warehouseCategoryId == null)
+        {
+            return java.util.Collections.emptyList();
+        }
+        return fdWarehouseCategoryChangeLogMapper.selectByEntityId(warehouseCategoryId);
+    }
+
+    private void recordWarehouseCategoryFieldChanges(FdWarehouseCategory before, FdWarehouseCategory after, String operator)
+    {
+        if (before == null || after == null || after.getWarehouseCategoryId() == null)
+        {
+            return;
+        }
+        java.util.Date now = DateUtils.getNowDate();
+        String op = StringUtils.isNotEmpty(operator) ? operator : "";
+        pushChange(after.getWarehouseCategoryId(), op, now, "parent_id", "上级分类ID", nzObj(before.getParentId()), nzObj(after.getParentId()));
+        pushChange(after.getWarehouseCategoryId(), op, now, "warehouse_category_code", "库房分类编码", nzObj(before.getWarehouseCategoryCode()), nzObj(after.getWarehouseCategoryCode()));
+        pushChange(after.getWarehouseCategoryId(), op, now, "warehouse_category_name", "库房分类名称", nzObj(before.getWarehouseCategoryName()), nzObj(after.getWarehouseCategoryName()));
+        pushChange(after.getWarehouseCategoryId(), op, now, "referred_name", "简码", nzObj(before.getReferredName()), nzObj(after.getReferredName()));
+        pushChange(after.getWarehouseCategoryId(), op, now, "his_id", "HIS系统ID", nzObj(before.getHisId()), nzObj(after.getHisId()));
+        pushChange(after.getWarehouseCategoryId(), op, now, "remark", "备注", nzObj(before.getRemark()), nzObj(after.getRemark()));
+    }
+
+    private void pushChange(Long entityId, String operator, java.util.Date changeTime, String fieldName, String fieldLabel, String oldValue, String newValue)
+    {
+        if (java.util.Objects.equals(oldValue, newValue))
+        {
+            return;
+        }
+        FdWarehouseCategoryChangeLog rec = new FdWarehouseCategoryChangeLog();
+        rec.setId(UUID7.generateUUID7());
+        rec.setWarehouseCategoryId(entityId);
+        rec.setChangeTime(changeTime);
+        rec.setOperator(operator);
+        rec.setOperatorName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
+        rec.setFieldName(fieldName);
+        rec.setFieldLabel(fieldLabel);
+        rec.setOldValue(oldValue);
+        rec.setNewValue(newValue);
+        fdWarehouseCategoryChangeLogMapper.insert(rec);
+    }
+
+    private static String nzObj(Object v)
+    {
+        if (v == null)
+        {
+            return "";
+        }
+        if (v instanceof java.math.BigDecimal)
+        {
+            return ((java.math.BigDecimal) v).stripTrailingZeros().toPlainString();
+        }
+        return String.valueOf(v);
+    }
+
 }

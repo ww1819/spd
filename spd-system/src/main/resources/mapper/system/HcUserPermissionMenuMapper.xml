@@ -3,10 +3,10 @@
 <mapper namespace="com.spd.system.mapper.HcUserPermissionMenuMapper">
 
   <insert id="batchInsert" parameterType="java.util.List">
-    insert into hc_user_permission_menu (id, user_id, tenant_id, menu_id, create_by, create_time)
+    insert into hc_user_permission_menu (id, user_id, tenant_id, menu_id, create_by, create_time, is_deleted)
     values
     <foreach collection="list" item="item" separator=",">
-      (#{item.id}, #{item.userId}, #{item.tenantId}, #{item.menuId}, #{item.createBy}, now())
+      (#{item.id}, #{item.userId}, #{item.tenantId}, #{item.menuId}, #{item.createBy}, now(), 0)
     </foreach>
   </insert>
 
@@ -25,8 +25,8 @@
 
   <delete id="deleteHcUserPermissionMenusNotInHcCustomerMenus">
     DELETE upm FROM hc_user_permission_menu upm
-    LEFT JOIN hc_customer_menu cm ON cm.tenant_id = #{tenantId} AND cm.menu_id = upm.menu_id
-    WHERE upm.tenant_id = #{tenantId} AND cm.menu_id IS NULL
+    LEFT JOIN hc_customer_menu cm ON cm.tenant_id = #{tenantId} AND cm.menu_id = upm.menu_id AND IFNULL(cm.is_deleted,0)=0
+    WHERE upm.tenant_id = #{tenantId} AND IFNULL(upm.is_deleted,0)=0 AND cm.menu_id IS NULL
   </delete>
 
 </mapper>

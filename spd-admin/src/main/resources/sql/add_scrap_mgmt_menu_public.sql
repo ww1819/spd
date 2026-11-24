@@ -1,6 +1,7 @@
 -- 库房管理：盘点管理后增加「报损管理」分栏（申请 / 审批 / 查询）
 -- 目录 3983；申请 3984；审批 3985；查询 3986
 -- 顺序：… → 调拨(6) → 盘点(7) → 报损(8)
+-- 【启动补全】已并入 mysql/material/menu.sql（SqlInitRunner 重启自动执行）；本文件保留作手工对照
 
 SET @wh_root := (
   SELECT m.menu_id FROM sys_menu m

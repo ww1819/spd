@@ -26,6 +26,9 @@ public class SysLicense extends BaseEntity
     /** Base64 签名 */
     private String signature;
 
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
     public Long getId()
     {
         return id;
@@ -74,5 +77,15 @@ public class SysLicense extends BaseEntity
     public void setSignature(String signature)
     {
         this.signature = signature;
+    }
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
     }
 }

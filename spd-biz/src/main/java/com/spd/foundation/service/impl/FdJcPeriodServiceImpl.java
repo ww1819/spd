@@ -45,6 +45,7 @@ public class FdJcPeriodServiceImpl implements IFdJcPeriodService
         if (StringUtils.isEmpty(row.getCreateBy()))
         {
             row.setCreateBy(SecurityUtils.getUserIdStr());
+            row.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (row.getDelFlag() == null)
         {
@@ -71,6 +72,7 @@ public class FdJcPeriodServiceImpl implements IFdJcPeriodService
         }
         validate(row);
         row.setUpdateBy(SecurityUtils.getUserIdStr());
+            row.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         row.setUpdateTime(DateUtils.getNowDate());
         return fdJcPeriodMapper.updateFdJcPeriod(row);
     }

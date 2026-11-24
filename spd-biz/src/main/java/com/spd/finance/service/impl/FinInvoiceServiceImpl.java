@@ -58,6 +58,7 @@ public class FinInvoiceServiceImpl implements IFinInvoiceService {
         row.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(row.getCreateBy())) {
             row.setCreateBy(SecurityUtils.getUserIdStr());
+            row.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         return finInvoiceMapper.insert(row);
     }
@@ -79,6 +80,7 @@ public class FinInvoiceServiceImpl implements IFinInvoiceService {
         row.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(row.getUpdateBy())) {
             row.setUpdateBy(SecurityUtils.getUserIdStr());
+            row.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         return finInvoiceMapper.update(row);
     }

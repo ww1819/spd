@@ -20,7 +20,7 @@
         select
         <include refid="Base_Column_List"/>
         from sys_his_external_db
-        where tenant_id = #{tenantId}
+        where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId}
           and enabled = '1'
         limit 1
     </select>
@@ -29,7 +29,7 @@
         select
         <include refid="Base_Column_List"/>
         from sys_his_external_db
-        where tenant_id = #{tenantId}
+        where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId}
         limit 1
     </select>
 
@@ -38,6 +38,8 @@
         <include refid="Base_Column_List"/>
         from sys_his_external_db
         <where>
+            AND IFNULL(is_deleted,0)=0
+
             <if test="tenantId != null and tenantId != ''">
                 and tenant_id like concat('%', #{tenantId}, '%')
             </if>
@@ -52,13 +54,11 @@
     </select>
 
     <insert id="insert">
-        insert into sys_his_external_db (
+        INSERT INTO sys_his_external_db (
             tenant_id, db_type, driver_class, jdbc_url, username, password, enabled,
-            sql_inpatient_range, sql_outpatient_range, remark
-        ) values (
+            sql_inpatient_range, sql_outpatient_range, remark, is_deleted) VALUES (
             #{tenantId}, #{dbType}, #{driverClass}, #{jdbcUrl}, #{username}, #{password}, #{enabled},
-            #{sqlInpatientRange}, #{sqlOutpatientRange}, #{remark}
-        )
+            #{sqlInpatientRange}, #{sqlOutpatientRange}, #{remark}, 0)
     </insert>
 
     <update id="updateByTenantId">
@@ -75,7 +75,10 @@
         where tenant_id = #{tenantId}
     </update>
 
-    <delete id="deleteByTenantId">
-        delete from sys_his_external_db where tenant_id = #{tenantId}
-    </delete>
+    <update id="deleteByTenantId">
+        <bind name="auditDeleteBy" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
+        <bind name="auditDeleteByName" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
+        update sys_his_external_db set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{auditDeleteByName}, delete_time = now()
+        where tenant_id = #{tenantId}
+    </update>
 </mapper>

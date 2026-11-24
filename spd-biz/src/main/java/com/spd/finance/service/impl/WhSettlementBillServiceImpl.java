@@ -88,6 +88,7 @@ public class WhSettlementBillServiceImpl implements IWhSettlementBillService {
         row.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(row.getCreateBy())) {
             row.setCreateBy(SecurityUtils.getUserIdStr());
+            row.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         row.setAuditStatus(0);
         row.setDelFlag(0);

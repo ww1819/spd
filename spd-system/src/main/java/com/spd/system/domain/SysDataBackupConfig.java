@@ -49,6 +49,9 @@ public class SysDataBackupConfig extends BaseEntity
 
     private String lastBackupMessage;
 
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
     public Long getId()
     {
         return id;
@@ -183,5 +186,15 @@ public class SysDataBackupConfig extends BaseEntity
             .append("updateTime", getUpdateTime())
             .append("remark", getRemark())
             .toString();
+    }
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
     }
 }

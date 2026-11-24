@@ -72,7 +72,7 @@
 		from sys_menu m
 		inner join hc_customer_menu hcm on hcm.menu_id = m.menu_id and hcm.tenant_id = #{tenantId}
 			and (hcm.is_enabled = '1' or hcm.is_enabled is null)
-			and (hcm.status = '0' or hcm.status is null)
+			and (hcm.status = '0' or hcm.status is null) and IFNULL(hcm.is_deleted,0)=0 
 		where m.menu_type in ('M', 'C', 'F') and m.status = 0
 		and (m.is_platform is null or m.is_platform != '1')
 		order by m.parent_id, m.order_num

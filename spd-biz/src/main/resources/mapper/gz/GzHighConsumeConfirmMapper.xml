@@ -915,10 +915,10 @@
                 or (chargeItemId != null and chargeItemId != '')
                 or orderingDepartmentId != null
                 or execDepartmentId != null">
-                left join his_inpatient_charge_mirror inp on l.visit_kind = 'INPATIENT' and inp.id = l.mirror_row_id and inp.tenant_id = l.tenant_id
+                left join his_inpatient_charge_mirror inp on l.visit_kind = 'INPATIENT' and inp.id = l.mirror_row_id and inp.tenant_id = l.tenant_id and IFNULL(inp.is_deleted,0)=0 
                 left join his_outpatient_charge_mirror outp on l.visit_kind = 'OUTPATIENT' and outp.id = l.mirror_row_id and outp.tenant_id = l.tenant_id
             </if>
-            <if test="pendingRefundReverse != null and pendingRefundReverse == '1'">
+            <if test="pendingRefundReverse != null and pendingRefundReverse == '1'"> and IFNULL(outp.is_deleted,0)=0 
                 left join gz_high_consume_confirm_bill th_bill on th_bill.confirm_id = l.confirm_id
                     and th_bill.tenant_id = l.tenant_id
                     and th_bill.bill_type = 301 and ifnull(th_bill.link_scoped, 0) = 0

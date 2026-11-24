@@ -1,5 +1,7 @@
 package com.spd.foundation.controller;
 
+
+import com.spd.foundation.domain.FdUnitChangeLog;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -113,4 +115,24 @@ public class FdUnitController extends BaseController
     {
         return toAjax(fdUnitService.deleteFdUnitByUnitIds(unitIds));
     }
+
+    /**
+     * Unit字段变更记录
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:unit:list')")
+    @GetMapping("/changeLog/{unitId}")
+    public AjaxResult changeLog(@PathVariable("unitId") Long unitId)
+    {
+        if (unitId == null)
+        {
+            return error("id 无效");
+        }
+        if (fdUnitService.selectFdUnitByUnitId(unitId) == null)
+        {
+            return error("记录不存在");
+        }
+        List<FdUnitChangeLog> logs = fdUnitService.selectUnitChangeLog(unitId);
+        return success(logs);
+    }
+
 }

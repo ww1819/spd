@@ -6,14 +6,14 @@
         insert into gz_order_entry_code_ref (
             id, tenant_id, src_acceptance_id, src_acceptance_no, src_order_entry_id, src_barcode_line_id, src_in_hospital_code,
             tgt_bill_kind, tgt_main_id, tgt_bill_no, tgt_entry_id, ref_purpose, material_id, material_name, warehouse_id,
-            create_by, create_time
+            create_by, create_time, is_deleted
         ) values
         <foreach collection="list" item="item" separator=",">
             (
                 #{item.id}, #{item.tenantId}, #{item.srcAcceptanceId}, #{item.srcAcceptanceNo}, #{item.srcOrderEntryId},
                 #{item.srcBarcodeLineId}, #{item.srcInHospitalCode}, #{item.tgtBillKind}, #{item.tgtMainId}, #{item.tgtBillNo},
                 #{item.tgtEntryId}, #{item.refPurpose}, #{item.materialId}, #{item.materialName}, #{item.warehouseId},
-                #{item.createBy}, #{item.createTime}
+                #{item.createBy}, #{item.createTime}, 0
             )
         </foreach>
     </insert>
@@ -26,7 +26,7 @@
     <select id="selectSrcAcceptanceIdsByTgtMainId" resultType="java.lang.String">
         select distinct src_acceptance_id
         from gz_order_entry_code_ref
-        where tgt_main_id = #{tgtMainId}
+        where IFNULL(is_deleted,0)=0 AND tgt_main_id = #{tgtMainId}
           and tgt_bill_kind = #{tgtBillKind}
           and src_acceptance_id is not null
           and trim(src_acceptance_id) != ''
@@ -38,7 +38,7 @@
                tgt_bill_no as tgtBillNo,
                src_in_hospital_code as inHospitalCode
         from gz_order_entry_code_ref
-        where tgt_bill_kind = #{tgtBillKind}
+        where IFNULL(is_deleted,0)=0 AND tgt_bill_kind = #{tgtBillKind}
           and src_barcode_line_id is not null
           and trim(src_barcode_line_id) != ''
         <if test="barcodeLineIds != null and barcodeLineIds.size() > 0">

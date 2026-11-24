@@ -67,6 +67,7 @@ public class GzPatientInfoServiceImpl implements IGzPatientInfoService
     public int insertGzPatientInfo(GzPatientInfo gzPatientInfo)
     {
         gzPatientInfo.setCreateBy(SecurityUtils.getUserIdStr());
+            gzPatientInfo.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         gzPatientInfo.setCreateTime(DateUtils.getNowDate());
         return gzPatientInfoMapper.insertGzPatientInfo(gzPatientInfo);
     }
@@ -81,6 +82,7 @@ public class GzPatientInfoServiceImpl implements IGzPatientInfoService
     public int updateGzPatientInfo(GzPatientInfo gzPatientInfo)
     {
         gzPatientInfo.setUpdateBy(SecurityUtils.getUserIdStr());
+            gzPatientInfo.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         gzPatientInfo.setUpdateTime(DateUtils.getNowDate());
         return gzPatientInfoMapper.updateGzPatientInfo(gzPatientInfo);
     }

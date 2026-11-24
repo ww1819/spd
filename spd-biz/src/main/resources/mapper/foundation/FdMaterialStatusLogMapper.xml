@@ -10,19 +10,21 @@
         <result property="operator"   column="operator"/>
         <result property="reason"     column="reason"/>
         <result property="tenantId"   column="tenant_id"/>
+            <result property="isDeleted" column="is_deleted"/>
     </resultMap>
 
     <insert id="insert" parameterType="com.spd.foundation.domain.FdMaterialStatusLog">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        INSERT INTO fd_material_status_log (id, material_id, action, action_time, operator, reason, tenant_id)
-        VALUES (#{id}, #{materialId}, #{action}, #{actionTime}, #{operator}, #{reason}, #{scopedTenantId})
+        INSERT INTO fd_material_status_log (id, material_id, action, action_time, operator, operator_name, reason, tenant_id, is_deleted)
+        VALUES (#{id}, #{materialId}, #{action}, #{actionTime}, #{operator}, #{operatorName}, #{reason}, #{scopedTenantId}, 0)
     </insert>
 
     <select id="selectByMaterialId" resultMap="FdMaterialStatusLogResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        SELECT id, material_id, action, action_time, operator, reason, tenant_id
+        SELECT id, material_id, action, action_time, operator, operator_name, reason, tenant_id
         FROM fd_material_status_log
-        WHERE material_id = #{materialId} and tenant_id = #{scopedTenantId}
+        WHERE IFNULL(is_deleted,0)=0 AND material_id = #{materialId} and tenant_id = #{scopedTenantId}
+        AND IFNULL(is_deleted,0)=0
         ORDER BY action_time DESC
     </select>
 

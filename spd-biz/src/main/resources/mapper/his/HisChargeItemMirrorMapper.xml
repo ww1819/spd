@@ -34,7 +34,7 @@
             cim.create_time as createTime,
             cim.update_time as updateTime
         from his_charge_item_mirror cim
-        where cim.tenant_id = #{tenantId}
+        where IFNULL(cim.is_deleted,0)=0 AND  cim.tenant_id = #{tenantId}
           and (cim.deleted_flag is null or cim.deleted_flag != 1)
         <if test="chargeItemId != null and chargeItemId != ''">
             and cim.charge_item_id = #{chargeItemId}
@@ -88,7 +88,7 @@
             create_time as createTime,
             update_time as updateTime
         from his_charge_item_mirror
-        where tenant_id = #{tenantId}
+        where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId}
           and charge_item_id = #{chargeItemId}
           and (deleted_flag is null or deleted_flag != 1)
         limit 1
@@ -163,7 +163,7 @@
     <select id="selectValueLevelsByChargeItemIds" resultType="com.spd.his.domain.HisChargeItemMirror">
         select charge_item_id as chargeItemId, value_level as valueLevel
         from his_charge_item_mirror
-        where tenant_id = #{tenantId}
+        where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId}
           and (deleted_flag is null or deleted_flag != 1)
           and charge_item_id in
         <foreach collection="chargeItemIds" item="cid" open="(" separator="," close=")">#{cid}</foreach>

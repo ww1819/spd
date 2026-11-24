@@ -269,6 +269,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         stkIoProfitLoss.setDelFlag(0);
         stkIoProfitLoss.setCreateTime(DateUtils.getNowDate());
         stkIoProfitLoss.setCreateBy(SecurityUtils.getUserIdStr());
+            stkIoProfitLoss.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         if (StringUtils.isEmpty(stkIoProfitLoss.getUuidId())) {
             stkIoProfitLoss.setUuidId(UUID7.generateUUID7());
         }
@@ -298,6 +299,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         }
         stkIoProfitLoss.setUpdateTime(DateUtils.getNowDate());
         stkIoProfitLoss.setUpdateBy(SecurityUtils.getUserIdStr());
+            stkIoProfitLoss.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         // 禁止客户端回写审核态（防并发审核后保存打回未审）
         stkIoProfitLoss.setBillStatus(null);
         stkIoProfitLoss.setAuditBy(null);
@@ -742,8 +744,10 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         Date auditNow = new Date();
         b.setAuditTime(auditNow);
         b.setAuditBy(SecurityUtils.getUserIdStr());
+            b.setAuditByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         b.setCreateTime(auditNow);
         b.setCreateBy(SecurityUtils.getUserIdStr());
+            b.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         b.setDelFlag(0);
         b.setTenantId(bill.getTenantId());
         if (StringUtils.isNotEmpty(entry.getSupplerId())) {

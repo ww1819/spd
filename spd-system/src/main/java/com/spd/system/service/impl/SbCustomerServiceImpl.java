@@ -156,6 +156,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       customer.setMoneyRoundMode(MoneyScaleUtils.DEFAULT_ROUND_MODE);
     }
     customer.setCreateBy(SecurityUtils.getUserIdStr());
+            customer.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
     int rows = sbCustomerMapper.insertSbCustomer(customer);
     if (rows > 0) {
       createDefaultTenantAdmin(customer.getCustomerId(),
@@ -752,7 +753,8 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     row.setAmountDecimalPlaces(amountScale);
     row.setMoneyRoundMode(roundMode);
     row.setAuditStatus(SbCustomerMoneyScaleAudit.STATUS_PENDING);
-    row.setApplyBy(SecurityUtils.getUsername());
+    row.setApplyBy(SecurityUtils.getUserIdStr());
+    row.setApplyByName(SecurityUtils.getUsernameSafe());
     row.setApplyTime(new Date());
     row.setApplyRemark(applyRemark);
     row.setOldPriceDecimalPlaces(MoneyScaleUtils.normalizeScale(customer.getPriceDecimalPlaces()));
@@ -768,7 +770,8 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
   public int approveMoneyScaleAudit(String auditId, String auditRemark) {
     SbCustomerMoneyScaleAudit row = requirePendingAudit(auditId);
     row.setAuditStatus(SbCustomerMoneyScaleAudit.STATUS_APPROVED);
-    row.setAuditBy(SecurityUtils.getUsername());
+    row.setAuditBy(SecurityUtils.getUserIdStr());
+    row.setAuditByName(SecurityUtils.getUsernameSafe());
     row.setAuditTime(new Date());
     row.setAuditRemark(auditRemark);
     int n = sbCustomerMoneyScaleAuditMapper.updateAuditResult(row);
@@ -776,7 +779,7 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
       throw new ServiceException("审核失败，记录可能已处理");
     }
     return sbCustomerMapper.updateEffectiveMoneyScale(row.getCustomerId(), row.getPriceDecimalPlaces(),
-        row.getAmountDecimalPlaces(), row.getMoneyRoundMode(), SecurityUtils.getUsername());
+        row.getAmountDecimalPlaces(), row.getMoneyRoundMode(), SecurityUtils.getUserIdStr());
   }
 
   @Override
@@ -787,7 +790,8 @@ public class SbCustomerServiceImpl implements ISbCustomerService {
     }
     SbCustomerMoneyScaleAudit row = requirePendingAudit(auditId);
     row.setAuditStatus(SbCustomerMoneyScaleAudit.STATUS_REJECTED);
-    row.setAuditBy(SecurityUtils.getUsername());
+    row.setAuditBy(SecurityUtils.getUserIdStr());
+    row.setAuditByName(SecurityUtils.getUsernameSafe());
     row.setAuditTime(new Date());
     row.setAuditRemark(auditRemark);
     int n = sbCustomerMoneyScaleAuditMapper.updateAuditResult(row);

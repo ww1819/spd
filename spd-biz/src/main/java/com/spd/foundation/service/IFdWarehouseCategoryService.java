@@ -1,5 +1,7 @@
 package com.spd.foundation.service;
 
+
+import com.spd.foundation.domain.FdWarehouseCategoryChangeLog;
 import java.util.List;
 import java.util.Map;
 
@@ -84,4 +86,10 @@ public interface IFdWarehouseCategoryService
 //     * @return 结果
 //     */
 //    public int deleteFdWarehouseCategoryByWarehouseCategoryId(Long warehouseCategoryId);
+
+    /**
+     * WarehouseCategory字段变更记录
+     */
+    List<FdWarehouseCategoryChangeLog> selectWarehouseCategoryChangeLog(Long warehouseCategoryId);
+
 }

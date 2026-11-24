@@ -70,6 +70,7 @@ public class FdMaterialCategoryServiceImpl implements IFdMaterialCategoryService
         fdMaterialCategory.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdMaterialCategory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdMaterialCategory.setCreateBy(SecurityUtils.getUserIdStr());
+            fdMaterialCategory.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (StringUtils.isEmpty(fdMaterialCategory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             fdMaterialCategory.setTenantId(SecurityUtils.getCustomerId());
@@ -91,6 +92,7 @@ public class FdMaterialCategoryServiceImpl implements IFdMaterialCategoryService
         fdMaterialCategory.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(fdMaterialCategory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             fdMaterialCategory.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdMaterialCategory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         return fdMaterialCategoryMapper.updateFdMaterialCategory(fdMaterialCategory);
     }
@@ -124,6 +126,7 @@ public class FdMaterialCategoryServiceImpl implements IFdMaterialCategoryService
         fdMaterialCategory.setDelFlag(1);
         fdMaterialCategory.setUpdateTime(DateUtils.getNowDate());
         fdMaterialCategory.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdMaterialCategory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         return fdMaterialCategoryMapper.updateFdMaterialCategory(fdMaterialCategory);
     }
 
@@ -144,6 +147,7 @@ public class FdMaterialCategoryServiceImpl implements IFdMaterialCategoryService
             }
             category.setPinyinCode(PinyinUtils.getPinyinInitials(category.getMaterialCategoryName()));
             category.setUpdateBy(SecurityUtils.getUserIdStr());
+            category.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
             category.setUpdateTime(DateUtils.getNowDate());
             affected += fdMaterialCategoryMapper.updateFdMaterialCategory(category);
         }
@@ -163,6 +167,7 @@ public class FdMaterialCategoryServiceImpl implements IFdMaterialCategoryService
             }
             category.setPinyinCode(PinyinUtils.getPinyinInitials(category.getMaterialCategoryName()));
             category.setUpdateBy(SecurityUtils.getUserIdStr());
+            category.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
             category.setUpdateTime(DateUtils.getNowDate());
             affected += fdMaterialCategoryMapper.updateFdMaterialCategory(category);
         }

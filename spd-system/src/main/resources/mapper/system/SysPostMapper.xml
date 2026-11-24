@@ -56,7 +56,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	<select id="selectPostListByUserId" parameterType="Long" resultType="Long">
 		select p.post_id
         from sys_post p
-	        left join sys_user_post up on up.post_id = p.post_id
+	        left join sys_user_post up on up.post_id = p.post_id and IFNULL(up.is_deleted,0)=0 
 	        left join sys_user u on u.user_id = up.user_id
 	    where u.user_id = #{userId}
 	</select>
@@ -71,7 +71,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		from sys_user_post up
 		inner join sys_post p on p.post_id = up.post_id
 		inner join sys_user u on u.user_id = up.user_id
-		where up.user_id = #{userId}
+		where IFNULL(up.is_deleted,0)=0 AND  up.user_id = #{userId}
 		  and p.post_code = 'super'
 		  and p.status = '0'
 		  and (
@@ -83,7 +83,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	<select id="selectPostsByUserName" parameterType="String" resultMap="SysPostResult">
 		select p.post_id, p.post_name, p.post_code
 		from sys_post p
-			 left join sys_user_post up on up.post_id = p.post_id
+			 left join sys_user_post up on up.post_id = p.post_id and IFNULL(up.is_deleted,0)=0 
 			 left join sys_user u on u.user_id = up.user_id
 		where u.user_name = #{userName}
 	</select>
@@ -154,7 +154,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 	<select id="selectHcSuperPostLinkedToCustomer" resultMap="SysPostResult">
 		select p.post_id, p.post_code, p.post_name, p.post_sort, p.status, p.create_by, p.create_time, p.remark, p.tenant_id
 		from sys_post p
-		inner join sys_user_post up on up.post_id = p.post_id
+		inner join sys_user_post up on up.post_id = p.post_id and IFNULL(up.is_deleted,0)=0 
 		inner join sys_user u on u.user_id = up.user_id
 		where p.post_code = 'super'
 		  and p.status = '0'

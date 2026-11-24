@@ -33,6 +33,9 @@ public class HisChargeItemMirror
     private Date createTime;
     private Date updateTime;
 
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
     public String getTenantId() { return tenantId; }
     public void setTenantId(String tenantId) { this.tenantId = tenantId; }
     public String getChargeItemId() { return chargeItemId; }
@@ -73,4 +76,14 @@ public class HisChargeItemMirror
     public void setCreateTime(Date createTime) { this.createTime = createTime; }
     public Date getUpdateTime() { return updateTime; }
     public void setUpdateTime(Date updateTime) { this.updateTime = updateTime; }
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
+    }
 }

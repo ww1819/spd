@@ -13,16 +13,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="updateBy"     column="update_by" />
         <result property="updateTime"   column="update_time" />
         <result property="remark"       column="remark" />
+        <result property="isDeleted"    column="is_deleted" />
     </resultMap>
 
     <sql id="selectSysPrintDocRowsVo">
-        select id, doc_kind, rows_per_page, create_by, create_time, update_by, update_time, remark
+        select id, doc_kind, rows_per_page, create_by, create_time, update_by, update_time, remark, is_deleted
         from sys_print_doc_rows
     </sql>
 
     <select id="selectByDocKind" resultMap="SysPrintDocRowsResult">
         <include refid="selectSysPrintDocRowsVo"/>
-        where doc_kind = #{docKind}
+        where IFNULL(is_deleted,0)=0 AND doc_kind = #{docKind}
         order by id desc
         limit 1
     </select>
@@ -36,6 +37,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             create_time,
             <if test="updateBy != null">update_by,</if>
             <if test="remark != null">remark,</if>
+            is_deleted,
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="docKind != null and docKind != ''">#{docKind},</if>
@@ -44,6 +46,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             sysdate(),
             <if test="updateBy != null">#{updateBy},</if>
             <if test="remark != null">#{remark},</if>
+            0,
         </trim>
     </insert>
 
@@ -54,6 +57,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             update_time = sysdate()
         </set>
-        where doc_kind = #{docKind}
+        where IFNULL(is_deleted,0)=0 AND doc_kind = #{docKind}
     </update>
 </mapper>

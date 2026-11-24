@@ -22,4 +22,17 @@ public class HisChargeFetchBatch extends BaseEntity
     private Integer insertedCount;
     private Integer skippedCount;
     private Integer driftCount;
+
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
+    }
 }

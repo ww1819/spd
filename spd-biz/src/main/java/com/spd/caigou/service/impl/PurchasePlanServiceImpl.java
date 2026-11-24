@@ -343,6 +343,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         purchasePlan.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(purchasePlan.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             purchasePlan.setCreateBy(SecurityUtils.getUserIdStr());
+            purchasePlan.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (StringUtils.isEmpty(purchasePlan.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             purchasePlan.setTenantId(SecurityUtils.getCustomerId());
@@ -370,6 +371,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         assertPurchasePlanHeaderIsGz(purchasePlan);
         purchasePlan.setUpdateTime(DateUtils.getNowDate());
         purchasePlan.setUpdateBy(SecurityUtils.getUserIdStr());
+            purchasePlan.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         String deleteBy = SecurityUtils.getUserIdStr();
         Set<Long> affectedApplyIds = new HashSet<>();
         List<Long> beforeApplyIds = purchasePlanEntryDepApplyMapper.selectDistinctDepApplyIdsByPlanId(purchasePlan.getId());
@@ -476,6 +478,7 @@ public class PurchasePlanServiceImpl implements IPurchasePlanService
         purchasePlan.setAuditDate(new Date());
         purchasePlan.setAuditOpinion(auditOpinion != null ? auditOpinion : "");
         purchasePlan.setUpdateBy(SecurityUtils.getUserIdStr());
+            purchasePlan.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         purchasePlan.setUpdateTime(new Date());
 
         int result = purchasePlanMapper.auditPurchasePlan(purchasePlan);

@@ -10,17 +10,20 @@
     <result property="operateTime" column="operate_time"/>
     <result property="operateBy" column="operate_by"/>
     <result property="reason" column="reason"/>
-  </resultMap>
+          <result property="operatorName" column="operator_name"/>
+        <result property="isDeleted" column="is_deleted"/>
+    </resultMap>
 
   <select id="selectByTenantIdAndMenuId" resultMap="Result">
     select log_id, tenant_id, menu_id, status, operate_time, operate_by, reason
     from hc_customer_menu_status_log
-    where tenant_id = #{tenantId} and menu_id = #{menuId}
-    order by operate_time desc
+    where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId} and menu_id = #{menuId}
+    AND IFNULL(is_deleted,0)=0
+        order by operate_time desc
   </select>
 
   <insert id="insert" parameterType="com.spd.system.domain.hc.HcCustomerMenuStatusLog">
-    insert into hc_customer_menu_status_log (log_id, tenant_id, menu_id, status, operate_time, operate_by, reason)
-    values (#{logId}, #{tenantId}, #{menuId}, #{status}, #{operateTime}, #{operateBy}, #{reason})
+    INSERT INTO hc_customer_menu_status_log (log_id, tenant_id, menu_id, status, operate_time, operate_by, reason, is_deleted)
+    VALUES (#{logId}, #{tenantId}, #{menuId}, #{status}, #{operateTime}, #{operateBy}, #{reason}, 0)
   </insert>
 </mapper>

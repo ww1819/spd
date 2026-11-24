@@ -5,13 +5,13 @@
     <insert id="batchInsert">
         insert into gz_refund_goods_entry_ref (
             id, tenant_id, refund_goods_entry_id, src_bill_kind, src_main_id, src_bill_no, src_detail_id, src_in_hospital_code,
-            tgt_bill_kind, tgt_main_id, tgt_bill_no, tgt_entry_id, ref_purpose, material_id, material_name, create_by, create_time
+            tgt_bill_kind, tgt_main_id, tgt_bill_no, tgt_entry_id, ref_purpose, material_id, material_name, create_by, create_time, is_deleted
         ) values
         <foreach collection="list" item="item" separator=",">
             (
                 #{item.id}, #{item.tenantId}, #{item.refundGoodsEntryId}, #{item.srcBillKind}, #{item.srcMainId}, #{item.srcBillNo},
                 #{item.srcDetailId}, #{item.srcInHospitalCode}, #{item.tgtBillKind}, #{item.tgtMainId}, #{item.tgtBillNo},
-                #{item.tgtEntryId}, #{item.refPurpose}, #{item.materialId}, #{item.materialName}, #{item.createBy}, #{item.createTime}
+                #{item.tgtEntryId}, #{item.refPurpose}, #{item.materialId}, #{item.materialName}, #{item.createBy}, #{item.createTime}, 0
             )
         </foreach>
     </insert>

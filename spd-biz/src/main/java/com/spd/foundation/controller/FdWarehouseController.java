@@ -1,5 +1,7 @@
 package com.spd.foundation.controller;
 
+
+import com.spd.foundation.domain.FdWarehouseChangeLog;
 import java.util.ArrayList;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
@@ -174,4 +176,24 @@ public class FdWarehouseController extends BaseController
         List<FdWarehouse> list = fdWarehouseService.selectFdWarehouseList(query);
         return success(list != null ? list : new ArrayList<>());
     }
+
+    /**
+     * Warehouse字段变更记录
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:warehouse:list')")
+    @GetMapping("/changeLog/{warehouseId}")
+    public AjaxResult changeLog(@PathVariable("warehouseId") Long warehouseId)
+    {
+        if (warehouseId == null)
+        {
+            return error("id 无效");
+        }
+        if (fdWarehouseService.selectFdWarehouseById(String.valueOf(warehouseId)) == null)
+        {
+            return error("记录不存在");
+        }
+        List<FdWarehouseChangeLog> logs = fdWarehouseService.selectWarehouseChangeLog(warehouseId);
+        return success(logs);
+    }
+
 }

@@ -402,12 +402,12 @@
     </resultMap>
 
     <select id="countByTenantId" resultType="long">
-        select count(*) from his_patient_charge_mirror_unified where tenant_id = #{tenantId}
+        select count(*) from his_patient_charge_mirror_unified where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId}
     </select>
 
     <select id="countMirrorSourceRowsByTenant" resultType="long">
         select
-            ifnull((select count(*) from his_inpatient_charge_mirror where tenant_id = #{tenantId}), 0)
+            ifnull((select count(*) from his_inpatient_charge_mirror where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId}), 0)
           + ifnull((select count(*) from his_outpatient_charge_mirror where tenant_id = #{tenantId}), 0)
     </select>
 

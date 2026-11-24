@@ -43,6 +43,9 @@ public class BasApplyTemplateEntry extends BaseEntity {
     /** 耗材对象 */
     private FdMaterial material;
 
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -117,5 +120,15 @@ public class BasApplyTemplateEntry extends BaseEntity {
             .append("qty", getQty())
             .append("sortOrder", getSortOrder())
             .toString();
+    }
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
     }
 }

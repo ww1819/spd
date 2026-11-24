@@ -42,6 +42,7 @@ public class FdJcTypeServiceImpl implements IFdJcTypeService
         if (StringUtils.isEmpty(row.getCreateBy()))
         {
             row.setCreateBy(SecurityUtils.getUserIdStr());
+            row.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (row.getDelFlag() == null)
         {
@@ -72,6 +73,7 @@ public class FdJcTypeServiceImpl implements IFdJcTypeService
         }
         validate(row, row.getId());
         row.setUpdateBy(SecurityUtils.getUserIdStr());
+            row.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         row.setUpdateTime(DateUtils.getNowDate());
         return fdJcTypeMapper.updateFdJcType(row);
     }

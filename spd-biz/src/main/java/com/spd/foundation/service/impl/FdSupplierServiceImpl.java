@@ -101,6 +101,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
         if (StringUtils.isEmpty(fdSupplier.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
         {
             fdSupplier.setCreateBy(SecurityUtils.getUserIdStr());
+            fdSupplier.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (StringUtils.isEmpty(fdSupplier.getTenantId()))
         {
@@ -164,6 +165,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
         if (StringUtils.isEmpty(fdSupplier.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
         {
             fdSupplier.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdSupplier.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         int n = fdSupplierMapper.updateFdSupplier(fdSupplier);
         if (n > 0)
@@ -723,6 +725,7 @@ public class FdSupplierServiceImpl implements IFdSupplierService
         rec.setSupplierId(supplierId);
         rec.setChangeTime(changeTime);
         rec.setOperator(operator);
+        rec.setOperatorName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         rec.setFieldName(fieldName);
         rec.setFieldLabel(fieldLabel);
         rec.setOldValue(oldValue);

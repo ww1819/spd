@@ -182,6 +182,7 @@ public class SbCustomerCategory68ServiceImpl implements ISbCustomerCategory68Ser
         row.setDelFlag(0);
         row.setCreateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(row.getCreateBy())) row.setCreateBy(SecurityUtils.getUserIdStr());
+            row.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         int n = sbCustomerCategory68Mapper.insert(row);
         saveLog(row.getCustomerId(), row.getId(), row.getRefCategory68Id(), OP_ADD, null, toSummary(row));
         return n;
@@ -203,6 +204,7 @@ public class SbCustomerCategory68ServiceImpl implements ISbCustomerCategory68Ser
         String summaryOld = toSummary(old);
         row.setUpdateTime(DateUtils.getNowDate());
         if (StringUtils.isEmpty(row.getUpdateBy())) row.setUpdateBy(SecurityUtils.getUserIdStr());
+            row.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         int n = sbCustomerCategory68Mapper.update(row);
         saveLog(old.getCustomerId(), row.getId(), old.getRefCategory68Id(), OP_UPDATE, summaryOld, toSummary(row));
         return n;

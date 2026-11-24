@@ -256,6 +256,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         }
         if (StringUtils.isEmpty(depPurchaseApply.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr())) {
             depPurchaseApply.setCreateBy(SecurityUtils.getUserIdStr());
+            depPurchaseApply.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (StringUtils.isEmpty(depPurchaseApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             depPurchaseApply.setTenantId(SecurityUtils.getCustomerId());
@@ -294,6 +295,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         assertDepPurchaseIsGz(depPurchaseApply);
         depPurchaseApply.setUpdateTime(DateUtils.getNowDate());
         depPurchaseApply.setUpdateBy(SecurityUtils.getUserIdStr());
+            depPurchaseApply.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         if (depPurchaseApply.getUserId() == null && existing != null && existing.getUserId() != null) {
             depPurchaseApply.setUserId(existing.getUserId());
         }
@@ -391,6 +393,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
                 }
                 depPurchaseApplyEntry.setCreateTime(DateUtils.getNowDate());
                 depPurchaseApplyEntry.setCreateBy(SecurityUtils.getUserIdStr());
+            depPurchaseApplyEntry.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                 list.add(depPurchaseApplyEntry);
             }
             if (!list.isEmpty())
@@ -467,6 +470,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         }
         depPurchaseApply.setRejectReason(rejectReason.trim());
         depPurchaseApply.setUpdateBy(SecurityUtils.getUserIdStr());
+            depPurchaseApply.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         depPurchaseApply.setUpdateTime(new Date());
         if (status == 1) {
             assertDepPurchaseDepartmentInUserScope(depPurchaseApply);
@@ -534,6 +538,7 @@ public class DepPurchaseApplyServiceImpl implements IDepPurchaseApplyService
         depPurchaseApply.setReceiptStatus(2);
         depPurchaseApply.setRejectReason(rejectReason);
         depPurchaseApply.setUpdateBy(SecurityUtils.getUserIdStr());
+            depPurchaseApply.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         depPurchaseApply.setUpdateTime(new Date());
         int res = depPurchaseApplyMapper.updateDepPurchaseApply(depPurchaseApply);
         return res;

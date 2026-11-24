@@ -374,14 +374,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <insert id="insertDeptBatchConsumeEntryRef" parameterType="DeptBatchConsumeEntry">
-        insert into t_hc_ks_xh_entry_ref(
+        INSERT INTO t_hc_ks_xh_entry_ref (
             id, tenant_id, consume_id, consume_bill_no, consume_entry_id, consume_bill_date, consume_status,
             src_bill_kind, src_bill_id, src_bill_no, src_entry_id,
             department_id, warehouse_id, material_id, material_name, material_speci, material_model,
             batch_no, batch_number, material_no, supplier_id, factory_id,
             out_entry_qty, available_qty, default_consume_qty, consume_qty, unit_price, amount,
-            main_barcode, sub_barcode, create_by, create_time, remark
-        ) values (
+            main_barcode, sub_barcode, create_by, create_time, remark, is_deleted) VALUES (
             #{refId},
             #{tenantId},
             cast(#{parenId} as char),
@@ -414,7 +413,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{subBarcode},
             #{createBy},
             now(),
-            #{remark}
+            #{remark},
+            0
         )
     </insert>
 
@@ -464,7 +464,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         from stk_dep_inventory dep
         inner join stk_io_bill bill on bill.id = dep.bill_id and bill.del_flag = 0 and bill.bill_type = 201
         left join stk_io_bill_entry oe on oe.id = dep.bill_entry_id and oe.del_flag = 0
-        where dep.del_flag = 0
+        where IFNULL(r.is_deleted,0)=0 AND  dep.del_flag = 0
           and dep.qty &gt; 0
           and dep.tenant_id = #{scopedTenantId}
           and bill.tenant_id = #{scopedTenantId}
@@ -601,7 +601,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material m on e.material_id = m.id
         left join his_charge_item_mirror hci on hci.tenant_id = #{scopedTenantId}
             and hci.charge_item_id = m.his_charge_item_id
-            and (hci.deleted_flag is null or hci.deleted_flag != 1)
+            and (hci.deleted_flag is null or hci.deleted_flag != 1) and IFNULL(hci.is_deleted,0)=0 
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
         where <include refid="auditedConsumeReportWhere"/>
@@ -637,7 +637,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material m on e.material_id = m.id
         left join his_charge_item_mirror hci on hci.tenant_id = #{scopedTenantId}
             and hci.charge_item_id = m.his_charge_item_id
-            and (hci.deleted_flag is null or hci.deleted_flag != 1)
+            and (hci.deleted_flag is null or hci.deleted_flag != 1) and IFNULL(hci.is_deleted,0)=0 
         left join fd_unit u on m.unit_id = u.unit_id
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
@@ -666,7 +666,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_material m on e.material_id = m.id
         left join his_charge_item_mirror hci on hci.tenant_id = #{scopedTenantId}
             and hci.charge_item_id = m.his_charge_item_id
-            and (hci.deleted_flag is null or hci.deleted_flag != 1)
+            and (hci.deleted_flag is null or hci.deleted_flag != 1) and IFNULL(hci.is_deleted,0)=0 
         left join fd_unit u on m.unit_id = u.unit_id
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id

@@ -28,6 +28,9 @@ public class GzShipmentEntryRef implements Serializable
     private String createBy;
     private Date createTime;
 
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     public String getTenantId() { return tenantId; }
@@ -62,4 +65,14 @@ public class GzShipmentEntryRef implements Serializable
     public void setCreateBy(String createBy) { this.createBy = createBy; }
     public Date getCreateTime() { return createTime; }
     public void setCreateTime(Date createTime) { this.createTime = createTime; }
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
+    }
 }

@@ -27,10 +27,16 @@ public class FdMaterialStatusLog {
     /** 操作人 */
     private String operator;
 
+    /** 操作人登录名快照 */
+    private String operatorName;
+
     /** 启用/停用原因 */
     private String reason;
     /** 租户ID */
     private String tenantId;
+
+    /** 软删除 0正常 1已删 */
+    private Integer isDeleted;
 
     public String getId() {
         return id;
@@ -86,5 +92,25 @@ public class FdMaterialStatusLog {
 
     public void setTenantId(String tenantId) {
         this.tenantId = tenantId;
+    }
+
+    public Integer getIsDeleted()
+    {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted)
+    {
+        this.isDeleted = isDeleted;
+    }
+
+    public String getOperatorName()
+    {
+        return operatorName;
+    }
+
+    public void setOperatorName(String operatorName)
+    {
+        this.operatorName = operatorName;
     }
 }

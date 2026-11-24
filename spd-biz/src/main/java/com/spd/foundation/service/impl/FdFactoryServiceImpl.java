@@ -107,6 +107,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         if (StringUtils.isEmpty(fdFactory.getCreateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
         {
             fdFactory.setCreateBy(SecurityUtils.getUserIdStr());
+            fdFactory.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         if (StringUtils.isEmpty(fdFactory.getFactoryName()))
         {
@@ -163,6 +164,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         if (StringUtils.isEmpty(fdFactory.getUpdateBy()) && StringUtils.isNotEmpty(SecurityUtils.getUserIdStr()))
         {
             fdFactory.setUpdateBy(SecurityUtils.getUserIdStr());
+            fdFactory.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         }
         int n = fdFactoryMapper.updateFdFactory(fdFactory);
         if (n > 0)
@@ -682,6 +684,7 @@ public class FdFactoryServiceImpl implements IFdFactoryService
         rec.setFactoryId(factoryId);
         rec.setChangeTime(changeTime);
         rec.setOperator(operator);
+        rec.setOperatorName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         rec.setFieldName(fieldName);
         rec.setFieldLabel(fieldLabel);
         rec.setOldValue(oldValue);

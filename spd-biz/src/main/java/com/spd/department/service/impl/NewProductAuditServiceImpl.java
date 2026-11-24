@@ -66,6 +66,7 @@ public class NewProductAuditServiceImpl implements INewProductAuditService
         newProductApply.setAuditDate(DateUtils.getNowDate());
         newProductApply.setUpdateTime(DateUtils.getNowDate());
         newProductApply.setUpdateBy(SecurityUtils.getUserIdStr());
+            newProductApply.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         return newProductApplyMapper.updateNewProductApply(newProductApply);
     }
 
@@ -84,6 +85,7 @@ public class NewProductAuditServiceImpl implements INewProductAuditService
         newProductApply.setApplyStatus(2); // 2-已拒绝
         newProductApply.setUpdateTime(DateUtils.getNowDate());
         newProductApply.setUpdateBy(SecurityUtils.getUserIdStr());
+            newProductApply.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         // 驳回原因通过前端传入的rejectReason字段，设置到remark中
         // 前端传入的数据结构：{ id: xxx, rejectReason: "驳回原因" }
         // 这里rejectReason会映射到remark字段

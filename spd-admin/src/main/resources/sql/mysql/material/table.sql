@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS `fd_material_category` (
   `delete_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`material_category_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='材料类别维护，财务科报表用';
 /
@@ -45,6 +48,8 @@ CREATE TABLE IF NOT EXISTS `fd_department` (
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   `parent_id` bigint DEFAULT NULL COMMENT '上级科室ID（NULL表示客户下顶级）',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_fd_department_tenant_his` (`tenant_id`,`his_id`),
   KEY `idx_fd_department_tenant_code` (`tenant_id`,`code`),
@@ -63,6 +68,8 @@ CREATE TABLE IF NOT EXISTS `fd_department_change_log` (
   `old_value` text COMMENT '原值',
   `new_value` text COMMENT '新值',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `operator_name` varchar(64) DEFAULT NULL COMMENT '操作人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_fd_dept_log_dept` (`department_id`),
   KEY `idx_fd_dept_log_time` (`change_time`),
@@ -105,6 +112,11 @@ CREATE TABLE IF NOT EXISTS `fd_supplier` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `del_by` varchar(100) DEFAULT NULL COMMENT '删除者',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_fd_supplier_tenant_his` (`tenant_id`,`his_id`),
   KEY `idx_fd_supplier_tenant_code` (`tenant_id`,`code`)
@@ -122,6 +134,8 @@ CREATE TABLE IF NOT EXISTS `fd_supplier_change_log` (
   `old_value` text COMMENT '原值',
   `new_value` text COMMENT '新值',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `operator_name` varchar(64) DEFAULT NULL COMMENT '操作人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_fd_supplier_log_supp` (`supplier_id`),
   KEY `idx_fd_supplier_log_time` (`change_time`),
@@ -148,6 +162,11 @@ CREATE TABLE IF NOT EXISTS `fd_factory` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `del_by` varchar(100) DEFAULT NULL COMMENT '删除者',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`factory_id`),
   UNIQUE KEY `uk_fd_factory_tenant_his` (`tenant_id`,`his_id`),
   KEY `idx_fd_factory_tenant_code` (`tenant_id`,`factory_code`)
@@ -164,6 +183,8 @@ CREATE TABLE IF NOT EXISTS `fd_factory_change_log` (
   `old_value` text COMMENT '原值',
   `new_value` text COMMENT '新值',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `operator_name` varchar(64) DEFAULT NULL COMMENT '操作人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_fd_factory_log_fid` (`factory_id`),
   KEY `idx_fd_factory_log_time` (`change_time`),
@@ -186,6 +207,9 @@ CREATE TABLE IF NOT EXISTS `fd_unit` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`unit_id`),
   UNIQUE KEY `uk_fd_unit_tenant_his` (`tenant_id`,`his_unit_id`),
   KEY `idx_fd_unit_tenant_code` (`tenant_id`,`unit_code`)
@@ -216,6 +240,9 @@ CREATE TABLE IF NOT EXISTS `fd_location` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`location_id`),
   KEY `idx_fd_location_tenant` (`tenant_id`),
   KEY `idx_fd_location_wh` (`warehouse_id`),
@@ -241,6 +268,11 @@ CREATE TABLE IF NOT EXISTS `fd_warehouse_category` (
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   `his_id` varchar(128) DEFAULT NULL COMMENT 'HIS系统库房分类ID',
+  `del_by` varchar(100) DEFAULT NULL COMMENT '删除者',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`warehouse_category_id`),
   UNIQUE KEY `uk_fd_wh_cat_tenant_his` (`tenant_id`,`his_id`),
   KEY `idx_fd_wh_cat_tenant` (`tenant_id`),
@@ -275,6 +307,8 @@ CREATE TABLE IF NOT EXISTS `fd_warehouse` (
   `require_expiry_date` tinyint DEFAULT 1 COMMENT '入库明细是否必填有效期 0否1是',
   `require_batch_no` tinyint DEFAULT 1 COMMENT '入库明细是否必填批号 0否1是',
   `inbound_expiry_warn_days` int DEFAULT 60 COMMENT '入库有效期临近提示天数',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='仓库';
 /
@@ -299,6 +333,11 @@ CREATE TABLE IF NOT EXISTS `fd_finance_category` (
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   `his_id` varchar(128) DEFAULT NULL COMMENT 'HIS系统财务分类ID',
+  `del_by` varchar(100) DEFAULT NULL COMMENT '删除者',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`finance_category_id`),
   KEY `idx_fd_fin_cat_tenant` (`tenant_id`),
   KEY `idx_fd_fin_cat_parent` (`parent_id`)
@@ -318,6 +357,11 @@ CREATE TABLE IF NOT EXISTS `fd_material_import` (
   `raw_data` text COMMENT '导入的原始整行数据（JSON）',
   `import_time` datetime NOT NULL COMMENT '导入时间',
   `operator` varchar(64) NOT NULL COMMENT '导入操作人',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `operator_name` varchar(64) DEFAULT NULL COMMENT '操作人user_name',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='耗材产品导入中间表';
 /
@@ -344,6 +388,9 @@ CREATE TABLE IF NOT EXISTS `wh_fixed_number` (
   `enable_status` char(1) NOT NULL DEFAULT '0' COMMENT '启用状态（0启用 1停用）',
   `disable_by` varchar(64) DEFAULT NULL COMMENT '停用人',
   `disable_time` datetime DEFAULT NULL COMMENT '停用时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_wh_fixed_number_material` (`warehouse_id`,`material_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库定数监测表';
@@ -368,6 +415,9 @@ CREATE TABLE IF NOT EXISTS `dept_fixed_number` (
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_dept_fixed_number_material` (`department_id`,`material_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室定数监测表';
@@ -393,6 +443,10 @@ CREATE TABLE IF NOT EXISTS `stk_initial_import` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_stk_initial_import_bill_no` (`bill_no`),
   KEY `idx_warehouse_id` (`warehouse_id`),
@@ -434,6 +488,8 @@ CREATE TABLE IF NOT EXISTS `stk_initial_import_entry` (
   `sort_order` int(11) DEFAULT 0 COMMENT '排序',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `third_party_detail_id` varchar(64) DEFAULT NULL COMMENT '第三方系统库存明细ID',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_paren_id` (`paren_id`),
   KEY `idx_material_id` (`material_id`),
@@ -457,6 +513,9 @@ CREATE TABLE IF NOT EXISTS `bas_apply_template` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_template_name` (`template_name`),
   KEY `idx_warehouse_id` (`warehouse_id`),
@@ -479,6 +538,10 @@ CREATE TABLE IF NOT EXISTS `bas_apply_template_entry` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_paren_id` (`paren_id`),
   KEY `idx_material_id` (`material_id`),
@@ -495,6 +558,8 @@ CREATE TABLE IF NOT EXISTS `fd_material_status_log` (
   `operator` varchar(64) NOT NULL COMMENT '操作人',
   `reason` varchar(512) DEFAULT NULL COMMENT '启用/停用原因',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `operator_name` varchar(64) DEFAULT NULL COMMENT '操作人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_material_id` (`material_id`),
   KEY `idx_action_time` (`action_time`),
@@ -513,6 +578,8 @@ CREATE TABLE IF NOT EXISTS `fd_material_change_log` (
   `old_value` text COMMENT '原值',
   `new_value` text COMMENT '新值',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `operator_name` varchar(64) DEFAULT NULL COMMENT '操作人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_material_id` (`material_id`),
   KEY `idx_change_time` (`change_time`),
@@ -533,6 +600,7 @@ CREATE TABLE IF NOT EXISTS `fd_material_his_charge_bind` (
   `unbind_by` varchar(64) DEFAULT NULL COMMENT '解绑人',
   `create_time` datetime DEFAULT NULL,
   `update_time` datetime DEFAULT NULL,
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
   PRIMARY KEY (`id`),
   KEY `idx_mhcb_tenant_material` (`tenant_id`, `material_id`, `effective_to`),
   KEY `idx_mhcb_tenant_charge` (`tenant_id`, `charge_item_id`, `effective_to`)
@@ -551,6 +619,8 @@ CREATE TABLE IF NOT EXISTS `sys_user_department` (
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sys_user.customer_id)',
   `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
   PRIMARY KEY (`user_id`,`department_id`),
   KEY `idx_sys_user_dept_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户与科室关联（主键即 uk_sys_user_dept）';
@@ -561,6 +631,7 @@ CREATE TABLE IF NOT EXISTS `sys_user_post` (
   `user_id` bigint NOT NULL COMMENT '用户ID',
   `post_id` bigint NOT NULL COMMENT '岗位/工作组ID(sys_post.post_id)',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sys_user.customer_id)',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
   PRIMARY KEY (`user_id`,`post_id`),
   KEY `idx_sys_user_post_post` (`post_id`),
   KEY `idx_sys_user_post_tenant` (`tenant_id`)
@@ -575,6 +646,8 @@ CREATE TABLE IF NOT EXISTS `hc_user_permission_menu` (
   `menu_id` bigint(20) NOT NULL COMMENT '菜单ID(关联sys_menu.menu_id)',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_hc_upm_user_menu` (`user_id`, `menu_id`),
   KEY `idx_hc_upm_tenant` (`tenant_id`)
@@ -588,6 +661,11 @@ CREATE TABLE IF NOT EXISTS `hc_customer_menu` (
   `is_enabled` char(1) DEFAULT '1' COMMENT '是否开启（0关闭 1开启）',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`tenant_id`,`menu_id`),
   KEY `idx_hc_cm_menu_id` (`menu_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='耗材系统客户菜单权限表';
@@ -601,6 +679,7 @@ CREATE TABLE IF NOT EXISTS `hc_customer_menu_status_log` (
   `operate_time` datetime NOT NULL COMMENT '操作时间',
   `operate_by` varchar(64) DEFAULT '' COMMENT '操作人',
   `reason` varchar(500) DEFAULT NULL COMMENT '启停用原因',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
   PRIMARY KEY (`log_id`),
   KEY `idx_hc_cm_slog_tenant_menu` (`tenant_id`,`menu_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='耗材客户菜单功能启停用记录表';
@@ -615,6 +694,8 @@ CREATE TABLE IF NOT EXISTS `hc_customer_menu_period_log` (
   `end_time` datetime DEFAULT NULL COMMENT '结束时间，NULL表示未结束',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
   PRIMARY KEY (`period_id`),
   KEY `idx_hc_cm_plog_tenant_menu` (`tenant_id`,`menu_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='耗材客户菜单功能启停用时间段表';
@@ -627,6 +708,7 @@ CREATE TABLE IF NOT EXISTS `hc_customer_status_log` (
   `operate_time` datetime NOT NULL COMMENT '操作时间',
   `operate_by` varchar(64) DEFAULT '' COMMENT '操作人',
   `reason` varchar(500) DEFAULT NULL COMMENT '启停用原因',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
   PRIMARY KEY (`log_id`),
   KEY `idx_hc_csl_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='耗材客户启停用记录表';
@@ -640,6 +722,8 @@ CREATE TABLE IF NOT EXISTS `hc_customer_period_log` (
   `end_time` datetime DEFAULT NULL COMMENT '结束时间，NULL表示当前未结束',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建人',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
   PRIMARY KEY (`period_id`),
   KEY `idx_hc_cpl_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='耗材客户实际使用/停用时间段表';
@@ -671,11 +755,22 @@ CREATE TABLE IF NOT EXISTS `fin_invoice` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `title` varchar(255) DEFAULT NULL COMMENT '发票抬头',
+  `buyer_address_phone` varchar(512) DEFAULT NULL COMMENT '购方地址电话',
+  `buyer_bank_account` varchar(255) DEFAULT NULL COMMENT '购方开户行及账号',
+  `seller_address_phone` varchar(512) DEFAULT NULL COMMENT '销方地址电话',
+  `seller_bank_account` varchar(255) DEFAULT NULL COMMENT '销方开户行及账号',
+  `tax_no` varchar(64) DEFAULT NULL COMMENT '纳税人识别号',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_fin_invoice_tenant` (`tenant_id`),
   KEY `idx_fin_invoice_supplier` (`supplier_id`),
   KEY `idx_fin_invoice_audit` (`audit_status`),
-  KEY `idx_fin_invoice_date` (`invoice_date`)
+  KEY `idx_fin_invoice_date` (`invoice_date`),
+  KEY `idx_fin_invoice_no` (`invoice_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='发票管理表';
 /
 
@@ -699,6 +794,10 @@ CREATE TABLE IF NOT EXISTS `wh_settlement_bill` (
   `remark` varchar(512) DEFAULT NULL COMMENT '备注',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_wh_settlement_bill_no` (`bill_no`),
   KEY `idx_wh_settlement_warehouse` (`warehouse_id`),
@@ -737,6 +836,7 @@ CREATE TABLE IF NOT EXISTS `wh_settlement_bill_entry` (
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `sort_order` int(11) DEFAULT 0 COMMENT '排序',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_wh_settlement_entry_paren` (`paren_id`),
   KEY `idx_wh_settlement_entry_tenant` (`tenant_id`),
@@ -763,11 +863,17 @@ CREATE TABLE IF NOT EXISTS `supp_settlement_bill` (
   `remark` varchar(512) DEFAULT NULL COMMENT '备注',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新人',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `invoice_id` varchar(36) DEFAULT NULL COMMENT '关联发票ID（fin_invoice.id，UUID7）',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_supp_settlement_bill_no` (`bill_no`),
   KEY `idx_supp_settlement_supplier` (`supplier_id`),
   KEY `idx_supp_settlement_tenant` (`tenant_id`),
-  KEY `idx_supp_settlement_wh` (`wh_settlement_id`)
+  KEY `idx_supp_settlement_wh` (`wh_settlement_id`),
+  KEY `idx_supp_settlement_invoice` (`invoice_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供应商结算单主表';
 /
 
@@ -780,6 +886,8 @@ CREATE TABLE IF NOT EXISTS `supp_settlement_invoice` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_supp_settlement_invoice` (`supp_settlement_id`,`invoice_id`),
   KEY `idx_supp_settlement_invoice_supp` (`supp_settlement_id`),
@@ -821,6 +929,7 @@ CREATE TABLE IF NOT EXISTS `supp_settlement_bill_entry` (
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `sort_order` int(11) DEFAULT 0 COMMENT '排序',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_supp_settlement_entry_paren` (`paren_id`),
   KEY `idx_supp_settlement_entry_tenant` (`tenant_id`),
@@ -828,7 +937,7 @@ CREATE TABLE IF NOT EXISTS `supp_settlement_bill_entry` (
   KEY `idx_supp_settlement_entry_wh_entry` (`wh_settlement_entry_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='供应商结算单明细表';
 /
-/* 若曾建过 supp_settlement_bill 且含 invoice_id，可手动执行：ALTER TABLE supp_settlement_bill DROP COLUMN invoice_id; */
+/* 多发票关联以 supp_settlement_invoice 为准；主表 invoice_id 为历史/兼容列（衡水三院库仍有），勿随意 DROP */
 /* 供应商结算单与发票关联表（一张单可关联多张发票） */
 /
 /* 科室申购（按仓库；可由汇总申购审核按仓拆分生成，见 dep_purchase_apply_agg） */
@@ -864,6 +973,10 @@ CREATE TABLE IF NOT EXISTS `dep_purchase_apply` (
   `void_whole_by` varchar(64) DEFAULT NULL COMMENT '整单作废人',
   `void_whole_time` datetime DEFAULT NULL COMMENT '整单作废时间',
   `void_whole_reason` varchar(500) DEFAULT NULL COMMENT '整单作废原因',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_purchase_bill_no` (`purchase_bill_no`),
   KEY `idx_dep_purchase_apply_void` (`void_whole_flag`),
@@ -910,6 +1023,9 @@ CREATE TABLE IF NOT EXISTS `dep_purchase_apply_entry` (
   `line_void_by` varchar(64) DEFAULT NULL COMMENT '明细作废操作人',
   `line_void_time` datetime DEFAULT NULL COMMENT '明细作废时间',
   `line_void_reason` varchar(500) DEFAULT NULL COMMENT '明细作废原因',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_parent_id` (`parent_id`),
   KEY `idx_material_id` (`material_id`),
@@ -940,6 +1056,8 @@ CREATE TABLE IF NOT EXISTS `dep_pur_apply_ck_entry_ref` (
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_dep_pur_ck_pair` (`dep_pur_apply_entry_id`,`ck_entry_id`),
   KEY `idx_dep_pur_ck_ref_apply` (`dep_pur_apply_id`),
@@ -965,6 +1083,9 @@ CREATE TABLE IF NOT EXISTS `purchase_plan_entry_apply` (
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_plan_entry_apply` (`purchase_plan_entry_id`,`bas_apply_entry_id`),
   KEY `idx_ppea_entry_id` (`purchase_plan_entry_id`),
@@ -989,6 +1110,9 @@ CREATE TABLE IF NOT EXISTS `purchase_plan_entry_dep_apply` (
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_plan_entry_dep_apply` (`purchase_plan_entry_id`,`dep_purchase_apply_entry_id`),
   KEY `idx_ppeda_entry_id` (`purchase_plan_entry_id`),
@@ -1021,6 +1145,10 @@ CREATE TABLE IF NOT EXISTS `dep_purchase_apply_agg` (
   `audit_by` varchar(64) DEFAULT NULL COMMENT '审核人',
   `audit_date` datetime DEFAULT NULL COMMENT '审核时间',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_dep_purchase_agg_tenant` (`tenant_id`),
   KEY `idx_dep_purchase_agg_dept` (`department_id`),
@@ -1055,6 +1183,9 @@ CREATE TABLE IF NOT EXISTS `dep_purchase_apply_agg_entry` (
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_dep_purchase_agg_e_paren` (`parent_id`),
   KEY `idx_dep_purchase_agg_e_tenant` (`tenant_id`)
@@ -1081,6 +1212,9 @@ CREATE TABLE IF NOT EXISTS `gz_dep_apply` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_dep_apply_no` (`apply_bill_no`),
   KEY `idx_gz_dep_apply_wh` (`warehouse_id`),
@@ -1111,6 +1245,9 @@ CREATE TABLE IF NOT EXISTS `gz_dep_apply_entry` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_dep_apply_entry_paren` (`paren_id`),
   KEY `idx_gz_dep_apply_entry_batch` (`batch_no`),
@@ -1139,6 +1276,10 @@ CREATE TABLE IF NOT EXISTS `gz_order` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_order_no` (`order_no`),
   KEY `idx_gz_order_type` (`order_type`),
@@ -1176,6 +1317,9 @@ CREATE TABLE IF NOT EXISTS `gz_order_entry` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_order_entry_paren` (`paren_id`),
   KEY `idx_gz_order_entry_batch` (`batch_no`),
@@ -1220,6 +1364,9 @@ CREATE TABLE IF NOT EXISTS `gz_order_entry_inhospitalcode_list` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_order_entry_code_parent` (`parent_id`),
   KEY `idx_gz_order_entry_code_detail` (`detail_id`),
@@ -1256,10 +1403,16 @@ CREATE TABLE IF NOT EXISTS `gz_patient_info` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_gz_patient_medical_record` (`medical_record_no`),
   KEY `idx_gz_patient_hospital_number` (`hospital_number`),
-  KEY `idx_gz_patient_name` (`name`)
+  KEY `idx_gz_patient_name` (`name`),
+  KEY `idx_hospital_number` (`hospital_number`),
+  KEY `idx_name` (`name`),
+  UNIQUE KEY `uk_medical_record_no` (`medical_record_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='患者信息表';
 /
 
@@ -1283,6 +1436,10 @@ CREATE TABLE IF NOT EXISTS `gz_refund_goods` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_refund_goods_no` (`goods_no`),
   KEY `idx_gz_refund_goods_tenant` (`tenant_id`)
@@ -1316,6 +1473,9 @@ CREATE TABLE IF NOT EXISTS `gz_refund_goods_entry` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_refund_goods_entry_paren` (`paren_id`),
   KEY `idx_gz_refund_goods_entry_batch` (`batch_no`),
@@ -1345,6 +1505,10 @@ CREATE TABLE IF NOT EXISTS `gz_refund_stock` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_refund_stock_no` (`refund_no`),
   KEY `idx_gz_refund_stock_tenant` (`tenant_id`),
@@ -1378,6 +1542,9 @@ CREATE TABLE IF NOT EXISTS `gz_refund_stock_entry` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_refund_stock_entry_paren` (`paren_id`),
   KEY `idx_gz_refund_stock_entry_batch` (`batch_no`),
@@ -1406,6 +1573,10 @@ CREATE TABLE IF NOT EXISTS `gz_shipment` (
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
   `ref_acceptance_id` varchar(36) DEFAULT NULL COMMENT '引用的备货验收单主表ID（varchar36）',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_shipment_no` (`shipment_no`),
   KEY `idx_gz_shipment_tenant` (`tenant_id`),
@@ -1442,6 +1613,9 @@ CREATE TABLE IF NOT EXISTS `gz_shipment_entry` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_shipment_entry_paren` (`paren_id`),
   KEY `idx_gz_shipment_entry_batch` (`batch_no`),
@@ -1494,10 +1668,19 @@ CREATE TABLE IF NOT EXISTS `gz_traceability` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_trace_no` (`trace_no`),
   KEY `idx_gz_trace_tenant` (`tenant_id`),
-  KEY `idx_gz_trace_mirror` (`tenant_id`,`trace_source`,`mirror_row_id`)
+  KEY `idx_gz_trace_mirror` (`tenant_id`,`trace_source`,`mirror_row_id`),
+  KEY `idx_gz_tr_list_ctime` (`tenant_id`, `trace_source`, `order_status`, `del_flag`, `create_time`),
+  KEY `idx_hospital_number` (`hospital_number`),
+  KEY `idx_medical_record_no` (`medical_record_no`),
+  KEY `idx_order_status` (`order_status`),
+  UNIQUE KEY `uk_trace_no` (`trace_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值追溯主表';
 /
 
@@ -1532,10 +1715,16 @@ CREATE TABLE IF NOT EXISTS `gz_traceability_entry` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_trace_entry_parent` (`parent_id`),
   KEY `idx_gz_trace_entry_inv` (`inventory_id`),
-  KEY `idx_gz_trace_entry_tenant` (`tenant_id`)
+  KEY `idx_gz_trace_entry_tenant` (`tenant_id`),
+  KEY `idx_in_hospital_code` (`in_hospital_code`),
+  KEY `idx_material_id` (`material_id`),
+  KEY `idx_parent_id` (`parent_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值追溯明细表';
 /
 
@@ -1572,6 +1761,9 @@ CREATE TABLE IF NOT EXISTS `gz_depot_inventory` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_depot_inv_batch` (`batch_no`),
   KEY `idx_gz_depot_inv_wh` (`warehouse_id`),
@@ -1607,6 +1799,9 @@ CREATE TABLE IF NOT EXISTS `gz_dep_inventory` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_dep_inv_batch` (`batch_no`),
   KEY `idx_gz_dep_inv_dept` (`department_id`),
@@ -1669,12 +1864,18 @@ CREATE TABLE IF NOT EXISTS `stk_io_bill` (
   `his_push_time` datetime DEFAULT NULL COMMENT 'HIS最近推送时间',
   `his_push_msg` varchar(500) DEFAULT NULL COMMENT 'HIS推送失败/校验原因',
   `his_trace_id` varchar(64) DEFAULT NULL COMMENT 'HIS traceId',
+  `recipient_name` varchar(64) DEFAULT NULL COMMENT '领用人姓名',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_stk_io_bill_no` (`bill_no`),
   KEY `idx_stk_io_bill_type` (`bill_type`),
   KEY `idx_stk_io_bill_wh` (`warehouse_id`),
   KEY `idx_stk_io_bill_tenant` (`tenant_id`),
-  KEY `idx_stk_io_bill_suppler` (`suppler_id`)
+  KEY `idx_stk_io_bill_suppler` (`suppler_id`),
+  KEY `idx_stk_io_bill_list` (`tenant_id`, `bill_type`, `del_flag`, `bill_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='出入库主表';
 /
 
@@ -1732,6 +1933,11 @@ CREATE TABLE IF NOT EXISTS `stk_io_bill_entry` (
   `his_push_msg` varchar(500) DEFAULT NULL COMMENT '行级HIS推送错误/校验',
   `his_drug_id` varchar(64) DEFAULT NULL COMMENT '推送快照 drugId',
   `his_drug_spec_packing_id` varchar(64) DEFAULT NULL COMMENT '推送快照 drugSpecPackingId',
+  `del_by` varchar(100) DEFAULT NULL COMMENT '删除者',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_stk_io_entry_paren` (`paren_id`),
   KEY `idx_stk_io_entry_material` (`material_id`),
@@ -1750,6 +1956,10 @@ CREATE TABLE IF NOT EXISTS `stk_delivery_line_cap` (
   `qty_cap` decimal(18,4) NOT NULL COMMENT '该行可入总量上限（取历次接口快照与历史行的最大值）',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_stk_delivery_line_cap` (`tenant_id`, `delivery_no`, `line_sign`(191)),
   KEY `idx_stk_delivery_line_cap_tenant` (`tenant_id`)
@@ -1853,6 +2063,9 @@ CREATE TABLE IF NOT EXISTS `hc_doc_bill_ref` (
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者(软删操作人)',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间(软删时间)',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_hc_ref_tenant_tgt` (`tenant_id`,`tgt_bill_id`),
   KEY `idx_hc_ref_tenant_src` (`tenant_id`,`src_bill_id`),
@@ -1908,6 +2121,9 @@ CREATE TABLE IF NOT EXISTS `t_hc_ck_flow` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_hc_ck_bill` (`bill_id`),
   KEY `idx_hc_ck_entry` (`entry_id`),
@@ -1961,6 +2177,9 @@ CREATE TABLE IF NOT EXISTS `t_hc_ks_flow` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_hc_ks_bill` (`bill_id`),
   KEY `idx_hc_ks_entry` (`entry_id`),
@@ -2008,13 +2227,17 @@ CREATE TABLE IF NOT EXISTS `stk_inventory` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_stk_inv_batch` (`batch_no`),
   KEY `idx_stk_inv_batch_id` (`batch_id`),
   KEY `idx_stk_inv_mat_wh` (`material_id`,`warehouse_id`),
   KEY `idx_stk_inv_supplier` (`supplier_id`),
   KEY `idx_stk_inv_factory` (`factory_id`),
-  KEY `idx_stk_inv_tenant` (`tenant_id`)
+  KEY `idx_stk_inv_tenant` (`tenant_id`),
+  KEY `idx_batch_id` (`batch_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库库存明细表';
 /
 
@@ -2063,6 +2286,9 @@ CREATE TABLE IF NOT EXISTS `stk_dep_inventory` (
   `his_pharmacy_stock_id` varchar(128) DEFAULT NULL COMMENT '退库权威键 pharmacyStockId',
   `his_stock_query_id` varchar(128) DEFAULT NULL COMMENT 'HIS合并库存ID',
   `his_storage_stock_id` varchar(128) DEFAULT NULL COMMENT 'HIS药库批次ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_stk_dep_inv_batch` (`batch_no`),
   KEY `idx_stk_dep_inv_batch_id` (`batch_id`),
@@ -2102,6 +2328,9 @@ CREATE TABLE IF NOT EXISTS `stk_profit_loss_pending` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_stk_profit_pending_bill` (`bill_id`,`entry_id`),
   KEY `idx_stk_profit_pending_batch` (`batch_no`),
@@ -2172,13 +2401,21 @@ CREATE TABLE IF NOT EXISTS `stk_batch` (
   `del_time` datetime DEFAULT NULL COMMENT '删除时间',
   `del_by` varchar(64) DEFAULT NULL COMMENT '删除人',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_stk_batch_no` (`batch_no`),
   KEY `idx_stk_batch_material` (`material_id`),
   KEY `idx_stk_batch_wh` (`warehouse_id`),
   KEY `idx_stk_batch_bill` (`bill_id`),
   KEY `idx_stk_batch_supplier` (`supplier_id`),
-  KEY `idx_stk_batch_tenant` (`tenant_id`)
+  KEY `idx_stk_batch_tenant` (`tenant_id`),
+  KEY `idx_bill_id` (`bill_id`),
+  KEY `idx_del_flag` (`del_flag`),
+  KEY `idx_material_id` (`material_id`),
+  KEY `idx_warehouse_id` (`warehouse_id`),
+  UNIQUE KEY `uk_batch_no` (`batch_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='批次追溯表';
 /
 
@@ -2207,6 +2444,9 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking` (
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_stk_stocktaking_uuid` (`uuid_id`),
   KEY `idx_stk_stocktaking_wh` (`warehouse_id`),
@@ -2259,6 +2499,9 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_stk_ste_entry_uuid` (`entry_uuid`),
   KEY `idx_stk_ste_paren` (`paren_id`),
@@ -2291,6 +2534,10 @@ CREATE TABLE IF NOT EXISTS `stk_io_profit_loss` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_stk_pl_uuid` (`uuid_id`),
   KEY `idx_pl_stocktaking` (`stocktaking_id`),
@@ -2298,7 +2545,11 @@ CREATE TABLE IF NOT EXISTS `stk_io_profit_loss` (
   KEY `idx_pl_department` (`department_id`),
   KEY `idx_pl_biz_scope` (`biz_scope`),
   KEY `idx_pl_tenant` (`tenant_id`),
-  KEY `idx_pl_bill_status` (`bill_status`)
+  KEY `idx_pl_bill_status` (`bill_status`),
+  KEY `idx_bill_status` (`bill_status`),
+  KEY `idx_del_flag` (`del_flag`),
+  KEY `idx_stocktaking_id` (`stocktaking_id`),
+  KEY `idx_warehouse_id` (`warehouse_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='盈亏单主表';
 /
 
@@ -2343,11 +2594,18 @@ CREATE TABLE IF NOT EXISTS `stk_io_profit_loss_entry` (
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `del_by` varchar(100) DEFAULT NULL COMMENT '删除者',
+  `del_time` date DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_stk_ple_entry_uuid` (`entry_uuid`),
   KEY `idx_pl_entry_paren` (`paren_id`),
   KEY `idx_pl_entry_st_line` (`stocktaking_line_uuid`),
-  KEY `idx_pl_entry_tenant` (`tenant_id`)
+  KEY `idx_pl_entry_tenant` (`tenant_id`),
+  KEY `idx_paren_id` (`paren_id`),
+  KEY `idx_stocktaking_entry_id` (`stocktaking_entry_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='盈亏单明细表';
 /
 
@@ -2380,6 +2638,10 @@ CREATE TABLE IF NOT EXISTS `t_hc_ks_xh` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_hc_ks_xh_no` (`consume_bill_no`),
   KEY `idx_hc_ks_xh_wh` (`warehouse_id`),
@@ -2432,6 +2694,9 @@ CREATE TABLE IF NOT EXISTS `t_hc_ks_xh_entry` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_hc_ks_xh_e_paren` (`paren_id`),
   KEY `idx_hc_ks_xh_e_tenant` (`tenant_id`)
@@ -2473,6 +2738,8 @@ CREATE TABLE IF NOT EXISTS `t_hc_ks_xh_entry_ref` (
   `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_ks_xh_ref_tenant` (`tenant_id`),
   KEY `idx_ks_xh_ref_consume` (`consume_id`,`consume_entry_id`),
@@ -2513,6 +2780,12 @@ CREATE TABLE IF NOT EXISTS `sys_print_setting` (
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) DEFAULT '' COMMENT '备注',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_bill_type` (`bill_type`),
   KEY `idx_status` (`status`),
@@ -2532,6 +2805,12 @@ CREATE TABLE IF NOT EXISTS `sys_license` (
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统离线授权';
 /
@@ -2561,6 +2840,9 @@ CREATE TABLE IF NOT EXISTS `wh_warehouse_apply` (
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_wh_wh_apply_tenant` (`tenant_id`),
   KEY `idx_wh_wh_apply_bas` (`bas_apply_id`),
@@ -2604,6 +2886,9 @@ CREATE TABLE IF NOT EXISTS `wh_warehouse_apply_entry` (
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_wh_wh_apply_e_paren` (`paren_id`),
   KEY `idx_wh_wh_apply_e_bas` (`bas_apply_id`),
@@ -2631,6 +2916,8 @@ CREATE TABLE IF NOT EXISTS `wh_wh_apply_ck_entry_ref` (
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_wh_ck_pair` (`wh_apply_entry_id`,`ck_entry_id`),
   KEY `idx_wh_ck_ref_apply` (`wh_apply_id`),
@@ -2660,6 +2947,8 @@ CREATE TABLE IF NOT EXISTS `gz_order_entry_code_ref` (
   `warehouse_id` bigint DEFAULT NULL COMMENT '仓库冗余',
   `create_by` varchar(64) DEFAULT NULL,
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_code_ref_barcode` (`src_barcode_line_id`),
   KEY `idx_gz_code_ref_tgt` (`tgt_bill_kind`,`tgt_entry_id`),
@@ -2685,6 +2974,8 @@ CREATE TABLE IF NOT EXISTS `gz_shipment_entry_ref` (
   `material_name` varchar(300) DEFAULT NULL,
   `create_by` varchar(64) DEFAULT NULL,
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_ship_ref_entry` (`shipment_entry_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='备货出库明细引用关系';
@@ -2708,6 +2999,8 @@ CREATE TABLE IF NOT EXISTS `gz_refund_goods_entry_ref` (
   `material_name` varchar(300) DEFAULT NULL,
   `create_by` varchar(64) DEFAULT NULL,
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_rg_ref_entry` (`refund_goods_entry_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='备货退库/退货明细引用关系';
@@ -2731,6 +3024,12 @@ CREATE TABLE IF NOT EXISTS `sys_data_backup_config` (
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_sys_data_backup_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='数据备份配置';
@@ -2749,6 +3048,10 @@ CREATE TABLE IF NOT EXISTS `sys_his_external_db` (
   `sql_outpatient_range` mediumtext COMMENT '门诊区间查询SQL，两个?为字符串起止(yyyy-MM-dd HH:mm:ss)下含上不含；SQLSERVER可空走内置',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`tenant_id`),
   KEY `idx_sys_his_ext_enabled` (`enabled`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='租户级HIS外联库连接';
@@ -2809,6 +3112,12 @@ CREATE TABLE IF NOT EXISTS `his_inpatient_charge_mirror` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '本地入库时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_his_inp_mirror_tenant_hisid` (`tenant_id`,`his_inpatient_charge_id`),
   KEY `idx_his_inp_mirror_tenant_charge_date` (`tenant_id`,`charge_date`),
@@ -2857,6 +3166,12 @@ CREATE TABLE IF NOT EXISTS `his_outpatient_charge_mirror` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '本地入库时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_his_out_mirror_tenant_hisid` (`tenant_id`,`his_outpatient_charge_id`),
   KEY `idx_his_out_mirror_tenant_charge_date` (`tenant_id`,`charge_date`),
@@ -2916,6 +3231,12 @@ CREATE TABLE IF NOT EXISTS `his_patient_charge_mirror_unified` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_hpcm_unified_list` (`tenant_id`,`visit_kind`,`charge_at`),
   KEY `idx_hpcm_unified_tenant_at` (`tenant_id`,`charge_at`),
@@ -2938,6 +3259,11 @@ CREATE TABLE IF NOT EXISTS `his_charge_fetch_batch` (
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '抓取完成时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_his_fetch_batch_tenant_time` (`tenant_id`,`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费数据抓取批次';
@@ -2964,6 +3290,10 @@ CREATE TABLE IF NOT EXISTS `his_charge_item_mirror` (
   `deleted_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '本地删除标记：0正常，1已删除(HIS未返回)',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '本地首次入库时间',
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '本地最近刷新时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`tenant_id`,`charge_item_id`),
   KEY `idx_his_charge_item_mirror_name` (`tenant_id`,`item_name`),
   KEY `idx_his_charge_item_mirror_referred` (`tenant_id`,`referred_code`),
@@ -3008,6 +3338,8 @@ CREATE TABLE IF NOT EXISTS `his_mirror_consume_link` (
   `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志 0正常 1删除',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_hmcl_mirror` (`mirror_row_id`),
   KEY `idx_hmcl_consume` (`dept_batch_consume_id`),
@@ -3017,7 +3349,9 @@ CREATE TABLE IF NOT EXISTS `his_mirror_consume_link` (
   KEY `idx_hmcl_dep_inv` (`tenant_id`,`dep_inventory_id`),
   KEY `idx_hmcl_tenant_del` (`tenant_id`,`del_flag`),
   KEY `idx_hmcl_confirm` (`tenant_id`,`confirm_status`),
-  KEY `idx_hmcl_trace_id` (`tenant_id`,`traceability_id`)
+  KEY `idx_hmcl_trace_id` (`tenant_id`,`traceability_id`),
+  KEY `idx_hmcl_tenant_confirm_trace` (`tenant_id`, `confirm_status`, `del_flag`, `gz_dep_inventory_id`, `traceability_id`),
+  KEY `idx_hmcl_tenant_confirm_legacy` (`tenant_id`, `confirm_status`, `del_flag`, `gz_dep_inventory_id`, `dept_batch_consume_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费镜像与科室消耗明细关联（含退费返还累计与库存行快照）';
 /
 
@@ -3035,6 +3369,7 @@ CREATE TABLE IF NOT EXISTS `his_mirror_process_log` (
   `process_by` varchar(64) DEFAULT NULL COMMENT '操作人',
   `process_time` datetime NOT NULL COMMENT '操作时间',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '落库时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
   PRIMARY KEY (`id`),
   KEY `idx_hmpl_mirror_time` (`tenant_id`, `visit_kind`, `mirror_row_id`, `process_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='HIS计费镜像核销操作日志';
@@ -3057,6 +3392,11 @@ CREATE TABLE IF NOT EXISTS `gz_high_consume_confirm` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_gz_hcc_confirm_no` (`tenant_id`,`confirm_no`),
   KEY `idx_gz_hcc_dept` (`tenant_id`,`department_id`,`confirm_time`)
@@ -3072,6 +3412,9 @@ CREATE TABLE IF NOT EXISTS `gz_high_consume_confirm_line` (
   `traceability_entry_id` bigint DEFAULT NULL COMMENT '高值计费明细 gz_traceability_entry.id',
   `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_gz_hccl_link` (`consume_link_id`),
   KEY `idx_gz_hccl_confirm` (`tenant_id`,`confirm_id`)
@@ -3089,6 +3432,9 @@ CREATE TABLE IF NOT EXISTS `gz_high_consume_confirm_bill` (
   `link_scoped` tinyint NOT NULL DEFAULT 0 COMMENT '1=按明细生成的反向单(301/401) 0=按确认批次',
   `del_flag` tinyint NOT NULL DEFAULT 0 COMMENT '删除标志',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_hccb_confirm` (`tenant_id`,`confirm_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='高值即入即出正向/反向结算单据关联';
@@ -3108,6 +3454,9 @@ CREATE TABLE IF NOT EXISTS `sb_tenant_setting` (
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_sb_tenant_setting` (`tenant_id`,`setting_key`),
   KEY `idx_sb_tenant_setting_tenant` (`tenant_id`)
@@ -3137,6 +3486,9 @@ CREATE TABLE IF NOT EXISTS `his_billing_refund_order` (
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_hbro_tenant_origin` (`tenant_id`,`origin_charge_detail_id`),
   KEY `idx_hbro_mirror` (`tenant_id`,`origin_mirror_row_id`)
@@ -3163,6 +3515,9 @@ CREATE TABLE IF NOT EXISTS `his_billing_refund_order_line` (
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_hbrol_refund` (`tenant_id`,`refund_order_id`),
   KEY `idx_hbrol_link` (`consume_link_id`)
@@ -3179,6 +3534,12 @@ CREATE TABLE IF NOT EXISTS `sys_print_doc_rows` (
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_sys_print_doc_rows_doc_kind` (`doc_kind`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='按单据类型的打印每页行数';
@@ -3204,6 +3565,8 @@ CREATE TABLE IF NOT EXISTS `gz_bill_entry_change_log` (
   `operator` varchar(64) DEFAULT NULL COMMENT '操作人',
   `change_time` datetime NOT NULL COMMENT '变更时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `operator_name` varchar(64) DEFAULT NULL COMMENT '操作人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_becl_bill` (`bill_type`,`bill_id`),
   KEY `idx_gz_becl_time` (`change_time`),
@@ -3224,6 +3587,8 @@ CREATE TABLE IF NOT EXISTS `stk_bill_entry_change_log` (
   `operator` varchar(64) DEFAULT NULL COMMENT '操作人',
   `change_time` datetime NOT NULL COMMENT '变更时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `operator_name` varchar(64) DEFAULT NULL COMMENT '操作人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_stk_becl_bill` (`bill_type`,`bill_id`),
   KEY `idx_stk_becl_time` (`change_time`),
@@ -3278,9 +3643,20 @@ CREATE TABLE IF NOT EXISTS `purchase_order` (
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_purchase_order_no` (`order_no`),
-  KEY `idx_purchase_order_tenant` (`tenant_id`)
+  KEY `idx_purchase_order_tenant` (`tenant_id`),
+  KEY `idx_department_id` (`department_id`),
+  KEY `idx_order_date` (`order_date`),
+  KEY `idx_order_status` (`order_status`),
+  KEY `idx_plan_no` (`plan_no`),
+  KEY `idx_supplier_id` (`supplier_id`),
+  KEY `idx_warehouse_id` (`warehouse_id`),
+  UNIQUE KEY `uk_order_no` (`order_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购订单主表';
 /
 CREATE TABLE IF NOT EXISTS `purchase_order_entry` (
@@ -3312,10 +3688,16 @@ CREATE TABLE IF NOT EXISTS `purchase_order_entry` (
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_poe_parent` (`parent_id`),
   KEY `idx_poe_order_no` (`order_no`),
-  KEY `idx_poe_tenant` (`tenant_id`)
+  KEY `idx_poe_tenant` (`tenant_id`),
+  KEY `idx_material_code` (`material_code`),
+  KEY `idx_material_id` (`material_id`),
+  KEY `idx_parent_id` (`parent_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购订单明细表';
 /
 CREATE TABLE IF NOT EXISTS `purchase_plan` (
@@ -3341,9 +3723,21 @@ CREATE TABLE IF NOT EXISTS `purchase_plan` (
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `pro_person` varchar(50) DEFAULT NULL COMMENT '采购员',
+  `telephone` varchar(20) DEFAULT NULL COMMENT '联系电话',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_purchase_plan_no` (`plan_no`),
-  KEY `idx_purchase_plan_tenant` (`tenant_id`)
+  KEY `idx_purchase_plan_tenant` (`tenant_id`),
+  KEY `idx_department_id` (`department_id`),
+  KEY `idx_plan_date` (`plan_date`),
+  KEY `idx_plan_status` (`plan_status`),
+  KEY `idx_supplier_id` (`supplier_id`),
+  KEY `idx_warehouse_id` (`warehouse_id`),
+  UNIQUE KEY `uk_plan_no` (`plan_no`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购计划主表';
 /
 CREATE TABLE IF NOT EXISTS `purchase_plan_entry` (
@@ -3368,10 +3762,15 @@ CREATE TABLE IF NOT EXISTS `purchase_plan_entry` (
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_ppe_parent` (`parent_id`),
   KEY `idx_ppe_plan_no` (`plan_no`),
-  KEY `idx_ppe_tenant` (`tenant_id`)
+  KEY `idx_ppe_tenant` (`tenant_id`),
+  KEY `idx_material_id` (`material_id`),
+  KEY `idx_parent_id` (`parent_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='采购计划明细表';
 /
 CREATE TABLE IF NOT EXISTS `bas_apply` (
@@ -3395,6 +3794,12 @@ CREATE TABLE IF NOT EXISTS `bas_apply` (
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `del_by` varchar(100) DEFAULT NULL COMMENT '删除者',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_bas_apply_no` (`apply_bill_no`),
   KEY `idx_bas_apply_tenant` (`tenant_id`)
@@ -3423,6 +3828,11 @@ CREATE TABLE IF NOT EXISTS `bas_apply_entry` (
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `del_by` varchar(100) DEFAULT NULL COMMENT '删除者',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_bas_apply_entry_paren` (`paren_id`),
   KEY `idx_bas_apply_entry_no` (`apply_bill_no`),
@@ -3446,9 +3856,22 @@ CREATE TABLE IF NOT EXISTS `new_product_apply` (
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `audit_date` date DEFAULT NULL COMMENT '审核日期',
+  `reason_and_benefit` varchar(2000) DEFAULT NULL COMMENT '申请理由及效益分析',
+  `medical_insurance` varchar(10) DEFAULT NULL COMMENT '医保(是/否)',
+  `centralized_procurement` varchar(10) DEFAULT NULL COMMENT '集采(是/否)',
+  `procurement_form` varchar(10) DEFAULT NULL COMMENT '采购形式(长期/临采)',
+  `platform_price` decimal(18,6) DEFAULT NULL COMMENT '平台价格',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_new_product_apply_no` (`apply_no`),
-  KEY `idx_new_product_apply_tenant` (`tenant_id`)
+  KEY `idx_new_product_apply_tenant` (`tenant_id`),
+  KEY `idx_apply_date` (`apply_date`),
+  KEY `idx_apply_no` (`apply_no`),
+  KEY `idx_apply_status` (`apply_status`),
+  KEY `idx_department_id` (`department_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='新品申购主表';
 /
 CREATE TABLE IF NOT EXISTS `new_product_apply_entry` (
@@ -3470,9 +3893,21 @@ CREATE TABLE IF NOT EXISTS `new_product_apply_entry` (
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `factory_name` varchar(200) DEFAULT NULL COMMENT '生产厂家',
+  `supplier_name` varchar(200) DEFAULT NULL COMMENT '供应商',
+  `brand_requirement` varchar(200) DEFAULT NULL COMMENT '品牌要求',
+  `special_note` varchar(500) DEFAULT NULL COMMENT '特殊说明',
+  `case_fee_category` varchar(200) DEFAULT NULL COMMENT '病案费用类别',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_npa_entry_parent` (`parent_id`),
-  KEY `idx_npa_entry_no` (`apply_no`)
+  KEY `idx_npa_entry_no` (`apply_no`),
+  KEY `idx_material_id` (`material_id`),
+  KEY `idx_parent_id` (`parent_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='新品申购明细表';
 /
 CREATE TABLE IF NOT EXISTS `new_product_apply_detail` (
@@ -3485,9 +3920,16 @@ CREATE TABLE IF NOT EXISTS `new_product_apply_detail` (
   `del_flag` int DEFAULT 0 COMMENT '删除标志',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `similar_product` varchar(200) DEFAULT NULL COMMENT '我院同类产品',
+  `speci` varchar(200) DEFAULT NULL COMMENT '规格',
+  `model` varchar(100) DEFAULT NULL COMMENT '型号',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_npa_detail_parent` (`parent_id`),
-  KEY `idx_npa_detail_no` (`apply_no`)
+  KEY `idx_npa_detail_no` (`apply_no`),
+  KEY `idx_parent_id` (`parent_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='新品申购扩展明细表';
 /
 
@@ -3502,6 +3944,8 @@ CREATE TABLE IF NOT EXISTS `spd_scm_tenant_bind` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_spd_scm_tenant_bind` (`tenant_id`),
   KEY `idx_spd_scm_tenant_hospital_code` (`scm_hospital_code`)
@@ -3519,6 +3963,8 @@ CREATE TABLE IF NOT EXISTS `spd_scm_supplier_bind` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_spd_scm_supplier_bind` (`tenant_id`,`supplier_id`),
   KEY `idx_spd_scm_supplier_code` (`scm_supplier_code`)
@@ -3534,6 +3980,11 @@ CREATE TABLE IF NOT EXISTS `spd_foundation_data_snapshot` (
   `after_json` mediumtext COMMENT '变更后JSON快照',
   `create_by` varchar(64) DEFAULT NULL COMMENT '操作人',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '快照时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_spd_fd_snap_tenant_entity` (`tenant_id`, `entity_type`, `entity_id`),
   KEY `idx_spd_fd_snap_time` (`create_time`)
@@ -3590,6 +4041,10 @@ CREATE TABLE IF NOT EXISTS `stk_lv_io_inhospital_barcode` (
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_stk_lv_io_bar_tenant_io` (`tenant_id`,`io_direction`),
   KEY `idx_stk_lv_io_bar_bill` (`tenant_id`,`stk_io_bill_id`),
@@ -3647,6 +4102,9 @@ CREATE TABLE IF NOT EXISTS `hc_barcode_master` (
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_hc_barcode_master_tenant_code` (`tenant_id`,`barcode_value`),
   KEY `idx_hc_barcode_master_type` (`tenant_id`,`business_type_code`),
@@ -3688,6 +4146,9 @@ CREATE TABLE IF NOT EXISTS `hc_barcode_flow` (
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_hc_barcode_flow_master` (`tenant_id`,`hc_barcode_master_id`),
   KEY `idx_hc_barcode_flow_code` (`tenant_id`,`barcode_value`),
@@ -3739,6 +4200,9 @@ CREATE TABLE IF NOT EXISTS `gz_wh_flow` (
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_wh_flow_tenant_time` (`tenant_id`,`flow_time`),
   KEY `idx_gz_wh_flow_bill` (`tenant_id`,`bill_id`),
@@ -3788,6 +4252,9 @@ CREATE TABLE IF NOT EXISTS `gz_dep_flow` (
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_dep_flow_tenant_time` (`tenant_id`,`flow_time`),
   KEY `idx_gz_dep_flow_bill` (`tenant_id`,`bill_id`),
@@ -3816,6 +4283,9 @@ CREATE TABLE IF NOT EXISTS `purchase_forecast_task` (
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_purchase_forecast_task_no` (`task_no`),
   KEY `idx_pft_warehouse` (`warehouse_id`),
@@ -3852,6 +4322,9 @@ CREATE TABLE IF NOT EXISTS `purchase_forecast_entry` (
   `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_pfe_task` (`task_id`),
   KEY `idx_pfe_wh_mat` (`warehouse_id`,`material_id`),
@@ -3877,6 +4350,9 @@ CREATE TABLE IF NOT EXISTS `fd_jc_type` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_fd_jc_type_tenant` (`tenant_id`),
   KEY `idx_fd_jc_type_code` (`tenant_id`, `code`)
@@ -3898,6 +4374,9 @@ CREATE TABLE IF NOT EXISTS `fd_jc_period` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_fd_jc_period_tenant` (`tenant_id`),
   KEY `idx_fd_jc_period_ym` (`tenant_id`, `start_ym`, `end_ym`)
@@ -3920,6 +4399,9 @@ CREATE TABLE IF NOT EXISTS `fd_jc_report` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_fd_jc_report_tenant` (`tenant_id`),
   KEY `idx_fd_jc_report_period` (`tenant_id`, `period_id`, `report_mode`),
@@ -3952,6 +4434,9 @@ CREATE TABLE IF NOT EXISTS `fd_focus18` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `tenant_id` varchar(64) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_fd_focus18_tenant` (`tenant_id`),
   KEY `idx_fd_focus18_parent` (`tenant_id`, `parent_id`),
@@ -3968,6 +4453,7 @@ CREATE TABLE IF NOT EXISTS `sys_user_home_pref` (
   `home_view` varchar(32) NOT NULL DEFAULT 'dept' COMMENT '默认首页视角: dept/warehouse/global',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_user_home_pref` (`user_id`, `tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户首页默认视角';
@@ -3984,6 +4470,7 @@ CREATE TABLE IF NOT EXISTS `sys_user_menu_hit` (
   `last_hit_time` datetime DEFAULT NULL COMMENT '最近点击时间',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_user_menu_hit` (`user_id`, `tenant_id`, `path`),
   KEY `idx_user_menu_hit_rank` (`user_id`, `tenant_id`, `hit_count`, `last_hit_time`)
@@ -4011,6 +4498,12 @@ CREATE TABLE IF NOT EXISTS `purchase_price_adjust` (
   `create_time` datetime DEFAULT NULL COMMENT 'create time',
   `update_by` varchar(64) DEFAULT NULL COMMENT 'update by',
   `update_time` datetime DEFAULT NULL COMMENT 'update time',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_price_adjust_tenant_bill_no` (`tenant_id`, `bill_no`),
   KEY `idx_price_adjust_bill_date` (`bill_date`),
@@ -4044,6 +4537,11 @@ CREATE TABLE IF NOT EXISTS `purchase_price_adjust_entry` (
   `create_time` datetime DEFAULT NULL COMMENT 'create time',
   `update_by` varchar(64) DEFAULT NULL COMMENT 'update by',
   `update_time` datetime DEFAULT NULL COMMENT 'update time',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_price_adjust_entry_parent` (`parent_id`),
   KEY `idx_price_adjust_entry_material` (`material_id`)
@@ -4067,6 +4565,9 @@ CREATE TABLE IF NOT EXISTS `stk_scrap_bill` (
   `create_time` datetime DEFAULT NULL COMMENT 'create time',
   `update_by` varchar(64) DEFAULT NULL COMMENT 'update by',
   `update_time` datetime DEFAULT NULL COMMENT 'update time',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_scrap_bill_tenant_bill_no` (`tenant_id`, `bill_no`),
   KEY `idx_scrap_bill_warehouse` (`warehouse_id`),
@@ -4101,9 +4602,138 @@ CREATE TABLE IF NOT EXISTS `stk_scrap_bill_entry` (
   `create_time` datetime DEFAULT NULL COMMENT 'create time',
   `update_by` varchar(64) DEFAULT NULL COMMENT 'update by',
   `update_time` datetime DEFAULT NULL COMMENT 'update time',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_scrap_entry_parent` (`parent_id`),
   KEY `idx_scrap_entry_material` (`material_id`),
   KEY `idx_scrap_entry_inventory` (`inventory_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='warehouse scrap bill entry';
 /
+
+-- ========== 科室库存预警（HS3 SCHEMA-DIFF 2026-11-24） ==========
+CREATE TABLE IF NOT EXISTS `dep_inventory_warning` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `department_id` bigint NOT NULL COMMENT '科室ID',
+  `material_id` bigint NOT NULL COMMENT '耗材ID',
+  `min_qty_warning` decimal(18,6) DEFAULT NULL COMMENT '少于数量预警',
+  `max_qty_warning` decimal(18,6) DEFAULT NULL COMMENT '多余数量预警',
+  `del_flag` int DEFAULT 0 COMMENT '删除标志',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_department_material` (`department_id`,`material_id`,`del_flag`),
+  KEY `idx_department_id` (`department_id`),
+  KEY `idx_material_id` (`material_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='科室库存预警设置表';
+/
+
+-- ========== 仓库档案变更记录（SCHEMA 约定 §4） ==========
+CREATE TABLE IF NOT EXISTS `fd_warehouse_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `warehouse_id` bigint NOT NULL COMMENT '仓库ID',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
+  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
+  `old_value` text COMMENT '原值',
+  `new_value` text COMMENT '新值',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `operator_name` varchar(64) DEFAULT NULL COMMENT '操作人user_name',
+  PRIMARY KEY (`id`),
+  KEY `idx_warehouse_log_entity` (`warehouse_id`),
+  KEY `idx_warehouse_log_time` (`change_time`),
+  KEY `idx_warehouse_log_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='仓库档案变更记录';
+/
+
+-- ========== 单位档案变更记录（SCHEMA 约定 §4） ==========
+CREATE TABLE IF NOT EXISTS `fd_unit_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `unit_id` bigint NOT NULL COMMENT '单位ID',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
+  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
+  `old_value` text COMMENT '原值',
+  `new_value` text COMMENT '新值',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `operator_name` varchar(64) DEFAULT NULL COMMENT '操作人user_name',
+  PRIMARY KEY (`id`),
+  KEY `idx_unit_log_entity` (`unit_id`),
+  KEY `idx_unit_log_time` (`change_time`),
+  KEY `idx_unit_log_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='单位档案变更记录';
+/
+
+-- ========== 财务分类档案变更记录（SCHEMA 约定 §4） ==========
+CREATE TABLE IF NOT EXISTS `fd_finance_category_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `finance_category_id` bigint NOT NULL COMMENT '财务分类ID',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
+  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
+  `old_value` text COMMENT '原值',
+  `new_value` text COMMENT '新值',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `operator_name` varchar(64) DEFAULT NULL COMMENT '操作人user_name',
+  PRIMARY KEY (`id`),
+  KEY `idx_financeCategory_log_entity` (`finance_category_id`),
+  KEY `idx_financeCategory_log_time` (`change_time`),
+  KEY `idx_financeCategory_log_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='财务分类档案变更记录';
+/
+
+-- ========== 库房分类档案变更记录（SCHEMA 约定 §4） ==========
+CREATE TABLE IF NOT EXISTS `fd_warehouse_category_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `warehouse_category_id` bigint NOT NULL COMMENT '库房分类ID',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
+  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
+  `old_value` text COMMENT '原值',
+  `new_value` text COMMENT '新值',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `operator_name` varchar(64) DEFAULT NULL COMMENT '操作人user_name',
+  PRIMARY KEY (`id`),
+  KEY `idx_warehouseCategory_log_entity` (`warehouse_category_id`),
+  KEY `idx_warehouseCategory_log_time` (`change_time`),
+  KEY `idx_warehouseCategory_log_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='库房分类档案变更记录';
+/
+
+-- ========== 货位档案变更记录（SCHEMA 约定 §4） ==========
+CREATE TABLE IF NOT EXISTS `fd_location_change_log` (
+  `id` varchar(36) NOT NULL COMMENT '主键UUID7',
+  `location_id` bigint NOT NULL COMMENT '货位ID',
+  `change_time` datetime NOT NULL COMMENT '变更时间',
+  `operator` varchar(64) NOT NULL COMMENT '操作人',
+  `field_name` varchar(64) NOT NULL COMMENT '字段名（英文）',
+  `field_label` varchar(64) DEFAULT NULL COMMENT '字段中文名',
+  `old_value` text COMMENT '原值',
+  `new_value` text COMMENT '新值',
+  `tenant_id` varchar(36) DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
+  `operator_name` varchar(64) DEFAULT NULL COMMENT '操作人user_name',
+  PRIMARY KEY (`id`),
+  KEY `idx_location_log_entity` (`location_id`),
+  KEY `idx_location_log_time` (`change_time`),
+  KEY `idx_location_log_tenant` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='货位档案变更记录';
+/
+

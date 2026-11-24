@@ -5,6 +5,10 @@
 -- 根因：线上库仅有 PRIMARY，列表条件（tenant/bill_type/date/供应商）全表扫描，
 --       再叠加「被引用状态」相关子查询与 PageHelper count，易超过 10 秒。
 --
+-- 说明：本文件为手工入口；单列索引多数已在 table.sql 建表定义中。
+--       复合索引 idx_stk_io_bill_list 已并入 material/column.sql（SqlInitRunner 幂等）。
+--       生产若尚未跑过启动补全，可在此逐条执行（先 SHOW INDEX 确认）。
+--
 -- DBeaver：每条单独 Ctrl+Enter；或整段 Alt+X
 -- ============================================================
 

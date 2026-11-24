@@ -1,5 +1,7 @@
 package com.spd.foundation.service;
 
+
+import com.spd.foundation.domain.FdUnitChangeLog;
 import java.util.List;
 import com.spd.foundation.domain.FdUnit;
 
@@ -58,4 +60,10 @@ public interface IFdUnitService
 //     * @return 结果
 //     */
 //    public int deleteFdUnitByUnitId(Long unitId);
+
+    /**
+     * Unit字段变更记录
+     */
+    List<FdUnitChangeLog> selectUnitChangeLog(Long unitId);
+
 }

@@ -75,6 +75,7 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
         gzDepApply.setApplyBillNo(getNumber());
         gzDepApply.setCreateTime(DateUtils.getNowDate());
         gzDepApply.setCreateBy(SecurityUtils.getUserIdStr());
+            gzDepApply.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         if (StringUtils.isEmpty(gzDepApply.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             gzDepApply.setTenantId(SecurityUtils.getCustomerId());
         }
@@ -109,6 +110,7 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
             gzDepApply.getGzDepApplyEntryList(), GzDepApplyEntry::getMaterialId, "高值科室申领");
         gzDepApply.setUpdateTime(DateUtils.getNowDate());
         gzDepApply.setUpdateBy(SecurityUtils.getUserIdStr());
+            gzDepApply.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         gzDepApplyMapper.deleteGzDepApplyEntryByParenId(gzDepApply.getId(), com.spd.common.utils.SecurityUtils.getUserIdStr());
         insertGzDepApplyEntry(gzDepApply);
         return gzDepApplyMapper.updateGzDepApply(gzDepApply);
@@ -163,6 +165,7 @@ public class GzDepApplyServiceImpl implements IGzDepApplyService
 
         gzDepApply.setApplyBillStatus(2);
         gzDepApply.setUpdateBy(SecurityUtils.getUserIdStr());
+            gzDepApply.setUpdateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
         gzDepApply.setUpdateTime(DateUtils.getNowDate());
 
         int res = gzDepApplyMapper.updateGzDepApply(gzDepApply);
