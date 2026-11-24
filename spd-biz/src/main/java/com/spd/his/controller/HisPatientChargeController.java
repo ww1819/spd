@@ -1,6 +1,7 @@
 package com.spd.his.controller;
 
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,6 +49,17 @@ public class HisPatientChargeController extends BaseController
 {
     @Autowired
     private IHisPatientChargeService hisPatientChargeService;
+
+    /**
+     * 进页访问日志：前端上报分段耗时，落 sys_oper_log（title=患者收费查询-进页）。
+     */
+    @PreAuthorize("@ss.hasPermi('department:patientCharge:list')")
+    @Log(title = "患者收费查询-进页", businessType = BusinessType.OTHER, isSaveResponseData = false)
+    @PostMapping("/mirror/pageAccess")
+    public AjaxResult pageAccess(@RequestBody(required = false) Map<String, Object> body)
+    {
+        return success();
+    }
 
     @PreAuthorize("@ss.hasPermi('department:patientCharge:list')")
     @GetMapping("/mirror/inpatient/list")

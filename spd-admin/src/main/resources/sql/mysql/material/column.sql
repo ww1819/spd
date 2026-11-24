@@ -3651,6 +3651,23 @@ EXECUTE stmt_hpcm_vl_at;
 DEALLOCATE PREPARE stmt_hpcm_vl_at;
 /
 
+-- 待核销支路：按租户+计费时间扫（拆分支后 pending 段用）
+SET @idx_hpcm_tenant_at := (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = DATABASE() AND table_name = 'his_patient_charge_mirror_unified' AND index_name = 'idx_hpcm_unified_tenant_at'
+);
+/
+SET @sql_hpcm_tenant_at := IF(@idx_hpcm_tenant_at = 0,
+  'ALTER TABLE his_patient_charge_mirror_unified ADD INDEX idx_hpcm_unified_tenant_at (tenant_id, charge_at)',
+  'SELECT 1');
+/
+PREPARE stmt_hpcm_tenant_at FROM @sql_hpcm_tenant_at;
+/
+EXECUTE stmt_hpcm_tenant_at;
+/
+DEALLOCATE PREPARE stmt_hpcm_tenant_at;
+/
+
 -- ========== HV-F-006 高值冲销生成反向计费单 ==========
 CALL add_table_column('gz_traceability', 'reverse_flag', 'tinyint NOT NULL', '是否冲销反向单 0否 1是', '0');
 /

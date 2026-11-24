@@ -104,6 +104,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     private static final int HIS_ID_QUERY_BATCH = 400;
     private static final int INSERT_BATCH_SIZE = 80;
     private static final String KIND_IN = "INPATIENT";
+    private static final String KIND_OUT = "OUTPATIENT";
 
     /** HIS 区间查询占位符绑定格式（字符串比较，与内置 SQL 一致） */
     private static final DateTimeFormatter HIS_FETCH_TIME_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -1961,7 +1962,8 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
     {
         HisPatientChargeMirrorUnifiedSupport.normalizeListQueryKeywords(uq);
         applyPatientChargeDepartmentScopeIfNeeded(uq);
-        // HIGH 列表为 UNION ALL 子查询；关闭 PageHelper 自动 count，由 countList 双分支相加
+        // HIGH/LOW 列表为 UNION ALL；关闭 PageHelper 自动 count，由 countList 双分支相加
+        syncPendingValueLevelBeforeListIfNeeded(uq);
         PageUtils.startPage(false);
         List<HisPatientChargeMirrorUnified> rows = hisPatientChargeMirrorUnifiedMapper.selectList(uq);
         long total = hisPatientChargeMirrorUnifiedMapper.countList(uq);
@@ -1979,6 +1981,16 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         return new UnifiedMirrorPageSlice(safeRows, total, pageNum, pageSize);
     }
 
+    /**
+     * HIGH/LOW 列表只按行快照 m.value_level 过滤（可走索引）。
+     * 生产禁止在列表请求内跑 sync UPDATE：JOIN 对齐曾打满 socketTimeout(60s) 导致整页转圈。
+     * 空/过期快照靠入库写快照 + 收费项维护时 refreshPending；展示列仍用 resolvedValueLevelExpr 跟项。
+     */
+    private void syncPendingValueLevelBeforeListIfNeeded(HisPatientChargeMirrorUnifiedQuery uq)
+    {
+        // no-op：见方法注释
+    }
+
     /** 补齐处理方/处理情况展示字段，并将 process_by 解析为姓名 */
     private void enrichUnifiedProcessDisplay(List<HisPatientChargeMirrorUnified> rows)
     {
@@ -1987,18 +1999,109 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             return;
         }
         Map<String, String> nameCache = new HashMap<>();
+        List<HisPatientChargeMirrorUnified> needReconcile = new ArrayList<>();
         for (HisPatientChargeMirrorUnified u : rows)
         {
             if (u == null)
             {
                 continue;
             }
-            // 仅高值：条码/追溯已删导致无有效消耗时，校正「已核销」为待核销
-            if (isHighValueLevel(u.getValueLevel()))
+            if (isHighValueLevel(u.getValueLevel()) && needsHighConsumedReconcileCheck(u))
             {
-                reconcileHighConsumedWithoutActiveAlloc(u);
+                needReconcile.add(u);
             }
             u.setProcessByName(resolveProcessByDisplayName(u.getProcessBy(), nameCache));
+        }
+        if (!needReconcile.isEmpty())
+        {
+            Map<String, BigDecimal> activeNetByKey = loadActiveNetAllocQtyMap(needReconcile);
+            for (HisPatientChargeMirrorUnified u : needReconcile)
+            {
+                reconcileHighConsumedWithoutActiveAlloc(u, activeNetByKey);
+            }
+        }
+    }
+
+    private static boolean needsHighConsumedReconcileCheck(HisPatientChargeMirrorUnified u)
+    {
+        String status = StringUtils.trimToEmpty(u.getProcessStatus());
+        return "CONSUMED".equals(status) || "PARTIALLY_CONSUMED".equals(status) || "CONSUMING".equals(status);
+    }
+
+    private Map<String, BigDecimal> loadActiveNetAllocQtyMap(List<HisPatientChargeMirrorUnified> rows)
+    {
+        Map<String, BigDecimal> map = new HashMap<>();
+        if (rows == null || rows.isEmpty())
+        {
+            return map;
+        }
+        String tenantId = StringUtils.trimToEmpty(rows.get(0).getTenantId());
+        List<String> inIds = new ArrayList<>();
+        List<String> outIds = new ArrayList<>();
+        for (HisPatientChargeMirrorUnified u : rows)
+        {
+            if (u == null || StringUtils.isBlank(u.getId()))
+            {
+                continue;
+            }
+            String vk = StringUtils.trimToEmpty(u.getVisitKind()).toUpperCase();
+            if (KIND_OUT.equals(vk))
+            {
+                outIds.add(u.getId());
+            }
+            else
+            {
+                inIds.add(u.getId());
+            }
+        }
+        if (!inIds.isEmpty())
+        {
+            List<java.util.Map<String, Object>> rowsIn =
+                hisMirrorConsumeLinkMapper.sumActiveNetAllocQtyForMirrorRows(tenantId, KIND_IN, inIds);
+            putActiveNetRows(map, KIND_IN, rowsIn);
+        }
+        if (!outIds.isEmpty())
+        {
+            List<java.util.Map<String, Object>> rowsOut =
+                hisMirrorConsumeLinkMapper.sumActiveNetAllocQtyForMirrorRows(tenantId, KIND_OUT, outIds);
+            putActiveNetRows(map, KIND_OUT, rowsOut);
+        }
+        return map;
+    }
+
+    private static void putActiveNetRows(Map<String, BigDecimal> map, String visitKind,
+        List<java.util.Map<String, Object>> rows)
+    {
+        if (rows == null)
+        {
+            return;
+        }
+        for (java.util.Map<String, Object> r : rows)
+        {
+            if (r == null)
+            {
+                continue;
+            }
+            Object idObj = r.get("mirrorRowId");
+            if (idObj == null)
+            {
+                idObj = r.get("mirror_row_id");
+            }
+            if (idObj == null)
+            {
+                continue;
+            }
+            Object qtyObj = r.get("qty");
+            BigDecimal qty = BigDecimal.ZERO;
+            if (qtyObj instanceof BigDecimal)
+            {
+                qty = (BigDecimal) qtyObj;
+            }
+            else if (qtyObj instanceof Number)
+            {
+                qty = BigDecimal.valueOf(((Number) qtyObj).doubleValue());
+            }
+            map.put(visitKind + "|" + String.valueOf(idObj), qty);
         }
     }
 
@@ -2009,8 +2112,10 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     /**
      * 高值专用：追溯/条码已删导致消耗记录为空，但镜像仍标 CONSUMED 时，回退为 PENDING_CONSUME。
+     * activeNetByKey 可为批量预查结果（visitKind|id → qty）；缺省时回退单条查询。
      */
-    private void reconcileHighConsumedWithoutActiveAlloc(HisPatientChargeMirrorUnified u)
+    private void reconcileHighConsumedWithoutActiveAlloc(HisPatientChargeMirrorUnified u,
+        Map<String, BigDecimal> activeNetByKey)
     {
         String status = StringUtils.trimToEmpty(u.getProcessStatus());
         if (!"CONSUMED".equals(status) && !"PARTIALLY_CONSUMED".equals(status) && !"CONSUMING".equals(status))
@@ -2024,7 +2129,15 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
         {
             return;
         }
-        BigDecimal activeNet = hisMirrorConsumeLinkMapper.sumActiveNetAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId);
+        BigDecimal activeNet = null;
+        if (activeNetByKey != null)
+        {
+            activeNet = activeNetByKey.get(visitKind + "|" + mirrorRowId);
+        }
+        if (activeNet == null)
+        {
+            activeNet = hisMirrorConsumeLinkMapper.sumActiveNetAllocQtyForMirrorRow(tenantId, visitKind, mirrorRowId);
+        }
         if (activeNet != null && activeNet.compareTo(BigDecimal.ZERO) > 0)
         {
             return;
@@ -2299,6 +2412,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             return Collections.emptyList();
         }
         ensureUnifiedMirrorBackfill(uq.getTenantId());
+        syncPendingValueLevelBeforeListIfNeeded(uq);
         List<DepartmentConsumeReminderRowVo> list = hisPatientChargeMirrorUnifiedMapper.selectDepartmentConsumeReminderList(uq);
         if (list == null || list.isEmpty())
         {
@@ -2324,6 +2438,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             return 0L;
         }
         ensureUnifiedMirrorBackfill(uq.getTenantId());
+        syncPendingValueLevelBeforeListIfNeeded(uq);
         return hisPatientChargeMirrorUnifiedMapper.countDepartmentConsumeReminder(uq);
     }
 

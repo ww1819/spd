@@ -24,6 +24,10 @@ public interface HisMirrorConsumeLinkMapper
     BigDecimal sumActiveNetAllocQtyForMirrorRow(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
         @Param("mirrorRowId") String mirrorRowId);
 
+    /** 批量：有效净核销量，按 mirror_row_id 汇总（map 键 mirrorRowId / qty） */
+    List<java.util.Map<String, Object>> sumActiveNetAllocQtyForMirrorRows(@Param("tenantId") String tenantId,
+        @Param("visitKind") String visitKind, @Param("mirrorRowIds") List<String> mirrorRowIds);
+
     List<String> selectDistinctBillSourcesForMirror(@Param("tenantId") String tenantId, @Param("visitKind") String visitKind,
         @Param("mirrorRowId") String mirrorRowId);
 

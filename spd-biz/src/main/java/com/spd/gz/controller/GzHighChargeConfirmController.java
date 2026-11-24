@@ -2,6 +2,7 @@ package com.spd.gz.controller;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,6 +40,15 @@ public class GzHighChargeConfirmController extends BaseController
     private IGzHighChargeConfirmService gzHighChargeConfirmService;
     @Autowired
     private IGzHighValueWriteOffService gzHighValueWriteOffService;
+
+    /** 进页访问日志：前端上报分段耗时 → sys_oper_log（title=高值核销确认-进页） */
+    @PreAuthorize("@ss.hasPermi('gz:highChargeConfirm:list')")
+    @Log(title = "高值核销确认-进页", businessType = BusinessType.OTHER, isSaveResponseData = false)
+    @PostMapping("/pageAccess")
+    public AjaxResult pageAccess(@RequestBody(required = false) Map<String, Object> body)
+    {
+        return success();
+    }
 
     @PreAuthorize("@ss.hasPermi('gz:highChargeConfirm:list')")
     @GetMapping("/list")

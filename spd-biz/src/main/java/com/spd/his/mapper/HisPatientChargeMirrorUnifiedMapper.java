@@ -37,6 +37,15 @@ public interface HisPatientChargeMirrorUnifiedMapper
         @Param("tenantId") String tenantId,
         @Param("ids") List<String> ids);
 
+    /**
+     * 列表前：将待核销/核销中行的 value_level 与收费项对齐（可选计费时间范围），
+     * 使 HIGH/LOW 过滤只需 m.value_level，可走索引。
+     */
+    int syncPendingValueLevelFromChargeItem(
+        @Param("tenantId") String tenantId,
+        @Param("beginChargeDate") Date beginChargeDate,
+        @Param("endChargeDate") Date endChargeDate);
+
     /** 乐观认领：PENDING_CONSUME → CONSUMING */
     int claimMirrorProcessPending(
         @Param("tenantId") String tenantId,
