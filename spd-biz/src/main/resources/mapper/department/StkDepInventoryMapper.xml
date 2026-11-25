@@ -526,19 +526,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <delete id="deleteStkDepInventoryById" parameterType="map">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_dep_inventory
         set del_flag = 1,
-            delete_by = #{deleteBy}, delete_by_name = #{deleteByName},
+            delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto},
             delete_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteStkDepInventoryByIds" parameterType="map">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_dep_inventory
         set del_flag = 1,
-            delete_by = #{deleteBy}, delete_by_name = #{deleteByName},
+            delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto},
             delete_time = now()
         where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
