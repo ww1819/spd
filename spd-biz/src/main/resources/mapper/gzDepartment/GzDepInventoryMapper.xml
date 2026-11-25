@@ -205,6 +205,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="insertGzDepInventory" parameterType="GzDepInventory" useGeneratedKeys="true" keyProperty="id">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <bind name="_createByAuto" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
+        <bind name="_createByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         insert into gz_dep_inventory
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="materialId != null">material_id,</if>
@@ -222,6 +224,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="secondaryBarcode != null">secondary_barcode,</if>
             del_flag,
             create_by,
+            create_by_name,
             create_time,
             update_by,
             update_time,
@@ -243,6 +246,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="secondaryBarcode != null">#{secondaryBarcode},</if>
             #{delFlag},
             #{createBy},
+            #{_createByNameAuto},
             #{createTime},
             #{updateBy},
             #{updateTime},

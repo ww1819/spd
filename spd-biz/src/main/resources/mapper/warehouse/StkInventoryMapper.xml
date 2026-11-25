@@ -662,6 +662,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <insert id="insertStkInventory" parameterType="StkInventory" useGeneratedKeys="true" keyProperty="id">
+        <bind name="_createByAuto" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
+        <bind name="_createByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         insert into stk_inventory
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="qty != null">qty,</if>
@@ -690,6 +692,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="mainBarcode != null">main_barcode,</if>
             <if test="subBarcode != null">sub_barcode,</if>
             <if test="lvInhospitalPackageCode != null and lvInhospitalPackageCode != ''">lv_inhospital_package_code,</if>
+            create_by,
+            create_by_name,
+            create_time,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="qty != null">#{qty},</if>
@@ -718,6 +723,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="mainBarcode != null">#{mainBarcode},</if>
             <if test="subBarcode != null">#{subBarcode},</if>
             <if test="lvInhospitalPackageCode != null and lvInhospitalPackageCode != ''">#{lvInhospitalPackageCode},</if>
+            #{_createByAuto},
+            #{_createByNameAuto},
+            now(),
          </trim>
     </insert>
 

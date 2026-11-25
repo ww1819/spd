@@ -208,6 +208,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="insertGzDepotInventory" parameterType="GzDepotInventory" useGeneratedKeys="true" keyProperty="id">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
+        <bind name="_createByAuto" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
+        <bind name="_createByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         insert into gz_depot_inventory
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="qty != null">qty,</if>
@@ -228,6 +230,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             tenant_id,
             <if test="masterBarcode != null">master_barcode,</if>
             <if test="secondaryBarcode != null">secondary_barcode,</if>
+            create_by,
+            create_by_name,
+            create_time,
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="qty != null">#{qty},</if>
@@ -248,6 +253,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{scopedTenantId},
             <if test="masterBarcode != null">#{masterBarcode},</if>
             <if test="secondaryBarcode != null">#{secondaryBarcode},</if>
+            #{_createByAuto},
+            #{_createByNameAuto},
+            now(),
          </trim>
     </insert>
 

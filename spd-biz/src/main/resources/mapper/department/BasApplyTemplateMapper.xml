@@ -210,9 +210,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="batchInsertEntry">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        insert into bas_apply_template_entry(paren_id, material_id, warehouse_id, qty, sort_order, tenant_id, is_deleted) values
+        <bind name="_createByAuto" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
+        <bind name="_createByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
+        insert into bas_apply_template_entry(paren_id, material_id, warehouse_id, qty, sort_order, tenant_id, is_deleted, create_by, create_by_name, create_time) values
         <foreach item="item" collection="list" separator=",">
-            (#{item.parenId}, #{item.materialId}, #{item.warehouseId}, #{item.qty}, #{item.sortOrder}, #{scopedTenantId}, 0)
+            (#{item.parenId}, #{item.materialId}, #{item.warehouseId}, #{item.qty}, #{item.sortOrder}, #{scopedTenantId}, 0, #{_createByAuto}, #{_createByNameAuto}, now())
         </foreach>
     </insert>
 </mapper>

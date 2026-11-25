@@ -449,9 +449,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update purchase_order_entry set del_flag = '1', delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now(), update_time = now() where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
     </delete>
 
+    <!-- 与 uk_order_no(order_no) 全局唯一对齐：取号不按租户过滤，否则跨租户会撞号 -->
     <select id="selectMaxOrderNo" parameterType="String" resultType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select max(order_no) from purchase_order where order_no like concat('PO', #{date}, '%') and tenant_id = #{scopedTenantId}
+        select max(order_no) from purchase_order where order_no like concat('PO', #{date}, '%')
     </select>
 
     <update id="updatePushCodesSnapshot">

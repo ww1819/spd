@@ -511,8 +511,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </delete>
 
+    <!-- 与 uk_plan_no(plan_no) 全局唯一对齐：取号不按租户过滤，否则跨租户会撞号 -->
     <select id="selectMaxPlanNo" parameterType="String" resultType="String">
-        <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select max(plan_no) from purchase_plan where plan_no like concat('JH', #{date}, '%') and tenant_id = #{scopedTenantId}
+        select max(plan_no) from purchase_plan where plan_no like concat('JH', #{date}, '%')
     </select>
 </mapper>

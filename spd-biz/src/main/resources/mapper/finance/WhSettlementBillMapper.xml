@@ -120,19 +120,21 @@
     </update>
 
     <insert id="insertEntry" parameterType="com.spd.finance.domain.WhSettlementBillEntry">
+        <bind name="_createByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         insert into wh_settlement_bill_entry (id, tenant_id, paren_id, bill_no, material_id, material_name, speci, model, unit, unit_price, qty, amt,
-            batch_number, end_time, batch_no, factory_id, factory_code, factory_name, source_bill_type, source_bill_id, source_bill_no, source_entry_id, supplier_id, supplier_name, del_flag, sort_order, create_time)
+            batch_number, end_time, batch_no, factory_id, factory_code, factory_name, source_bill_type, source_bill_id, source_bill_no, source_entry_id, supplier_id, supplier_name, del_flag, sort_order, create_by_name, create_time)
         values (#{id}, #{tenantId}, #{parenId}, #{billNo}, #{materialId}, #{materialName}, #{speci}, #{model}, #{unit}, #{unitPrice}, #{qty}, #{amt},
-            #{batchNumber}, #{endTime}, #{batchNo}, #{factoryId}, #{factoryCode}, #{factoryName}, #{sourceBillType}, #{sourceBillId}, #{sourceBillNo}, #{sourceEntryId}, #{supplierId}, #{supplierName}, 0, #{sortOrder}, now())
+            #{batchNumber}, #{endTime}, #{batchNo}, #{factoryId}, #{factoryCode}, #{factoryName}, #{sourceBillType}, #{sourceBillId}, #{sourceBillNo}, #{sourceEntryId}, #{supplierId}, #{supplierName}, 0, #{sortOrder}, #{_createByNameAuto}, now())
     </insert>
 
     <insert id="insertEntryBatch">
+        <bind name="_createByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         insert into wh_settlement_bill_entry (id, tenant_id, paren_id, bill_no, material_id, material_name, speci, model, unit, unit_price, qty, amt,
-            batch_number, end_time, batch_no, factory_id, factory_code, factory_name, source_bill_type, source_bill_id, source_bill_no, source_entry_id, supplier_id, supplier_name, del_flag, sort_order, create_time)
+            batch_number, end_time, batch_no, factory_id, factory_code, factory_name, source_bill_type, source_bill_id, source_bill_no, source_entry_id, supplier_id, supplier_name, del_flag, sort_order, create_by_name, create_time)
         values
         <foreach collection="list" item="e" separator=",">
             (#{e.id}, #{e.tenantId}, #{e.parenId}, #{e.billNo}, #{e.materialId}, #{e.materialName}, #{e.speci}, #{e.model}, #{e.unit}, #{e.unitPrice}, #{e.qty}, #{e.amt},
-             #{e.batchNumber}, #{e.endTime}, #{e.batchNo}, #{e.factoryId}, #{e.factoryCode}, #{e.factoryName}, #{e.sourceBillType}, #{e.sourceBillId}, #{e.sourceBillNo}, #{e.sourceEntryId}, #{e.supplierId}, #{e.supplierName}, 0, #{e.sortOrder}, now())
+             #{e.batchNumber}, #{e.endTime}, #{e.batchNo}, #{e.factoryId}, #{e.factoryCode}, #{e.factoryName}, #{e.sourceBillType}, #{e.sourceBillId}, #{e.sourceBillNo}, #{e.sourceEntryId}, #{e.supplierId}, #{e.supplierName}, 0, #{e.sortOrder}, #{_createByNameAuto}, now())
         </foreach>
     </insert>
 
