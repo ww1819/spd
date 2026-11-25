@@ -9,6 +9,7 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
@@ -24,7 +26,11 @@ import com.alibaba.druid.pool.DruidDataSource;
 /**
  * 启动时按顺序执行 SQL 脚本：table → column → view → trigger → procedure。
  * 脚本内用单独一行的「/」分隔每条要执行的语句，按「/」分次执行。
- * <p>配置项与类同处一处，避免 DevTools RestartClassLoader 与独立 {@code SqlInitProperties} 类加载不一致导致 NoClassDefFoundError。</p>
+ * <p>
+ * 业务 Bean（如 SysConfig/SysJob）的 {@code @PostConstruct} 早于 {@link ApplicationRunner}，
+ * 因此主路径在 {@code masterDataSource} 创建时由 {@link #runEarlyIfEnabled} 执行；
+ * {@link ApplicationRunner} 仅作兜底（已执行则跳过）。
+ * </p>
  *
  * @author spd
  */
@@ -50,6 +56,9 @@ public class SqlInitRunner implements ApplicationRunner
         "focus18_data.sql",
         "data_integrity.sql"
     };
+
+    /** 全 JVM 只执行一次（早跑成功后 ApplicationRunner 跳过） */
+    private static final AtomicBoolean EXECUTED = new AtomicBoolean(false);
 
     private final DataSource masterDataSource;
     private final ResourceLoader resourceLoader;
@@ -101,6 +110,51 @@ public class SqlInitRunner implements ApplicationRunner
         this.failOnError = failOnError;
     }
 
+    /**
+     * 在 {@code masterDataSource} 工厂方法内调用（早于业务 {@code @PostConstruct}）。
+     * <p>
+     * 注意：此时 {@code @ConfigurationProperties} 尚未把 url 绑到 Druid 对象上，
+     * 必须从 Environment 读取 {@code spring.datasource.druid.master.*}，否则会出现
+     * {@code The url cannot be null} 且 EXECUTED 被置位导致 ApplicationRunner 跳过。
+     * </p>
+     */
+    public static void runEarlyIfEnabled(DataSource masterDataSource, Environment env, ResourceLoader resourceLoader)
+    {
+        if (env == null || resourceLoader == null)
+        {
+            return;
+        }
+        Boolean on = env.getProperty("spd.sql.init.enabled", Boolean.class, true);
+        if (!Boolean.TRUE.equals(on))
+        {
+            return;
+        }
+        String jdbcUrl = env.getProperty("spring.datasource.druid.master.url");
+        String jdbcUser = env.getProperty("spring.datasource.druid.master.username");
+        String jdbcPass = env.getProperty("spring.datasource.druid.master.password", "");
+        if (jdbcUrl == null || jdbcUrl.trim().isEmpty())
+        {
+            log.warn("SqlInitRunner early：Environment 尚无 master.url，改由 ApplicationRunner 执行");
+            return;
+        }
+        if (!EXECUTED.compareAndSet(false, true))
+        {
+            return;
+        }
+        String loc = normalizeLocation(env.getProperty("spd.sql.init.location", "classpath:sql/mysql/"));
+        boolean fail = Boolean.TRUE.equals(env.getProperty("spd.sql.init.fail-on-error", Boolean.class, false));
+        log.info("SqlInitRunner：用 Environment JDBC 配置早执行 material 脚本（早于业务 @PostConstruct）");
+        try
+        {
+            runMaterialScripts(masterDataSource, resourceLoader, loc, fail, jdbcUrl.trim(), jdbcUser, jdbcPass);
+        }
+        catch (RuntimeException ex)
+        {
+            EXECUTED.set(false);
+            throw ex;
+        }
+    }
+
     @Override
     public void run(ApplicationArguments args) throws Exception
     {
@@ -108,10 +162,21 @@ public class SqlInitRunner implements ApplicationRunner
         {
             return;
         }
+        if (!EXECUTED.compareAndSet(false, true))
+        {
+            log.info("SqlInitRunner：material 脚本已在 DataSource 创建时执行，跳过 ApplicationRunner");
+            return;
+        }
         String loc = normalizeLocation(location);
         boolean fail = failOnError;
+        log.info("SqlInitRunner：ApplicationRunner 兜底执行 material 脚本");
+        runMaterialScripts(masterDataSource, resourceLoader, loc, fail, null, null, null);
+    }
 
-        // 材料管理
+    private static void runMaterialScripts(DataSource masterDataSource, ResourceLoader resourceLoader,
+            String loc, boolean fail, String jdbcUrl, String jdbcUser, String jdbcPass)
+            throws IllegalStateException
+    {
         for (String scriptName : SCRIPT_ORDER)
         {
             String path = loc + "material/" + scriptName;
@@ -126,7 +191,7 @@ public class SqlInitRunner implements ApplicationRunner
             {
                 String content = readResource(resource);
                 List<String> statements = parseStatements(content);
-                executeStatements(statements, scriptName, fail);
+                executeStatements(masterDataSource, statements, scriptName, fail, jdbcUrl, jdbcUser, jdbcPass);
                 log.info("材料管理SQL 脚本执行完成: {}", scriptName);
             }
             catch (Exception e)
@@ -134,11 +199,10 @@ public class SqlInitRunner implements ApplicationRunner
                 log.error("材料管理SQL 脚本执行失败: {}", scriptName, e);
                 if (fail)
                 {
-                    throw e;
+                    throw new IllegalStateException("材料管理SQL 脚本执行失败: " + scriptName, e);
                 }
             }
         }
-
     }
 
     private static String normalizeLocation(String location)
@@ -168,7 +232,7 @@ public class SqlInitRunner implements ApplicationRunner
     /**
      * 按单独一行的「/」分隔符解析 SQL，得到多条语句。
      */
-    private List<String> parseStatements(String content)
+    private static List<String> parseStatements(String content)
     {
         List<String> statements = new ArrayList<>();
         StringBuilder current = new StringBuilder();
@@ -212,17 +276,10 @@ public class SqlInitRunner implements ApplicationRunner
         return sb.toString().trim().isEmpty();
     }
 
-    /**
-     * 使用原始 JDBC 连接执行，绕过 Druid StatFilter 对存储过程等语法的解析，避免 ParserException。
-     * 分隔符「/」的另一作用：单条语句报错不影响后续语句，每条之间独立执行，出错只记日志并继续执行下一段。
-     */
-    /**
-     * 每条 SQL 使用独立 Statement 执行，避免 CALL 存储过程返回结果集后复用同一 Statement 导致
-     * "No operations allowed after statement closed"；同时消费掉可能的结果集与更新计数。
-     */
-    private void executeStatements(List<String> statements, String scriptName, boolean failOnError) throws Exception
+    private static void executeStatements(DataSource masterDataSource, List<String> statements, String scriptName,
+            boolean failOnError, String jdbcUrl, String jdbcUser, String jdbcPass) throws Exception
     {
-        Connection conn = getRawConnection();
+        Connection conn = getRawConnection(masterDataSource, jdbcUrl, jdbcUser, jdbcPass);
         Exception firstError = null;
         try
         {
@@ -237,7 +294,7 @@ public class SqlInitRunner implements ApplicationRunner
                 if (err != null && isConnectionClosedOrTimeout(err))
                 {
                     try { conn.close(); } catch (Exception ignored) { }
-                    conn = getRawConnection();
+                    conn = getRawConnection(masterDataSource, jdbcUrl, jdbcUser, jdbcPass);
                     err = executeOne(conn, sql, scriptName);
                 }
                 if (err != null && firstError == null)
@@ -259,8 +316,7 @@ public class SqlInitRunner implements ApplicationRunner
         }
     }
 
-    /** 执行单条 SQL，成功返回 null，失败记日志并返回异常 */
-    private Exception executeOne(Connection conn, String sql, String scriptName)
+    private static Exception executeOne(Connection conn, String sql, String scriptName)
     {
         try (Statement st = conn.createStatement())
         {
@@ -289,7 +345,6 @@ public class SqlInitRunner implements ApplicationRunner
         return cause != null && cause != e && isConnectionClosedOrTimeout(cause instanceof Exception ? (Exception) cause : new Exception(cause));
     }
 
-    /** 消费 Statement 的所有结果集与更新计数，避免影响后续执行 */
     private static void consumeAllResults(Statement st) throws java.sql.SQLException
     {
         while (true)
@@ -305,26 +360,37 @@ public class SqlInitRunner implements ApplicationRunner
         }
     }
 
-    /** SQL 初始化执行时 socket 读超时（毫秒），避免大表/存储过程执行时 Read timed out 导致连接关闭 */
     private static final int SOCKET_TIMEOUT_MS = 300_000;
 
-    private Connection getRawConnection() throws Exception
+    private static Connection getRawConnection(DataSource masterDataSource, String jdbcUrl, String jdbcUser,
+            String jdbcPass) throws Exception
     {
+        // 优先 Environment 传入的 URL（工厂方法阶段 Druid 上 url 常为 null）
+        if (jdbcUrl != null && !jdbcUrl.trim().isEmpty())
+        {
+            String url = appendSocketTimeout(jdbcUrl.trim(), SOCKET_TIMEOUT_MS);
+            return DriverManager.getConnection(url, jdbcUser, jdbcPass != null ? jdbcPass : "");
+        }
         if (masterDataSource instanceof DruidDataSource)
         {
             DruidDataSource druid = (DruidDataSource) masterDataSource;
-            String url = druid.getUrl();
-            url = appendSocketTimeout(url, SOCKET_TIMEOUT_MS);
-            return DriverManager.getConnection(url, druid.getUsername(), druid.getPassword());
+            if (druid.getUrl() != null && !druid.getUrl().isEmpty())
+            {
+                String url = appendSocketTimeout(druid.getUrl(), SOCKET_TIMEOUT_MS);
+                return DriverManager.getConnection(url, druid.getUsername(), druid.getPassword());
+            }
         }
-        return masterDataSource.getConnection();
+        if (masterDataSource != null)
+        {
+            return masterDataSource.getConnection();
+        }
+        throw new IllegalStateException("SqlInitRunner：无可用 JDBC 连接（url 为空且无 DataSource）");
     }
 
     private static String appendSocketTimeout(String url, int timeoutMs)
     {
         if (url == null) return url;
-        String param = "socketTimeout=" + timeoutMs;
         if (url.contains("socketTimeout=")) return url;
-        return url + (url.contains("?") ? "&" : "?") + param;
+        return url + (url.contains("?") ? "&" : "?") + "socketTimeout=" + timeoutMs;
     }
 }
