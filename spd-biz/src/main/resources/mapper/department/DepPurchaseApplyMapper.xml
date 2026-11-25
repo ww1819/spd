@@ -515,8 +515,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <!-- 批量新增申购明细，主键ID使用自增，不再从代码端传入，避免重复主键错误 -->
     <insert id="batchDepPurchaseApplyEntry">
-        insert into dep_purchase_apply_entry(
-            parent_id,
+        insert into dep_purchase_apply_entry(parent_id,
             material_id,
             material_name,
             material_spec,
@@ -534,37 +533,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             purchase_bill_no,
             tenant_id,
             create_by,
+            create_by_name,
             create_time,
             update_by,
             update_time,
-            remark
-        )
+            remark)
         values
         <foreach item="item" index="index" collection="list" separator=",">
-            (
-                #{item.parentId},
-                #{item.materialId},
-                #{item.materialName},
-                #{item.materialSpec},
-                #{item.unit},
-                #{item.unitPrice},
-                #{item.qty},
-                #{item.amt},
-                #{item.reason},
-                #{item.supplierName},
-                #{item.brand},
-                #{item.model},
-                #{item.srcAggEntryId},
-                #{item.srcAggApplyId},
-                #{item.srcAggBillNo},
-                #{item.purchaseBillNo},
-                #{item.tenantId},
-                #{item.createBy},
-                #{item.createTime},
-                #{item.updateBy},
-                #{item.updateTime},
-                #{item.remark}
-            )
+            (#{item.parentId}, #{item.materialId}, #{item.materialName}, #{item.materialSpec}, #{item.unit}, #{item.unitPrice}, #{item.qty}, #{item.amt}, #{item.reason}, #{item.supplierName}, #{item.brand}, #{item.model}, #{item.srcAggEntryId}, #{item.srcAggApplyId}, #{item.srcAggBillNo}, #{item.purchaseBillNo}, #{item.tenantId}, #{item.createBy}, #{item.createByName}, #{item.createTime}, #{item.updateBy}, #{item.updateTime}, #{item.remark})
         </foreach>
     </insert>
 
