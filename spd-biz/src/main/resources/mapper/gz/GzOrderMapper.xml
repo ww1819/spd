@@ -285,14 +285,41 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             material_name, material_speci, material_model, material_unit_name, factory_id, factory_name,
             supplier_name, warehouse_name, finance_category_name, register_no, brand_name, hc_barcode_master_id,
             del_flag, create_date, create_by, create_by_name, create_time, update_by, update_by_name, update_time, tenant_id
-        ) values (
-            #{parentId}, #{code}, #{detailId}, #{materialId}, #{price}, #{qty}, #{batchNo}, #{batchNumber},
-            #{masterBarcode}, #{secondaryBarcode}, #{endDate}, #{inHospitalCode}, #{warehouseId}, #{supplierId},
-            #{materialName}, #{materialSpeci}, #{materialModel}, #{materialUnitName}, #{factoryId}, #{factoryName},
-            #{supplierName}, #{warehouseName}, #{financeCategoryName}, #{registerNo}, #{brandName}, #{hcBarcodeMasterId},
-            #{delFlag}, #{createDate}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{scopedTenantId}
-        )
-    </insert>
+        ) values (#{parentId},
+            #{code},
+            #{detailId},
+            #{materialId},
+            #{price},
+            #{qty},
+            #{batchNo},
+            #{batchNumber},
+            #{masterBarcode},
+            #{secondaryBarcode},
+            #{endDate},
+            #{inHospitalCode},
+            #{warehouseId},
+            #{supplierId},
+            #{materialName},
+            #{materialSpeci},
+            #{materialModel},
+            #{materialUnitName},
+            #{factoryId},
+            #{factoryName},
+            #{supplierName},
+            #{warehouseName},
+            #{financeCategoryName},
+            #{registerNo},
+            #{brandName},
+            #{hcBarcodeMasterId},
+            #{delFlag},
+            #{createDate},
+            #{createBy},
+            #{createByName},
+            #{createTime},
+            #{updateBy},
+            #{updateByName},
+            #{updateTime},
+            #{scopedTenantId})</insert>
 
     <update id="updateGzOrderEntryInhospitalcodeListSnapshots" parameterType="GzOrderEntryInhospitalcodeList">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
@@ -467,7 +494,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                ad.id adId, ad.code adCode, ad.name adName,
                (select count(1)
                 from gz_order_entry_inhospitalcode_list ic
-                where IFNULL(cr.is_deleted,0)=0 AND  ic.parent_id = gz.id
+                where ic.parent_id = gz.id
                   and ic.tenant_id = #{scopedTenantId}
                   and IFNULL(ic.del_flag, 0) = 0
                   and ic.in_hospital_code is not null

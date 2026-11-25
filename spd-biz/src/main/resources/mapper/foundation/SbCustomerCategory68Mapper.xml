@@ -69,11 +69,20 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into sb_customer_category68 (
             id, customer_id, ref_category68_id, parent_id, category68_code, category68_name, name_pinyin,
             del_flag, create_by, create_by_name, create_time, update_by, update_by_name, update_time
-        ) values (
-            #{id}, #{customerId}, #{refCategory68Id}, #{parentId}, #{category68Code}, #{category68Name}, #{namePinyin},
-            #{delFlag}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}
-        )
-    </insert>
+        ) values (#{id},
+            #{customerId},
+            #{refCategory68Id},
+            #{parentId},
+            #{category68Code},
+            #{category68Name},
+            #{namePinyin},
+            #{delFlag},
+            #{createBy},
+            #{createByName},
+            #{createTime},
+            #{updateBy},
+            #{updateByName},
+            #{updateTime})</insert>
 
     <update id="update" parameterType="com.spd.foundation.domain.SbCustomerCategory68">
         update sb_customer_category68

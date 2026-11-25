@@ -56,14 +56,37 @@
           register_no, register_name, manufacturer_name, udi_code, medical_name, medical_no, brand,
           payload_json, scm_update_time, last_sync_batch_id, apply_status, last_apply_log_id,
           del_flag, create_by, create_by_name, create_time, remark
-        ) values (
-          #{id}, #{tenantId}, #{scmArchiveId}, #{hospitalCode}, #{scmSupplierCode}, #{spdMaterialId}, #{spdSupplierId},
-          #{materialName}, #{pinyinCode}, #{specification}, #{model}, #{unitName}, #{price}, #{salePrice},
-          #{registerNo}, #{registerName}, #{manufacturerName}, #{udiCode}, #{medicalName}, #{medicalNo}, #{brand},
-          #{payloadJson}, #{scmUpdateTime}, #{lastSyncBatchId}, #{applyStatus}, #{lastApplyLogId},
-          '0', #{createBy}, now(), #{remark}
-        )
-    </insert>
+        ) values (#{id},
+          #{tenantId},
+          #{scmArchiveId},
+          #{hospitalCode},
+          #{scmSupplierCode},
+          #{spdMaterialId},
+          #{spdSupplierId},
+          #{materialName},
+          #{pinyinCode},
+          #{specification},
+          #{model},
+          #{unitName},
+          #{price},
+          #{salePrice},
+          #{registerNo},
+          #{registerName},
+          #{manufacturerName},
+          #{udiCode},
+          #{medicalName},
+          #{medicalNo},
+          #{brand},
+          #{payloadJson},
+          #{scmUpdateTime},
+          #{lastSyncBatchId},
+          #{applyStatus},
+          #{lastApplyLogId},
+          '0',
+          #{createBy},
+          #{createByName},
+          now(),
+          #{remark})</insert>
 
     <update id="update" parameterType="com.spd.foundation.domain.SpdScmMaterialArchive">
         update spd_scm_material_archive

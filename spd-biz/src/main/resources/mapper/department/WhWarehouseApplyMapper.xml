@@ -103,14 +103,23 @@
             id, tenant_id, apply_bill_no, bas_apply_id, bas_apply_bill_no, warehouse_id, department_id,
             bill_status, void_whole_flag, total_qty, total_amt, source_audit_date, del_flag,
             create_by, create_by_name, create_time, remark
-        ) values (
-            #{id}, #{tenantId}, #{applyBillNo}, #{basApplyId}, #{basApplyBillNo}, #{warehouseId}, #{departmentId},
+        ) values (#{id},
+            #{tenantId},
+            #{applyBillNo},
+            #{basApplyId},
+            #{basApplyBillNo},
+            #{warehouseId},
+            #{departmentId},
             #{billStatus},
             <choose><when test="voidWholeFlag != null">#{voidWholeFlag}</when><otherwise>0</otherwise></choose>,
-            #{totalQty}, #{totalAmt}, #{sourceAuditDate}, #{delFlag},
-            #{createBy}, #{createTime}, #{remark}
-        )
-    </insert>
+            #{totalQty},
+            #{totalAmt},
+            #{sourceAuditDate},
+            #{delFlag},
+            #{createBy},
+            #{createByName},
+            #{createTime},
+            #{remark})</insert>
 
     <insert id="insertWhWarehouseApplyEntry" parameterType="WhWarehouseApplyEntry">
         insert into wh_warehouse_apply_entry (
@@ -119,16 +128,33 @@
             batch_no, batch_number, begin_time, end_time, supplier_id, factory_id,
             line_void_status, line_void_qty, del_flag,
             create_by, create_by_name, create_time, remark
-        ) values (
-            #{id}, #{parenId}, #{tenantId}, #{basApplyId}, #{basApplyBillNo}, #{basApplyEntryId}, #{lineNo},
-            #{materialId}, #{warehouseId}, #{stkInventoryId}, #{unitPrice}, #{qty}, #{price}, #{amt},
-            #{batchNo}, #{batchNumber}, #{beginTime}, #{endTime}, #{supplierId}, #{factoryId},
+        ) values (#{id},
+            #{parenId},
+            #{tenantId},
+            #{basApplyId},
+            #{basApplyBillNo},
+            #{basApplyEntryId},
+            #{lineNo},
+            #{materialId},
+            #{warehouseId},
+            #{stkInventoryId},
+            #{unitPrice},
+            #{qty},
+            #{price},
+            #{amt},
+            #{batchNo},
+            #{batchNumber},
+            #{beginTime},
+            #{endTime},
+            #{supplierId},
+            #{factoryId},
             <choose><when test="lineVoidStatus != null">#{lineVoidStatus}</when><otherwise>0</otherwise></choose>,
             <choose><when test="lineVoidQty != null">#{lineVoidQty}</when><otherwise>0</otherwise></choose>,
             #{delFlag},
-            #{createBy}, #{createTime}, #{remark}
-        )
-    </insert>
+            #{createBy},
+            #{createByName},
+            #{createTime},
+            #{remark})</insert>
 
     <select id="selectWhWarehouseApplyById" resultMap="WhWarehouseApplyResult">
         select m.id, m.tenant_id, m.apply_bill_no, m.bas_apply_id, m.bas_apply_bill_no, m.warehouse_id, m.department_id,
@@ -409,10 +435,20 @@
             id, tenant_id, wh_apply_id, wh_apply_bill_no, wh_apply_entry_id,
             ck_bill_id, ck_bill_no, ck_entry_id, ref_qty, ref_amt, link_status, del_flag,
             create_by, create_by_name, create_time, remark
-        ) values (
-            #{id}, #{tenantId}, #{whApplyId}, #{whApplyBillNo}, #{whApplyEntryId},
-            #{ckBillId}, #{ckBillNo}, #{ckEntryId}, #{refQty}, #{refAmt}, #{linkStatus}, #{delFlag},
-            #{createBy}, #{createTime}, #{remark}
-        )
-    </insert>
+        ) values (#{id},
+            #{tenantId},
+            #{whApplyId},
+            #{whApplyBillNo},
+            #{whApplyEntryId},
+            #{ckBillId},
+            #{ckBillNo},
+            #{ckEntryId},
+            #{refQty},
+            #{refAmt},
+            #{linkStatus},
+            #{delFlag},
+            #{createBy},
+            #{createByName},
+            #{createTime},
+            #{remark})</insert>
 </mapper>

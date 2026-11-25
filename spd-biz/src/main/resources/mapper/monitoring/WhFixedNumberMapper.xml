@@ -193,8 +193,7 @@
         insert into wh_fixed_number
         (id, material_id, warehouse_id, upper_limit, lower_limit, expiry_reminder, monitoring, location, location_id, del_flag, enable_status, tenant_id, remark, create_by, create_by_name, create_time)
         values
-        (#{id}, #{materialId}, #{warehouseId}, #{upperLimit}, #{lowerLimit}, #{expiryReminder}, #{monitoring}, #{location}, #{locationId}, 0, '0', #{tenantId}, #{remark}, #{createBy}, now())
-    </insert>
+        (#{id}, #{materialId}, #{warehouseId}, #{upperLimit}, #{lowerLimit}, #{expiryReminder}, #{monitoring}, #{location}, #{locationId}, 0, '0', #{tenantId}, #{remark}, #{createBy}, #{createByName}, now())</insert>
 
     <update id="updateWhFixedNumber" parameterType="WhFixedNumber">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />

@@ -263,12 +263,23 @@
             id, tenant_id, purchase_bill_no, purchase_bill_date, department_id, user_id,
             purchase_bill_status, split_status, total_amount, urgency_level, expected_delivery_date,
             reject_reason, del_flag, create_by, create_by_name, create_time, remark
-        ) values (
-            #{id}, #{tenantId}, #{purchaseBillNo}, #{purchaseBillDate}, #{departmentId}, #{userId},
-            #{purchaseBillStatus}, #{splitStatus}, #{totalAmount}, #{urgencyLevel}, #{expectedDeliveryDate},
-            #{rejectReason}, #{delFlag}, #{createBy}, #{createTime}, #{remark}
-        )
-    </insert>
+        ) values (#{id},
+            #{tenantId},
+            #{purchaseBillNo},
+            #{purchaseBillDate},
+            #{departmentId},
+            #{userId},
+            #{purchaseBillStatus},
+            #{splitStatus},
+            #{totalAmount},
+            #{urgencyLevel},
+            #{expectedDeliveryDate},
+            #{rejectReason},
+            #{delFlag},
+            #{createBy},
+            #{createByName},
+            #{createTime},
+            #{remark})</insert>
 
     <update id="updateDepPurchaseApplyAgg" parameterType="DepPurchaseApplyAgg">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>

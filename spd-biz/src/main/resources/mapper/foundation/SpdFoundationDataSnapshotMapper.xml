@@ -4,8 +4,7 @@
 
     <insert id="insert">
         INSERT INTO spd_foundation_data_snapshot (id, tenant_id, entity_type, entity_id, before_json, after_json, create_by, create_by_name, create_time, is_deleted)
-        VALUES (#{id}, #{tenantId}, #{entityType}, #{entityId}, #{beforeJson}, #{afterJson}, #{createBy}, now(), 0)
-    </insert>
+        VALUES (#{id}, #{tenantId}, #{entityType}, #{entityId}, #{beforeJson}, #{afterJson}, #{createBy}, #{createByName}, now(), 0)</insert>
 
     <select id="selectList" resultType="com.spd.foundation.domain.SpdFoundationDataSnapshot">
         select id, tenant_id as tenantId, entity_type as entityType, entity_id as entityId,

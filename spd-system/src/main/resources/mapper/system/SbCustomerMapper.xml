@@ -97,15 +97,25 @@
       status, planned_disable_time, hc_status, hc_planned_disable_time,
       remark, create_by, create_by_name, create_time
     )
-    values (
-      #{customerId}, #{customerName}, #{customerCode}, #{tenantKey},
-      #{socialCreditCode}, #{address}, #{contactName}, #{contactPhone},
-      ifnull(#{priceDecimalPlaces}, 3), ifnull(#{amountDecimalPlaces}, 3),
+    values (#{customerId},
+      #{customerName},
+      #{customerCode},
+      #{tenantKey},
+      #{socialCreditCode},
+      #{address},
+      #{contactName},
+      #{contactPhone},
+      ifnull(#{priceDecimalPlaces}, 3),
+      ifnull(#{amountDecimalPlaces}, 3),
       ifnull(nullif(#{moneyRoundMode}, ''), 'HALF_UP'),
-      #{status}, #{plannedDisableTime}, ifnull(#{hcStatus}, '0'), #{hcPlannedDisableTime},
-      #{remark}, #{createBy}, sysdate()
-    )
-  </insert>
+      #{status},
+      #{plannedDisableTime},
+      ifnull(#{hcStatus}, '0'),
+      #{hcPlannedDisableTime},
+      #{remark},
+      #{createBy},
+      #{createByName},
+      sysdate())</insert>
 
   <update id="updateSbCustomer" parameterType="com.spd.system.domain.SbCustomer">
     update sb_customer

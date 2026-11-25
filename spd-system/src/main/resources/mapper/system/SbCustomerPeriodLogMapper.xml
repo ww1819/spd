@@ -39,6 +39,5 @@
 
   <insert id="insert" parameterType="com.spd.system.domain.SbCustomerPeriodLog">
     insert into sb_customer_period_log (period_id, customer_id, period_type, start_time, end_time, create_by, create_by_name, create_time)
-    values (#{periodId}, #{customerId}, #{periodType}, #{startTime}, #{endTime}, #{createBy}, #{createTime})
-  </insert>
+    values (#{periodId}, #{customerId}, #{periodType}, #{startTime}, #{endTime}, #{createBy}, #{createByName}, #{createTime})</insert>
 </mapper>

@@ -42,8 +42,7 @@
 
   <insert id="insert" parameterType="com.spd.system.domain.hc.HcCustomerMenu">
     INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_by_name, create_time, is_deleted)
-    VALUES (#{tenantId}, #{menuId}, ifnull(#{status},'0'), ifnull(#{isEnabled},'1'), #{createBy}, now(), 0)
-  </insert>
+    VALUES (#{tenantId}, #{menuId}, ifnull(#{status},'0'), ifnull(#{isEnabled},'1'), #{createBy}, #{createByName}, now(), 0)</insert>
 
   <insert id="batchInsert">
     insert into hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_by_name, create_time, is_deleted)

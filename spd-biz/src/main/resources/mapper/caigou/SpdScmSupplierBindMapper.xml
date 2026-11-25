@@ -49,8 +49,7 @@
 
     <insert id="insert" parameterType="com.spd.caigou.domain.SpdScmSupplierBind">
         insert into spd_scm_supplier_bind(id, tenant_id, supplier_id, scm_supplier_code, remark, del_flag, create_by, create_by_name, create_time)
-        values(#{id}, #{tenantId}, #{supplierId}, #{scmSupplierCode}, #{remark}, '0', #{createBy}, now())
-    </insert>
+        values(#{id}, #{tenantId}, #{supplierId}, #{scmSupplierCode}, #{remark}, '0', #{createBy}, #{createByName}, now())</insert>
 
     <update id="updateByTenantAndSupplier" parameterType="com.spd.caigou.domain.SpdScmSupplierBind">
         update spd_scm_supplier_bind

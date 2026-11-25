@@ -324,12 +324,28 @@
             bill_no, adjust_type, supplier_id, bill_date, contact_name, contact_phone,
             bill_status, audit_by, audit_by_name, audit_date, print_by, print_date, adjust_reason, remark, del_flag,
             tenant_id, create_by, create_by_name, create_time, update_by, update_by_name, update_time
-        ) values (
-            #{billNo}, #{adjustType}, #{supplierId}, #{billDate}, #{contactName}, #{contactPhone},
-            #{billStatus}, #{auditBy}, #{auditDate}, #{printBy}, #{printDate}, #{adjustReason}, #{remark}, #{delFlag},
-            #{scopedTenantId}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}
-        )
-    </insert>
+        ) values (#{billNo},
+            #{adjustType},
+            #{supplierId},
+            #{billDate},
+            #{contactName},
+            #{contactPhone},
+            #{billStatus},
+            #{auditBy},
+            #{auditByName},
+            #{auditDate},
+            #{printBy},
+            #{printDate},
+            #{adjustReason},
+            #{remark},
+            #{delFlag},
+            #{scopedTenantId},
+            #{createBy},
+            #{createByName},
+            #{createTime},
+            #{updateBy},
+            #{updateByName},
+            #{updateTime})</insert>
 
     <update id="updatePurchasePriceAdjust" parameterType="com.spd.caigou.domain.PurchasePriceAdjust">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
@@ -373,13 +389,28 @@
             speci, model, unit_name, old_price, new_price, finance_class, manufacturer,
             reg_no, reg_valid_date, pack_speci, remark, del_flag, tenant_id,
             create_by, create_by_name, create_time
-        ) values (
-            #{parentId}, #{billNo}, #{lineNo}, #{materialId}, #{materialCode}, #{materialName},
-            #{speci}, #{model}, #{unitName}, #{oldPrice}, #{newPrice}, #{financeClass}, #{manufacturer},
-            #{regNo}, #{regValidDate}, #{packSpeci}, #{remark}, #{delFlag}, #{tenantId},
-            #{createBy}, #{createTime}
-        )
-    </insert>
+        ) values (#{parentId},
+            #{billNo},
+            #{lineNo},
+            #{materialId},
+            #{materialCode},
+            #{materialName},
+            #{speci},
+            #{model},
+            #{unitName},
+            #{oldPrice},
+            #{newPrice},
+            #{financeClass},
+            #{manufacturer},
+            #{regNo},
+            #{regValidDate},
+            #{packSpeci},
+            #{remark},
+            #{delFlag},
+            #{tenantId},
+            #{createBy},
+            #{createByName},
+            #{createTime})</insert>
 
     <insert id="batchInsertEntry">
         insert into purchase_price_adjust_entry (

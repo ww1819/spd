@@ -809,12 +809,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             tenant_id, dep_pur_apply_id, dep_pur_apply_bill_no, dep_pur_apply_entry_id,
             ck_bill_id, ck_bill_no, ck_entry_id, ref_qty, ref_amt, link_status, del_flag,
             create_by, create_by_name, create_time, remark
-        ) values (
-            #{tenantId}, #{depPurApplyId}, #{depPurApplyBillNo}, #{depPurApplyEntryId},
-            #{ckBillId}, #{ckBillNo}, #{ckEntryId}, #{refQty}, #{refAmt}, #{linkStatus}, #{delFlag},
-            #{createBy}, #{createTime}, #{remark}
-        )
-    </insert>
+        ) values (#{tenantId},
+            #{depPurApplyId},
+            #{depPurApplyBillNo},
+            #{depPurApplyEntryId},
+            #{ckBillId},
+            #{ckBillNo},
+            #{ckEntryId},
+            #{refQty},
+            #{refAmt},
+            #{linkStatus},
+            #{delFlag},
+            #{createBy},
+            #{createByName},
+            #{createTime},
+            #{remark})</insert>
 
     <update id="refreshPurchasePlanRefStatus">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>

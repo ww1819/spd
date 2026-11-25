@@ -406,9 +406,41 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <insert id="insertDeptStocktakingEntrySingle" parameterType="StkIoStocktakingEntry" useGeneratedKeys="true" keyProperty="id">
         insert into stk_io_stocktaking_entry( paren_id, stock_no, commodity_id, material_id, unit_price, qty, price, amt, batch_no, kc_no, kc_no_str, dep_inventory_id, warehouse_id_str, department_id_str, supplier_id_str, batch_number, begin_time, end_time, del_flag, remark, stock_qty, profit_qty, profit_loss_flag, stock_amount, profit_amount, return_warehouse_id, supplier_id, counted_flag, tenant_id, create_by, create_by_name, create_time, update_by, update_by_name, update_time)
-        values ( #{parenId}, #{stockNo}, #{commodityId}, #{materialId}, #{unitPrice}, #{qty}, #{price}, #{amt}, #{batchNo}, #{kcNo}, #{kcNoStr}, #{depInventoryId}, #{warehouseIdStr}, #{departmentIdStr}, #{supplierIdStr}, #{batchNumber}, #{beginTime}, #{endTime}, #{delFlag}, #{remark}, #{stockQty}, #{profitQty}, #{profitLossFlag}, #{stockAmount}, #{profitAmount}, #{returnWarehouseId}, #{supplierId}, COALESCE(#{countedFlag}, 0),
-                 (select t.tenant_id from stk_io_stocktaking t where t.id = #{parenId} limit 1), #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
-    </insert>
+        values (#{parenId},
+                 #{stockNo},
+                 #{commodityId},
+                 #{materialId},
+                 #{unitPrice},
+                 #{qty},
+                 #{price},
+                 #{amt},
+                 #{batchNo},
+                 #{kcNo},
+                 #{kcNoStr},
+                 #{depInventoryId},
+                 #{warehouseIdStr},
+                 #{departmentIdStr},
+                 #{supplierIdStr},
+                 #{batchNumber},
+                 #{beginTime},
+                 #{endTime},
+                 #{delFlag},
+                 #{remark},
+                 #{stockQty},
+                 #{profitQty},
+                 #{profitLossFlag},
+                 #{stockAmount},
+                 #{profitAmount},
+                 #{returnWarehouseId},
+                 #{supplierId},
+                 COALESCE(#{countedFlag}, 0),
+                 (select t.tenant_id from stk_io_stocktaking t where t.id = #{parenId} limit 1),
+                 #{createBy},
+                 #{createByName},
+                 #{createTime},
+                 #{updateBy},
+                 #{updateByName},
+                 #{updateTime})</insert>
 
     <update id="deleteDeptStocktakingEntryByParenIdExceptIds">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />

@@ -136,8 +136,7 @@
         insert into dept_fixed_number
         (id, material_id, department_id, upper_limit, lower_limit, expiry_reminder, monitoring, location, location_id, del_flag, tenant_id, create_by, create_by_name, create_time)
         values
-        (#{id}, #{materialId}, #{departmentId}, #{upperLimit}, #{lowerLimit}, #{expiryReminder}, #{monitoring}, #{location}, #{locationId}, 0, #{tenantId}, #{createBy}, now())
-    </insert>
+        (#{id}, #{materialId}, #{departmentId}, #{upperLimit}, #{lowerLimit}, #{expiryReminder}, #{monitoring}, #{location}, #{locationId}, 0, #{tenantId}, #{createBy}, #{createByName}, now())</insert>
 
     <update id="updateDeptFixedNumber" parameterType="DeptFixedNumber">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />

@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS `fd_department` (
   `parent_id` bigint DEFAULT NULL COMMENT '上级科室ID（NULL表示客户下顶级）',
   `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
   `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_fd_department_tenant_his` (`tenant_id`,`his_id`),
   KEY `idx_fd_department_tenant_code` (`tenant_id`,`code`),
@@ -309,6 +310,7 @@ CREATE TABLE IF NOT EXISTS `fd_warehouse` (
   `inbound_expiry_warn_days` int DEFAULT 60 COMMENT '入库有效期临近提示天数',
   `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
   `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='仓库';
 /
@@ -837,6 +839,8 @@ CREATE TABLE IF NOT EXISTS `wh_settlement_bill_entry` (
   `sort_order` int(11) DEFAULT 0 COMMENT '排序',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_wh_settlement_entry_paren` (`paren_id`),
   KEY `idx_wh_settlement_entry_tenant` (`tenant_id`),
@@ -930,6 +934,8 @@ CREATE TABLE IF NOT EXISTS `supp_settlement_bill_entry` (
   `sort_order` int(11) DEFAULT 0 COMMENT '排序',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_supp_settlement_entry_paren` (`paren_id`),
   KEY `idx_supp_settlement_entry_tenant` (`tenant_id`),
@@ -1545,6 +1551,7 @@ CREATE TABLE IF NOT EXISTS `gz_refund_stock_entry` (
   `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
   `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_refund_stock_entry_paren` (`paren_id`),
   KEY `idx_gz_refund_stock_entry_batch` (`batch_no`),
@@ -1718,6 +1725,7 @@ CREATE TABLE IF NOT EXISTS `gz_traceability_entry` (
   `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
   `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_gz_trace_entry_parent` (`parent_id`),
   KEY `idx_gz_trace_entry_inv` (`inventory_id`),
@@ -1938,6 +1946,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_bill_entry` (
   `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
   `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_stk_io_entry_paren` (`paren_id`),
   KEY `idx_stk_io_entry_material` (`material_id`),
@@ -2502,6 +2511,7 @@ CREATE TABLE IF NOT EXISTS `stk_io_stocktaking_entry` (
   `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
   `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_stk_ste_entry_uuid` (`entry_uuid`),
   KEY `idx_stk_ste_paren` (`paren_id`),
@@ -2740,6 +2750,9 @@ CREATE TABLE IF NOT EXISTS `t_hc_ks_xh_entry_ref` (
   `remark` varchar(500) DEFAULT NULL COMMENT '备注',
   `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除 0正常 1已删',
   `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_ks_xh_ref_tenant` (`tenant_id`),
   KEY `idx_ks_xh_ref_consume` (`consume_id`,`consume_entry_id`),
@@ -3926,6 +3939,8 @@ CREATE TABLE IF NOT EXISTS `new_product_apply_detail` (
   `delete_by` varchar(64) DEFAULT NULL COMMENT '删除者user_id',
   `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
   `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   PRIMARY KEY (`id`),
   KEY `idx_npa_detail_parent` (`parent_id`),
   KEY `idx_npa_detail_no` (`apply_no`),
@@ -4542,6 +4557,7 @@ CREATE TABLE IF NOT EXISTS `purchase_price_adjust_entry` (
   `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
   `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
   `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `audit_by_name` varchar(64) DEFAULT NULL COMMENT '审核人user_name',
   PRIMARY KEY (`id`),
   KEY `idx_price_adjust_entry_parent` (`parent_id`),
   KEY `idx_price_adjust_entry_material` (`material_id`)
@@ -4735,5 +4751,260 @@ CREATE TABLE IF NOT EXISTS `fd_location_change_log` (
   KEY `idx_location_log_time` (`change_time`),
   KEY `idx_location_log_tenant` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='货位档案变更记录';
+/
+
+-- ========== RuoYi system tables (audit name sync) ==========
+-- RuoYi/system boot table (synced for *_name)
+CREATE TABLE IF NOT EXISTS `sys_config` (
+  `config_id` int NOT NULL AUTO_INCREMENT COMMENT '参数主键',
+  `config_name` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '参数名称',
+  `config_key` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '参数键名',
+  `config_value` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '参数键值',
+  `config_type` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT 'N' COMMENT '系统内置（Y是 N否）',
+  `create_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '创建者',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '更新者',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`config_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='参数配置表';
+/
+
+-- RuoYi/system boot table (synced for *_name)
+CREATE TABLE IF NOT EXISTS `sys_job` (
+  `job_id` bigint NOT NULL AUTO_INCREMENT COMMENT '任务ID',
+  `job_name` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '' COMMENT '任务名称',
+  `job_group` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT 'DEFAULT' COMMENT '任务组名',
+  `invoke_target` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '调用目标字符串',
+  `cron_expression` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT 'cron执行表达式',
+  `misfire_policy` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '3' COMMENT '计划执行错误策略（1立即执行 2执行一次 3放弃执行）',
+  `concurrent` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '1' COMMENT '是否并发执行（0允许 1禁止）',
+  `status` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '0' COMMENT '状态（0正常 1暂停）',
+  `create_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '创建者',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '更新者',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '备注信息',
+  PRIMARY KEY (`job_id`,`job_name`,`job_group`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='定时任务调度表';
+/
+
+-- RuoYi/system boot table (synced for *_name)
+CREATE TABLE IF NOT EXISTS `sys_job_log` (
+  `job_log_id` bigint NOT NULL AUTO_INCREMENT COMMENT '任务日志ID',
+  `job_name` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '任务名称',
+  `job_group` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '任务组名',
+  `invoke_target` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '调用目标字符串',
+  `job_message` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '日志信息',
+  `status` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '0' COMMENT '执行状态（0正常 1失败）',
+  `exception_info` varchar(2000) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '异常信息',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (`job_log_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='定时任务调度日志表';
+/
+
+-- RuoYi/system boot table (synced for *_name)
+CREATE TABLE IF NOT EXISTS `sys_dict_type` (
+  `dict_id` bigint NOT NULL AUTO_INCREMENT COMMENT '字典主键',
+  `dict_name` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '字典名称',
+  `dict_type` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '字典类型',
+  `status` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '0' COMMENT '状态（0正常 1停用）',
+  `create_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '创建者',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '更新者',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`dict_id`) USING BTREE,
+  UNIQUE KEY `dict_type` (`dict_type`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='字典类型表';
+/
+
+-- RuoYi/system boot table (synced for *_name)
+CREATE TABLE IF NOT EXISTS `sys_dict_data` (
+  `dict_code` bigint NOT NULL AUTO_INCREMENT COMMENT '字典编码',
+  `dict_sort` int DEFAULT '0' COMMENT '字典排序',
+  `dict_label` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '字典标签',
+  `dict_value` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '字典键值',
+  `dict_type` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '字典类型',
+  `css_class` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '样式属性（其他样式扩展）',
+  `list_class` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '表格回显样式',
+  `is_default` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT 'N' COMMENT '是否默认（Y是 N否）',
+  `status` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '0' COMMENT '状态（0正常 1停用）',
+  `create_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '创建者',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '更新者',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`dict_code`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='字典数据表';
+/
+
+-- RuoYi/system boot table (synced for *_name)
+CREATE TABLE IF NOT EXISTS `sys_notice` (
+  `notice_id` int NOT NULL AUTO_INCREMENT COMMENT '公告ID',
+  `notice_title` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '公告标题',
+  `notice_type` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '公告类型（1通知 2公告）',
+  `notice_content` longblob COMMENT '公告内容',
+  `status` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '0' COMMENT '公告状态（0正常 1关闭）',
+  `create_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '创建者',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '更新者',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '备注',
+  `tenant_id` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '租户ID',
+  PRIMARY KEY (`notice_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='通知公告表';
+/
+
+-- RuoYi/system boot table (synced for *_name)
+CREATE TABLE IF NOT EXISTS `sys_dept` (
+  `dept_id` bigint NOT NULL AUTO_INCREMENT COMMENT '部门id',
+  `parent_id` bigint DEFAULT '0' COMMENT '父部门id',
+  `ancestors` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '祖级列表',
+  `dept_name` varchar(30) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '部门名称',
+  `order_num` int DEFAULT '0' COMMENT '显示顺序',
+  `leader` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '负责人',
+  `phone` varchar(11) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '联系电话',
+  `email` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '邮箱',
+  `status` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '0' COMMENT '部门状态（0正常 1停用）',
+  `del_flag` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '0',
+  `create_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '创建者',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '更新者',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `tenant_id` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '租户ID',
+  `delete_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '删除者',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`dept_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='部门表';
+/
+
+-- RuoYi/system boot table (synced for *_name)
+CREATE TABLE IF NOT EXISTS `sys_menu` (
+  `menu_id` bigint NOT NULL AUTO_INCREMENT COMMENT '菜单ID',
+  `menu_name` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '菜单名称',
+  `parent_id` bigint DEFAULT '0' COMMENT '父菜单ID',
+  `order_num` int DEFAULT '0' COMMENT '显示顺序',
+  `path` varchar(200) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '路由地址',
+  `component` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '组件路径',
+  `query` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '路由参数',
+  `is_frame` int DEFAULT '1' COMMENT '是否为外链（0是 1否）',
+  `is_cache` int DEFAULT '0' COMMENT '是否缓存（0缓存 1不缓存）',
+  `menu_type` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '菜单类型（M目录 C菜单 F按钮）',
+  `visible` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '0' COMMENT '菜单状态（0显示 1隐藏）',
+  `status` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '0' COMMENT '菜单状态（0正常 1停用）',
+  `perms` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '权限标识',
+  `icon` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '#' COMMENT '菜单图标',
+  `create_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '创建者',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '更新者',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '备注',
+  `is_platform` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '0' COMMENT '是否仅平台管理（0否 1是）',
+  `default_open_to_customer` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '0' COMMENT '耗材默认对客户开放（0否 1是）',
+  PRIMARY KEY (`menu_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='菜单权限表';
+/
+
+-- RuoYi/system boot table (synced for *_name)
+CREATE TABLE IF NOT EXISTS `sys_post` (
+  `post_id` bigint NOT NULL AUTO_INCREMENT COMMENT '岗位ID',
+  `post_code` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '岗位编码',
+  `post_name` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '岗位名称',
+  `post_sort` int NOT NULL COMMENT '显示顺序',
+  `status` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '状态（0正常 1停用）',
+  `create_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '创建者',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '更新者',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '备注',
+  `tenant_id` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '租户ID(同sb_customer.customer_id)',
+  `delete_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '删除者',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `message_reminder_keys` varchar(128) DEFAULT NULL COMMENT '消息提醒权限keys(库房/科室/数据等)',
+  `message_reminder_popup_keys` varchar(128) DEFAULT NULL COMMENT '登录弹窗消息提醒keys(库房/科室/数据等)',
+  `home_page_keys` varchar(64) DEFAULT NULL COMMENT 'home page auth keys simple,full,purchase,warehouse,department; empty=default simple',
+  PRIMARY KEY (`post_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='岗位信息表';
+/
+
+-- RuoYi/system boot table (synced for *_name)
+CREATE TABLE IF NOT EXISTS `sys_role` (
+  `role_id` bigint NOT NULL AUTO_INCREMENT COMMENT '角色ID',
+  `role_name` varchar(30) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '角色名称',
+  `role_key` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '角色权限字符串',
+  `role_sort` int NOT NULL COMMENT '显示顺序',
+  `data_scope` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '1' COMMENT '数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）',
+  `menu_check_strictly` tinyint(1) DEFAULT '1' COMMENT '菜单树选择项是否关联显示',
+  `dept_check_strictly` tinyint(1) DEFAULT '1' COMMENT '部门树选择项是否关联显示',
+  `status` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '角色状态（0正常 1停用）',
+  `del_flag` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '0',
+  `create_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '创建者',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '更新者',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '备注',
+  PRIMARY KEY (`role_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='角色信息表';
+/
+
+-- RuoYi/system boot table (synced for *_name)
+CREATE TABLE IF NOT EXISTS `sys_user` (
+  `user_id` bigint NOT NULL AUTO_INCREMENT COMMENT '用户ID',
+  `dept_id` bigint DEFAULT NULL COMMENT '部门ID',
+  `user_name` varchar(30) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '用户账号',
+  `nick_name` varchar(30) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT '用户昵称',
+  `user_type` varchar(2) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '00' COMMENT '用户类型（00系统用户）',
+  `email` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '用户邮箱',
+  `phonenumber` varchar(11) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '手机号码',
+  `sex` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '0' COMMENT '用户性别（0男 1女 2未知）',
+  `avatar` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '头像地址',
+  `password` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '密码',
+  `status` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '0' COMMENT '帐号状态（0正常 1停用）',
+  `del_flag` char(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '0',
+  `login_ip` varchar(128) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '最后登录IP',
+  `login_date` datetime DEFAULT NULL COMMENT '最后登录时间',
+  `create_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '创建者',
+  `create_by_name` varchar(64) DEFAULT NULL COMMENT '创建者user_name',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT '' COMMENT '更新者',
+  `update_by_name` varchar(64) DEFAULT NULL COMMENT '更新者user_name',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '备注',
+  `del_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `del_by` varchar(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '删除者',
+  `his_id` varchar(100) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT 'his系统工作人员ID，或其他第三方系统科室工作人员ID',
+  `referred_name` varchar(64) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '名称简码',
+  `customer_id` char(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT '客户ID(UUID7)，归属客户/租户',
+  `his_identity_id` varchar(64) DEFAULT NULL COMMENT 'HIS用户身份ID（众阳 identity_id）',
+  `message_reminder_keys` varchar(128) DEFAULT NULL COMMENT '消息提醒权限keys(库房/科室/数据等)',
+  `message_reminder_popup_keys` varchar(128) DEFAULT NULL COMMENT '登录弹窗消息提醒keys(库房/科室/数据等)',
+  `home_page_keys` varchar(64) DEFAULT NULL COMMENT 'home page auth keys simple,full,purchase,warehouse,department; empty=default simple',
+  `delete_by_name` varchar(64) DEFAULT NULL COMMENT '删除者user_name',
+  PRIMARY KEY (`user_id`) USING BTREE,
+  UNIQUE KEY `uk_sys_user_name_customer` (`user_name`,`customer_id`) USING BTREE,
+  UNIQUE KEY `uk_sys_user_customer_his_identity` (`customer_id`,`his_identity_id`),
+  UNIQUE KEY `uk_sys_user_customer_his` (`customer_id`,`his_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 ROW_FORMAT=DYNAMIC COMMENT='用户信息表';
 /
 

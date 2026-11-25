@@ -1108,12 +1108,20 @@
             id, tenant_id, confirm_no, department_id, warehouse_id,
             confirm_time, confirm_by, period_begin, period_end, remark,
             del_flag, create_by, create_by_name, create_time
-        ) values (
-            #{id}, #{tenantId}, #{confirmNo}, #{departmentId}, #{warehouseId},
-            #{confirmTime}, #{confirmBy}, #{periodBegin}, #{periodEnd}, #{remark},
-            ifnull(#{delFlag}, 0), #{createBy}, #{createTime}
-        )
-    </insert>
+        ) values (#{id},
+            #{tenantId},
+            #{confirmNo},
+            #{departmentId},
+            #{warehouseId},
+            #{confirmTime},
+            #{confirmBy},
+            #{periodBegin},
+            #{periodEnd},
+            #{remark},
+            ifnull(#{delFlag}, 0),
+            #{createBy},
+            #{createByName},
+            #{createTime})</insert>
 
     <insert id="insertConfirmLineBatch">
         insert into gz_high_consume_confirm_line (

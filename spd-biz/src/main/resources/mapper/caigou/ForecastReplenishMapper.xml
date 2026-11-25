@@ -133,12 +133,21 @@
       task_no, warehouse_id, is_gz, calc_days, lead_time_days, safety_days,
       status, generated_plan_ids, generated_plan_nos, tenant_id, del_flag,
       create_by, create_by_name, create_time, remark
-    ) values (
-      #{taskNo}, #{warehouseId}, #{isGz}, #{calcDays}, #{leadTimeDays}, #{safetyDays},
-      #{status}, #{generatedPlanIds}, #{generatedPlanNos}, #{tenantId}, '0',
-      #{createBy}, #{createTime}, #{remark}
-    )
-  </insert>
+    ) values (#{taskNo},
+      #{warehouseId},
+      #{isGz},
+      #{calcDays},
+      #{leadTimeDays},
+      #{safetyDays},
+      #{status},
+      #{generatedPlanIds},
+      #{generatedPlanNos},
+      #{tenantId},
+      '0',
+      #{createBy},
+      #{createByName},
+      #{createTime},
+      #{remark})</insert>
 
   <update id="updateTask">
     update purchase_forecast_task

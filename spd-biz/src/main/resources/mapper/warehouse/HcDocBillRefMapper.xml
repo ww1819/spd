@@ -12,7 +12,7 @@
             #{id}, #{tenantId}, #{bizDomain}, #{refType}, #{srcBillKind}, #{srcBillId}, #{srcBillNo}, #{srcEntryId}, #{srcEntryLineNo},
             #{tgtBillKind}, #{tgtBillId}, #{tgtBillNo}, #{tgtEntryId}, #{lineNo}, #{refQty}, #{refAmt},
             #{lockWarehouseId}, #{lockSupplierId}, #{lockDepartmentId}, #{remark},
-            IFNULL(#{delFlag}, 0), #{createBy}, now()
+            IFNULL(#{delFlag}, 0), #{createBy}, #{createByName}, now()
         )
     </insert>
 

@@ -15,11 +15,18 @@
         insert into sb_tenant_setting (
             id, tenant_id, setting_key, setting_value, remark, del_flag,
             create_by, create_by_name, create_time, update_by, update_by_name, update_time
-        ) values (
-            #{id}, #{tenantId}, #{settingKey}, #{settingValue}, #{remark}, ifnull(#{delFlag}, 0),
-            #{createBy}, #{createTime}, #{updateBy}, #{updateTime}
-        )
-    </insert>
+        ) values (#{id},
+            #{tenantId},
+            #{settingKey},
+            #{settingValue},
+            #{remark},
+            ifnull(#{delFlag}, 0),
+            #{createBy},
+            #{createByName},
+            #{createTime},
+            #{updateBy},
+            #{updateByName},
+            #{updateTime})</insert>
 
     <update id="updateSbTenantSetting">
         update sb_tenant_setting

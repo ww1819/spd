@@ -36,6 +36,5 @@
 
   <insert id="insert" parameterType="com.spd.system.domain.hc.HcCustomerPeriodLog">
     INSERT INTO hc_customer_period_log (period_id, tenant_id, period_type, start_time, end_time, create_by, create_by_name, create_time, is_deleted)
-    VALUES (#{periodId}, #{tenantId}, #{periodType}, #{startTime}, #{endTime}, #{createBy}, #{createTime}, 0)
-  </insert>
+    VALUES (#{periodId}, #{tenantId}, #{periodType}, #{startTime}, #{endTime}, #{createBy}, #{createByName}, #{createTime}, 0)</insert>
 </mapper>

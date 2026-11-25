@@ -70,10 +70,33 @@
         insert into fin_invoice (id, tenant_id, invoice_no, invoice_code, invoice_date, amount, tax_amount, total_amount,
             buyer_name, buyer_tax_no, seller_name, seller_tax_no, supplier_id, audit_status, audit_by, audit_time,
             del_flag, delete_by, delete_by_name, delete_time, remark, create_by, create_by_name, create_time, update_by, update_by_name, update_time)
-        values (#{id}, #{tenantId}, #{invoiceNo}, #{invoiceCode}, #{invoiceDate}, #{amount}, #{taxAmount}, #{totalAmount},
-            #{buyerName}, #{buyerTaxNo}, #{sellerName}, #{sellerTaxNo}, #{supplierId}, #{auditStatus}, #{auditBy}, #{auditTime},
-            0, #{deleteBy}, #{deleteTime}, #{remark}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
-    </insert>
+        values (#{id},
+            #{tenantId},
+            #{invoiceNo},
+            #{invoiceCode},
+            #{invoiceDate},
+            #{amount},
+            #{taxAmount},
+            #{totalAmount},
+            #{buyerName},
+            #{buyerTaxNo},
+            #{sellerName},
+            #{sellerTaxNo},
+            #{supplierId},
+            #{auditStatus},
+            #{auditBy},
+            #{auditTime},
+            0,
+            #{deleteBy},
+            #{deleteByName},
+            #{deleteTime},
+            #{remark},
+            #{createBy},
+            #{createByName},
+            #{createTime},
+            #{updateBy},
+            #{updateByName},
+            #{updateTime})</insert>
 
     <update id="update" parameterType="com.spd.finance.domain.FinInvoice">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />

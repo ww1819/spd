@@ -15,7 +15,7 @@
 
     <insert id="insert" parameterType="com.spd.finance.domain.SuppSettlementInvoice">
         INSERT INTO supp_settlement_invoice (id, tenant_id, supp_settlement_id, invoice_id, create_time, delete_by, delete_by_name, delete_time, is_deleted)
-        VALUES (#{id}, #{tenantId}, #{suppSettlementId}, #{invoiceId}, now(), null, null, 0)
+        VALUES (#{id}, #{tenantId}, #{suppSettlementId}, #{invoiceId}, now(), null, null, null, 0)
     </insert>
 
     <update id="logicalDeleteBySuppSettlementAndInvoice">

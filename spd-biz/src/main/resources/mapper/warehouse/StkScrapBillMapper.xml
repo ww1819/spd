@@ -159,12 +159,24 @@
             bill_no, warehouse_id, bill_date, total_amount, scrap_reason,
             bill_status, audit_by, audit_by_name, audit_date, remark, del_flag,
             tenant_id, create_by, create_by_name, create_time, update_by, update_by_name, update_time
-        ) values (
-            #{billNo}, #{warehouseId}, #{billDate}, #{totalAmount}, #{scrapReason},
-            #{billStatus}, #{auditBy}, #{auditDate}, #{remark}, #{delFlag},
-            #{scopedTenantId}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}
-        )
-    </insert>
+        ) values (#{billNo},
+            #{warehouseId},
+            #{billDate},
+            #{totalAmount},
+            #{scrapReason},
+            #{billStatus},
+            #{auditBy},
+            #{auditByName},
+            #{auditDate},
+            #{remark},
+            #{delFlag},
+            #{scopedTenantId},
+            #{createBy},
+            #{createByName},
+            #{createTime},
+            #{updateBy},
+            #{updateByName},
+            #{updateTime})</insert>
 
     <update id="updateStkScrapBill" parameterType="com.spd.warehouse.domain.StkScrapBill">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>

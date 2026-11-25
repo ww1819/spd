@@ -21,8 +21,7 @@
 
     <insert id="insert" parameterType="com.spd.caigou.domain.PurchasePlanEntryApply" useGeneratedKeys="true" keyProperty="id">
         insert into purchase_plan_entry_apply (purchase_plan_entry_id, bas_apply_entry_id, del_flag, tenant_id, create_by, create_by_name, create_time)
-        values (#{purchasePlanEntryId}, #{basApplyEntryId}, '0', #{tenantId}, #{createBy}, #{createTime})
-    </insert>
+        values (#{purchasePlanEntryId}, #{basApplyEntryId}, '0', #{tenantId}, #{createBy}, #{createByName}, #{createTime})</insert>
 
     <!-- 唯一键 uk_plan_entry_apply 含已逻辑删除行；更新计划时复用原行并恢复 del_flag=0 -->
     <insert id="batchInsert">

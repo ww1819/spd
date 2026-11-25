@@ -33,10 +33,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <insert id="insertSysLicense" parameterType="SysLicense">
         INSERT INTO sys_license (
             id, instance_id, expire_time, payload_json, signature,
-            create_by, create_by_name, create_time, update_by, update_by_name, update_time, remark, is_deleted) VALUES (
-            #{id}, #{instanceId}, #{expireTime}, #{payloadJson}, #{signature},
-            #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}, 0)
-    </insert>
+            create_by, create_by_name, create_time, update_by, update_by_name, update_time, remark, is_deleted) VALUES (#{id},
+            #{instanceId},
+            #{expireTime},
+            #{payloadJson},
+            #{signature},
+            #{createBy},
+            #{createByName},
+            #{createTime},
+            #{updateBy},
+            #{updateByName},
+            #{updateTime},
+            #{remark},
+            0)</insert>
 
     <update id="deleteSysLicenseById">
         <bind name="_auditDeleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />

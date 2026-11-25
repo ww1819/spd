@@ -5006,92 +5006,20 @@ CALL add_table_column('fd_location_change_log', 'is_deleted', 'tinyint NOT NULL'
 /
 
 -- ========== audit name snapshots + business delete_by/time ==========
--- operator user_name snapshots; business soft-delete delete_by/time
-CALL add_table_column('fd_material_category', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+-- operator user_name snapshots (idempotent add_table_column)
+CALL add_table_column('bas_apply', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('fd_material_category', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+CALL add_table_column('bas_apply', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
-CALL add_table_column('fd_material_category', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+CALL add_table_column('bas_apply', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('fd_department', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+CALL add_table_column('bas_apply', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
 /
-CALL add_table_column('fd_department', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+CALL add_table_column('bas_apply_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('fd_department_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+CALL add_table_column('bas_apply_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
-CALL add_table_column('fd_supplier', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('fd_supplier', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('fd_supplier', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('fd_supplier_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
-/
-CALL add_table_column('fd_factory', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('fd_factory', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('fd_factory', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('fd_factory_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
-/
-CALL add_table_column('fd_unit', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('fd_unit', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('fd_unit', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('fd_location', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('fd_location', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('fd_location', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('fd_warehouse_category', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('fd_warehouse_category', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('fd_warehouse_category', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('fd_warehouse', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('fd_warehouse', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('fd_finance_category', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('fd_finance_category', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('fd_finance_category', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('fd_material_import', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('fd_material_import', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('fd_material_import', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('fd_material_import', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
-/
-CALL add_table_column('wh_fixed_number', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('wh_fixed_number', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('wh_fixed_number', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('dept_fixed_number', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('dept_fixed_number', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('dept_fixed_number', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('stk_initial_import', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('stk_initial_import', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('stk_initial_import', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('stk_initial_import', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
-/
-CALL add_table_column('stk_initial_import_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+CALL add_table_column('bas_apply_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
 CALL add_table_column('bas_apply_template', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
@@ -5105,55 +5033,21 @@ CALL add_table_column('bas_apply_template_entry', 'update_by_name', 'varchar(64)
 /
 CALL add_table_column('bas_apply_template_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('fd_material_status_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+CALL add_table_column('biz_invoice', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('fd_material_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+CALL add_table_column('biz_invoice', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
-CALL add_table_column('sys_user_department', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+CALL add_table_column('biz_invoice', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
 /
-CALL add_table_column('hc_user_permission_menu', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+CALL add_table_column('dep_inventory_warning', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('hc_customer_menu', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+CALL add_table_column('dep_inventory_warning', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
-CALL add_table_column('hc_customer_menu', 'delete_time', 'datetime', 'delete time', NULL);
+CALL add_table_column('dep_inventory_warning', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('hc_customer_menu', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+CALL add_table_column('dep_pur_apply_ck_entry_ref', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('hc_customer_menu', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('hc_customer_menu_period_log', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('hc_customer_period_log', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('fin_invoice', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('fin_invoice', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('fin_invoice', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('fin_invoice', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
-/
-CALL add_table_column('wh_settlement_bill', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('wh_settlement_bill', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('wh_settlement_bill', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('wh_settlement_bill', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
-/
-CALL add_table_column('wh_settlement_bill_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('supp_settlement_bill', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('supp_settlement_bill', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('supp_settlement_bill', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('supp_settlement_bill', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
-/
-CALL add_table_column('supp_settlement_invoice', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('supp_settlement_bill_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+CALL add_table_column('dep_pur_apply_ck_entry_ref', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
 CALL add_table_column('dep_purchase_apply', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
@@ -5162,28 +5056,6 @@ CALL add_table_column('dep_purchase_apply', 'update_by_name', 'varchar(64)', 'up
 CALL add_table_column('dep_purchase_apply', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
 CALL add_table_column('dep_purchase_apply', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
-/
-CALL add_table_column('dep_purchase_apply_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('dep_purchase_apply_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('dep_purchase_apply_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('dep_pur_apply_ck_entry_ref', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('dep_pur_apply_ck_entry_ref', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('purchase_plan_entry_apply', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('purchase_plan_entry_apply', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('purchase_plan_entry_apply', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('purchase_plan_entry_dep_apply', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('purchase_plan_entry_dep_apply', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('purchase_plan_entry_dep_apply', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
 CALL add_table_column('dep_purchase_apply_agg', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
@@ -5199,6 +5071,140 @@ CALL add_table_column('dep_purchase_apply_agg_entry', 'update_by_name', 'varchar
 /
 CALL add_table_column('dep_purchase_apply_agg_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
+CALL add_table_column('dep_purchase_apply_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('dep_purchase_apply_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('dept_fixed_number', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('dept_fixed_number', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('dept_fixed_number', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('fd_department', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_department', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_department_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_factory', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_factory', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_factory', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('fd_factory_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_finance_category', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_finance_category', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_finance_category', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('fd_finance_category_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_focus18', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_focus18', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_focus18', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('fd_jc_period', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_jc_period', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_jc_period', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('fd_jc_report', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_jc_report', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_jc_report', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('fd_jc_type', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_jc_type', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_jc_type', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('fd_location', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_location', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_location', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('fd_location_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_material', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_material', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_material', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('fd_material_category', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_material_category', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_material_category', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('fd_material_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_material_import', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('fd_material_import', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_material_status_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_supplier', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_supplier', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_supplier', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('fd_supplier_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_unit', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_unit', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_unit', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('fd_unit_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_warehouse', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_warehouse', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_warehouse_category', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_warehouse_category', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_warehouse_category', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('fd_warehouse_category_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_warehouse_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+/
+CALL add_table_column('fin_invoice', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fin_invoice', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fin_invoice', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('fin_invoice', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('gen_table', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('gen_table', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('gen_table_column', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('gen_table_column', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('gz_bill_entry_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+/
 CALL add_table_column('gz_dep_apply', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
 CALL add_table_column('gz_dep_apply', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
@@ -5210,6 +5216,34 @@ CALL add_table_column('gz_dep_apply_entry', 'create_by_name', 'varchar(64)', 'cr
 CALL add_table_column('gz_dep_apply_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
 CALL add_table_column('gz_dep_apply_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('gz_dep_flow', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('gz_dep_flow', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('gz_dep_flow', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('gz_dep_inventory', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('gz_depot_inventory', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('gz_depot_inventory', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('gz_depot_inventory', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('gz_high_consume_confirm', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('gz_high_consume_confirm', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('gz_high_consume_confirm', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('gz_high_consume_confirm_bill', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('gz_high_consume_confirm_line', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
 CALL add_table_column('gz_order', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
@@ -5225,11 +5259,19 @@ CALL add_table_column('gz_order_entry', 'update_by_name', 'varchar(64)', 'update
 /
 CALL add_table_column('gz_order_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
+CALL add_table_column('gz_order_entry_code_ref', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
 CALL add_table_column('gz_order_entry_inhospitalcode_list', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
 CALL add_table_column('gz_order_entry_inhospitalcode_list', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
 CALL add_table_column('gz_order_entry_inhospitalcode_list', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list_ref', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list_ref', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('gz_order_entry_inhospitalcode_list_ref', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
 CALL add_table_column('gz_patient_info', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
@@ -5250,6 +5292,8 @@ CALL add_table_column('gz_refund_goods_entry', 'create_by_name', 'varchar(64)', 
 CALL add_table_column('gz_refund_goods_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
 CALL add_table_column('gz_refund_goods_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('gz_refund_goods_entry_ref', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
 CALL add_table_column('gz_refund_stock', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
@@ -5279,6 +5323,8 @@ CALL add_table_column('gz_shipment_entry', 'update_by_name', 'varchar(64)', 'upd
 /
 CALL add_table_column('gz_shipment_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
+CALL add_table_column('gz_shipment_entry_ref', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
 CALL add_table_column('gz_traceability', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
 CALL add_table_column('gz_traceability', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
@@ -5293,37 +5339,31 @@ CALL add_table_column('gz_traceability_entry', 'update_by_name', 'varchar(64)', 
 /
 CALL add_table_column('gz_traceability_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('gz_depot_inventory', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+CALL add_table_column('gz_wh_flow', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('gz_depot_inventory', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+CALL add_table_column('gz_wh_flow', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
-CALL add_table_column('gz_depot_inventory', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+CALL add_table_column('gz_wh_flow', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('gz_dep_inventory', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+CALL add_table_column('hc_barcode_flow', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('gz_dep_inventory', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+CALL add_table_column('hc_barcode_flow', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
-CALL add_table_column('gz_dep_inventory', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+CALL add_table_column('hc_barcode_flow', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('stk_io_bill', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+CALL add_table_column('hc_barcode_master', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('stk_io_bill', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+CALL add_table_column('hc_barcode_master', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
-CALL add_table_column('stk_io_bill', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+CALL add_table_column('hc_barcode_master', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('stk_io_bill', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+CALL add_table_column('hc_customer_menu', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+CALL add_table_column('hc_customer_menu', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+CALL add_table_column('hc_customer_menu_period_log', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('stk_io_bill_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('stk_delivery_line_cap', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('stk_delivery_line_cap', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('stk_delivery_line_cap', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+CALL add_table_column('hc_customer_period_log', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
 CALL add_table_column('hc_doc_bill_ref', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
@@ -5331,217 +5371,7 @@ CALL add_table_column('hc_doc_bill_ref', 'update_by_name', 'varchar(64)', 'updat
 /
 CALL add_table_column('hc_doc_bill_ref', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('t_hc_ck_flow', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('t_hc_ck_flow', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('t_hc_ck_flow', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('t_hc_ks_flow', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('t_hc_ks_flow', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('t_hc_ks_flow', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('stk_inventory', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('stk_inventory', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('stk_inventory', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('stk_dep_inventory', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('stk_dep_inventory', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('stk_dep_inventory', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('stk_profit_loss_pending', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('stk_profit_loss_pending', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('stk_profit_loss_pending', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('stk_batch', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('stk_batch', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('stk_batch', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
-/
-CALL add_table_column('stk_io_stocktaking', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('stk_io_stocktaking', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('stk_io_stocktaking', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('stk_io_stocktaking_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('stk_io_stocktaking_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('stk_io_stocktaking_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('stk_io_profit_loss', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('stk_io_profit_loss', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('stk_io_profit_loss', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('stk_io_profit_loss', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('stk_io_profit_loss_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('t_hc_ks_xh', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('t_hc_ks_xh', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('t_hc_ks_xh', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('t_hc_ks_xh', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
-/
-CALL add_table_column('t_hc_ks_xh_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('t_hc_ks_xh_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('t_hc_ks_xh_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('t_hc_ks_xh_entry_ref', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('sys_print_setting', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('sys_print_setting', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('sys_print_setting', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('sys_print_setting', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('sys_print_setting', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('sys_license', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('sys_license', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('sys_license', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('sys_license', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('sys_license', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('wh_warehouse_apply', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('wh_warehouse_apply', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('wh_warehouse_apply', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('wh_warehouse_apply_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('wh_warehouse_apply_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('wh_warehouse_apply_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('wh_wh_apply_ck_entry_ref', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('wh_wh_apply_ck_entry_ref', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('gz_order_entry_code_ref', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('gz_shipment_entry_ref', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('gz_refund_goods_entry_ref', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('sys_data_backup_config', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('sys_data_backup_config', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('sys_data_backup_config', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('sys_data_backup_config', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('sys_data_backup_config', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('sys_his_external_db', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('sys_his_external_db', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('sys_his_external_db', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('his_inpatient_charge_mirror', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('his_inpatient_charge_mirror', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('his_inpatient_charge_mirror', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('his_inpatient_charge_mirror', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('his_inpatient_charge_mirror', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('his_outpatient_charge_mirror', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('his_outpatient_charge_mirror', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('his_outpatient_charge_mirror', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('his_outpatient_charge_mirror', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('his_outpatient_charge_mirror', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('his_patient_charge_mirror_unified', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('his_patient_charge_mirror_unified', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('his_patient_charge_mirror_unified', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('his_patient_charge_mirror_unified', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('his_patient_charge_mirror_unified', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('his_charge_fetch_batch', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('his_charge_fetch_batch', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('his_charge_fetch_batch', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('his_charge_fetch_batch', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('his_charge_item_mirror', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('his_charge_item_mirror', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('his_charge_item_mirror', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('his_mirror_consume_link', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('his_mirror_consume_link', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('gz_high_consume_confirm', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('gz_high_consume_confirm', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('gz_high_consume_confirm', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('gz_high_consume_confirm', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('gz_high_consume_confirm', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('gz_high_consume_confirm_line', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('gz_high_consume_confirm_line', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('gz_high_consume_confirm_line', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('gz_high_consume_confirm_bill', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('gz_high_consume_confirm_bill', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('gz_high_consume_confirm_bill', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('sb_tenant_setting', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('sb_tenant_setting', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('sb_tenant_setting', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+CALL add_table_column('hc_user_permission_menu', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
 CALL add_table_column('his_billing_refund_order', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
@@ -5555,19 +5385,69 @@ CALL add_table_column('his_billing_refund_order_line', 'update_by_name', 'varcha
 /
 CALL add_table_column('his_billing_refund_order_line', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('sys_print_doc_rows', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+CALL add_table_column('his_charge_fetch_batch', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('sys_print_doc_rows', 'delete_time', 'datetime', 'delete time', NULL);
+CALL add_table_column('his_charge_fetch_batch', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('sys_print_doc_rows', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+CALL add_table_column('his_charge_item_mirror', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('sys_print_doc_rows', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+CALL add_table_column('his_hc_info', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('sys_print_doc_rows', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+CALL add_table_column('his_hc_info', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
-CALL add_table_column('gz_bill_entry_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+CALL add_table_column('his_hc_info', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('stk_bill_entry_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+CALL add_table_column('his_inpatient_charge_mirror', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('his_inpatient_charge_mirror', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('his_inpatient_charge_mirror', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('his_mirror_consume_link', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('his_outpatient_charge_mirror', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('his_outpatient_charge_mirror', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('his_outpatient_charge_mirror', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('his_patient_charge_mirror_unified', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('his_patient_charge_mirror_unified', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('his_patient_charge_mirror_unified', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('new_product_apply', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('new_product_apply', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('new_product_apply', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('new_product_apply_detail', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('new_product_apply_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('new_product_apply_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('new_product_apply_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('purchase_forecast_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('purchase_forecast_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('purchase_forecast_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('purchase_forecast_task', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('purchase_forecast_task', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('purchase_forecast_task', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
 CALL add_table_column('purchase_order', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
@@ -5597,129 +5477,17 @@ CALL add_table_column('purchase_plan_entry', 'update_by_name', 'varchar(64)', 'u
 /
 CALL add_table_column('purchase_plan_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('bas_apply', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+CALL add_table_column('purchase_plan_entry_apply', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('bas_apply', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+CALL add_table_column('purchase_plan_entry_apply', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
-CALL add_table_column('bas_apply', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+CALL add_table_column('purchase_plan_entry_apply', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('bas_apply', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+CALL add_table_column('purchase_plan_entry_dep_apply', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('bas_apply_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+CALL add_table_column('purchase_plan_entry_dep_apply', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
-CALL add_table_column('bas_apply_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('bas_apply_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('new_product_apply', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('new_product_apply', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('new_product_apply', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('new_product_apply_entry', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('new_product_apply_entry', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('new_product_apply_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('new_product_apply_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('new_product_apply_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('new_product_apply_detail', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('new_product_apply_detail', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('new_product_apply_detail', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('spd_scm_tenant_bind', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('spd_scm_tenant_bind', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('spd_scm_supplier_bind', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('spd_scm_supplier_bind', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('spd_foundation_data_snapshot', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('spd_foundation_data_snapshot', 'delete_time', 'datetime', 'delete time', NULL);
-/
-CALL add_table_column('spd_foundation_data_snapshot', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('spd_foundation_data_snapshot', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('stk_lv_io_inhospital_barcode', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('stk_lv_io_inhospital_barcode', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('stk_lv_io_inhospital_barcode', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('stk_lv_io_inhospital_barcode', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
-/
-CALL add_table_column('hc_barcode_master', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('hc_barcode_master', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('hc_barcode_master', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('hc_barcode_flow', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('hc_barcode_flow', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('hc_barcode_flow', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('gz_wh_flow', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('gz_wh_flow', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('gz_wh_flow', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('gz_dep_flow', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('gz_dep_flow', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('gz_dep_flow', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('purchase_forecast_task', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('purchase_forecast_task', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('purchase_forecast_task', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('purchase_forecast_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('purchase_forecast_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('purchase_forecast_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('fd_jc_type', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('fd_jc_type', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('fd_jc_type', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('fd_jc_period', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('fd_jc_period', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('fd_jc_period', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('fd_jc_report', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('fd_jc_report', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('fd_jc_report', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('fd_focus18', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
-/
-CALL add_table_column('fd_focus18', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
-/
-CALL add_table_column('fd_focus18', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
-/
-CALL add_table_column('purchase_price_adjust', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('purchase_price_adjust', 'delete_time', 'datetime', 'delete time', NULL);
+CALL add_table_column('purchase_plan_entry_dep_apply', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
 CALL add_table_column('purchase_price_adjust', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
@@ -5729,15 +5497,269 @@ CALL add_table_column('purchase_price_adjust', 'delete_by_name', 'varchar(64)', 
 /
 CALL add_table_column('purchase_price_adjust', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
 /
-CALL add_table_column('purchase_price_adjust_entry', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
-/
-CALL add_table_column('purchase_price_adjust_entry', 'delete_time', 'datetime', 'delete time', NULL);
-/
 CALL add_table_column('purchase_price_adjust_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
 CALL add_table_column('purchase_price_adjust_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
 CALL add_table_column('purchase_price_adjust_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('scm_certificate_config', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_certificate_config', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_certificate_type', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_certificate_type', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_delivery', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_delivery', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_delivery', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('scm_delivery_detail', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_delivery_detail', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_delivery_invoice', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_delivery_invoice', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_hospital', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_hospital', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_hospital_menu_auth', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_hospital_supplier', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_hospital_supplier', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_hospital_supplier', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('scm_hospital_supplier_apply', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_hospital_supplier_apply', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_hospital_supplier_apply', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('scm_hospital_supplier_permission', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_hospital_supplier_permission', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_hospital_user', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_hospital_user', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_manufacturer', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_manufacturer', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_material_category', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_material_category', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_material_dict', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_material_dict', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_notice_receiver', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_order', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_order', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_order_detail', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_order_detail', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_order_detail_delivery_rel', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_product_cert_license_snap', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_product_cert_license_snap', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_product_certificate', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_product_certificate', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_product_certificate', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('scm_product_certificate_aux', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_product_certificate_aux', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_purchase_statistics', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_purchase_statistics', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_settlement', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_settlement', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_settlement', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('scm_settlement_detail', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_settlement_detail', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_spd_supplier_bind', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_spd_supplier_bind', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_spd_tenant_bind', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_spd_tenant_bind', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_supplier', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_supplier', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_supplier', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('scm_supplier_cert_change_log', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_supplier_certificate', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_supplier_certificate', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_supplier_certificate', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('scm_supplier_code_mapping', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_supplier_code_mapping', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_supplier_export_log', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_supplier_menu_auth', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_supplier_user', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_supplier_user', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_supplier_user_apply', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('scm_tenant', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_tenant', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_tenant_menu', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_tenant_menu_pause', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_tenant_menu_pause', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('scm_tenant_status_period', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('scm_tenant_status_period', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('spd_foundation_data_snapshot', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('spd_foundation_data_snapshot', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('spd_scm_material_apply_log', 'apply_by_name', 'varchar(64)', 'applicant user_name snapshot', NULL);
+/
+CALL add_table_column('spd_scm_material_archive', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('spd_scm_material_archive', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('spd_scm_material_push_field_cfg', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('spd_scm_material_push_field_cfg', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('spd_scm_supplier_bind', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('spd_scm_supplier_bind', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('spd_scm_tenant_bind', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('spd_scm_tenant_bind', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('stk_batch', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('stk_batch', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('stk_batch', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('stk_bill_entry_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+/
+CALL add_table_column('stk_delivery_line_cap', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('stk_dep_inventory', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('stk_initial_import', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('stk_initial_import', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('stk_initial_import', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('stk_initial_import', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('stk_initial_import_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('stk_inventory', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('stk_inventory', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('stk_inventory', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_bill', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_bill', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_bill', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_bill', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_profit_loss', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_profit_loss', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_profit_loss', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_profit_loss', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_profit_loss_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_stocktaking', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_stocktaking', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_stocktaking', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('stk_lv_io_inhospital_barcode', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('stk_lv_io_inhospital_barcode', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('stk_lv_io_inhospital_barcode', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('stk_lv_io_inhospital_barcode', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('stk_profit_loss_pending', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('stk_profit_loss_pending', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('stk_profit_loss_pending', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
 CALL add_table_column('stk_scrap_bill', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
@@ -5749,31 +5771,467 @@ CALL add_table_column('stk_scrap_bill_entry', 'create_by_name', 'varchar(64)', '
 /
 CALL add_table_column('stk_scrap_bill_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
-CALL add_table_column('dep_inventory_warning', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+CALL add_table_column('supp_settlement_bill', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('dep_inventory_warning', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+CALL add_table_column('supp_settlement_bill', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
-CALL add_table_column('dep_inventory_warning', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+CALL add_table_column('supp_settlement_bill', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('fd_warehouse_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+CALL add_table_column('supp_settlement_bill', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
 /
-CALL add_table_column('fd_unit_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+CALL add_table_column('supp_settlement_bill_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('fd_finance_category_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+CALL add_table_column('supp_settlement_invoice', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('fd_warehouse_category_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+CALL add_table_column('sys_config', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
-CALL add_table_column('fd_location_change_log', 'operator_name', 'varchar(64)', 'operator user_name snapshot', NULL);
+CALL add_table_column('sys_config', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sys_data_backup_config', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_data_backup_config', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sys_data_backup_config', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sys_dept', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_dept', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sys_dept', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sys_dict_data', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_dict_data', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sys_dict_type', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_dict_type', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sys_his_external_db', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sys_job', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_job', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sys_license', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_license', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sys_license', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sys_menu', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_menu', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sys_notice', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_notice', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sys_post', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_post', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sys_post', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sys_print_doc_rows', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_print_doc_rows', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sys_print_doc_rows', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sys_print_setting', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_print_setting', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sys_print_setting', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sys_role', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_role', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sys_sheet_id', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_sheet_id', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sys_sheet_id', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sys_user', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_user', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sys_user_department', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_user_menu', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_user_role', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sys_user_warehouse', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('t_hc_ck_flow', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('t_hc_ck_flow', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('t_hc_ck_flow', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('t_hc_ks_flow', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('t_hc_ks_flow', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('t_hc_ks_flow', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('t_hc_ks_xh', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('t_hc_ks_xh', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('t_hc_ks_xh', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('t_hc_ks_xh', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('t_hc_ks_xh_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('t_hc_ks_xh_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('t_hc_ks_xh_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('t_hc_ks_xh_entry_ref', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('wh_fixed_number', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('wh_fixed_number', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('wh_fixed_number', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('wh_settlement_bill', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('wh_settlement_bill', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('wh_settlement_bill', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('wh_settlement_bill', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('wh_settlement_bill_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('wh_warehouse_apply', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('wh_warehouse_apply', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('wh_warehouse_apply', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('wh_warehouse_apply_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('wh_warehouse_apply_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('wh_warehouse_apply_entry', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('wh_wh_apply_ck_entry_ref', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('wh_wh_apply_ck_entry_ref', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('zs_tp_order', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('zs_tp_order', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('zs_tp_order_detail_delivery_rel', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
 
--- ========== sb_customer / money_scale_audit name snapshots (equipment shared) ==========
+-- ========== business soft-delete delete_by/time (restored) ==========
+CALL add_table_column('fd_material_import', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('fd_material_import', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('hc_customer_menu', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('hc_customer_menu', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('stk_delivery_line_cap', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('stk_delivery_line_cap', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('sys_print_setting', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('sys_print_setting', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('sys_license', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('sys_license', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('sys_data_backup_config', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('sys_data_backup_config', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('sys_his_external_db', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('sys_his_external_db', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('his_inpatient_charge_mirror', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('his_inpatient_charge_mirror', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('his_outpatient_charge_mirror', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('his_outpatient_charge_mirror', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('his_patient_charge_mirror_unified', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('his_patient_charge_mirror_unified', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('his_charge_fetch_batch', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('his_charge_fetch_batch', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('his_charge_item_mirror', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('his_charge_item_mirror', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('gz_high_consume_confirm', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('gz_high_consume_confirm', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('gz_high_consume_confirm_line', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('gz_high_consume_confirm_line', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('gz_high_consume_confirm_bill', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('gz_high_consume_confirm_bill', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('sys_print_doc_rows', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('sys_print_doc_rows', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('spd_foundation_data_snapshot', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('spd_foundation_data_snapshot', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('purchase_price_adjust', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('purchase_price_adjust', 'delete_time', 'datetime', 'delete time', NULL);
+/
+CALL add_table_column('purchase_price_adjust_entry', 'delete_by', 'varchar(64)', 'deleter user_id', NULL);
+/
+CALL add_table_column('purchase_price_adjust_entry', 'delete_time', 'datetime', 'delete time', NULL);
+/
+
+-- ========== equipment/sb audit name (mirrored for SqlInitRunner) ==========
+CALL add_table_column('equipment_accessory', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_accessory', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_accessory', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_accessory_io', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_accessory_io', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_accessory_io', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_accessory_io_entry', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_accessory_io_entry', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_accessory_stock', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_accessory_stock', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_accessory_stock', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_adverse_event', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_adverse_event', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_adverse_event', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_file', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_file', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_info', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_info', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_purchase_application', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_purchase_application', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_return', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_return', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_storage', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('equipment_storage', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_category68', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_category68', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_equipment_category', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_equipment_category', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('fd_equipment_dict', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('fd_equipment_dict', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_asset_category', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_asset_category', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_asset_inventory', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_asset_inventory', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_asset_inventory', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('sb_asset_inventory_item', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_asset_inventory_item', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_asset_inventory_item_print', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_asset_inventory_item_print', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_asset_print_log', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_asset_print_log', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_asset_print_task', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_asset_print_task', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_asset_print_task_item', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_asset_print_task_item', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
 CALL add_table_column('sb_customer', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
 CALL add_table_column('sb_customer', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
 /
 CALL add_table_column('sb_customer', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
 /
-CALL add_table_column('sb_customer_money_scale_audit', 'apply_by_name', 'varchar(64)', 'applicant user_name snapshot', NULL);
+CALL add_table_column('sb_customer_asset_ledger', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_customer_asset_ledger', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_customer_category68', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_customer_category68', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_customer_menu', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_customer_menu', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sb_customer_menu_period_log', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
 /
 CALL add_table_column('sb_customer_money_scale_audit', 'audit_by_name', 'varchar(64)', 'auditor user_name snapshot', NULL);
+/
+CALL add_table_column('sb_customer_money_scale_audit', 'apply_by_name', 'varchar(64)', 'applicant user_name snapshot', NULL);
+/
+CALL add_table_column('sb_customer_period_log', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_equipment_brand', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_equipment_brand', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_equipment_manufacturer', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_equipment_manufacturer', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_equipment_supplier', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_equipment_supplier', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_measuring_category', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_measuring_category', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_menu', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_menu', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_menu', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sb_role', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_role', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_role', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sb_role_menu', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sb_tenant_setting', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_tenant_setting', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_tenant_setting', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sb_user_permission_dept', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_user_permission_dept', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sb_user_permission_menu', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_user_permission_menu', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sb_user_permission_warehouse', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_user_permission_warehouse', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sb_user_role', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sb_work_group', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_work_group', 'update_by_name', 'varchar(64)', 'updater user_name snapshot', NULL);
+/
+CALL add_table_column('sb_work_group', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sb_work_group_dept', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_work_group_dept', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sb_work_group_menu', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_work_group_menu', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sb_work_group_user', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_work_group_user', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+CALL add_table_column('sb_work_group_warehouse', 'create_by_name', 'varchar(64)', 'creator user_name snapshot', NULL);
+/
+CALL add_table_column('sb_work_group_warehouse', 'delete_by_name', 'varchar(64)', 'deleter user_name snapshot', NULL);
+/
+
+-- ========== gap-fill Mapper-selected *_name missing in DB ==========
+CALL add_table_column('fd_department', 'delete_by_name', 'varchar(64)', '删除者user_name', NULL);
+/
+CALL add_table_column('fd_material', 'audit_by_name', 'varchar(64)', '审核人user_name', NULL);
+/
+CALL add_table_column('fd_warehouse', 'delete_by_name', 'varchar(64)', '删除者user_name', NULL);
+/
+CALL add_table_column('gz_refund_stock_entry', 'audit_by_name', 'varchar(64)', '审核人user_name', NULL);
+/
+CALL add_table_column('gz_traceability_entry', 'audit_by_name', 'varchar(64)', '审核人user_name', NULL);
+/
+CALL add_table_column('purchase_price_adjust_entry', 'audit_by_name', 'varchar(64)', '审核人user_name', NULL);
+/
+CALL add_table_column('stk_io_bill_entry', 'audit_by_name', 'varchar(64)', '审核人user_name', NULL);
+/
+CALL add_table_column('stk_io_stocktaking_entry', 'audit_by_name', 'varchar(64)', '审核人user_name', NULL);
+/
+CALL add_table_column('supp_settlement_bill_entry', 'create_by_name', 'varchar(64)', '创建者user_name', NULL);
+/
+CALL add_table_column('supp_settlement_bill_entry', 'update_by_name', 'varchar(64)', '更新者user_name', NULL);
+/
+CALL add_table_column('sys_user', 'delete_by_name', 'varchar(64)', '删除者user_name', NULL);
+/
+CALL add_table_column('t_hc_ks_xh_entry_ref', 'audit_by_name', 'varchar(64)', '审核人user_name', NULL);
+/
+CALL add_table_column('t_hc_ks_xh_entry_ref', 'delete_by_name', 'varchar(64)', '删除者user_name', NULL);
+/
+CALL add_table_column('t_hc_ks_xh_entry_ref', 'update_by_name', 'varchar(64)', '更新者user_name', NULL);
+/
+CALL add_table_column('wh_settlement_bill_entry', 'create_by_name', 'varchar(64)', '创建者user_name', NULL);
+/
+CALL add_table_column('wh_settlement_bill_entry', 'update_by_name', 'varchar(64)', '更新者user_name', NULL);
 /

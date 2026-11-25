@@ -44,12 +44,21 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         INSERT INTO sys_data_backup_config (
             tenant_id, backup_path, mysqldump_path, backup_time, enabled, job_id, retain_days,
             last_backup_time, last_backup_status, last_backup_message,
-            create_by, create_by_name, create_time, remark, is_deleted) VALUES (
-            #{tenantId}, #{backupPath}, #{mysqldumpPath}, #{backupTime}, #{enabled}, #{jobId}, #{retainDays},
-            #{lastBackupTime}, #{lastBackupStatus}, #{lastBackupMessage},
-            #{createBy}, sysdate(), #{remark}, 0
-        )
-    </insert>
+            create_by, create_by_name, create_time, remark, is_deleted) VALUES (#{tenantId},
+            #{backupPath},
+            #{mysqldumpPath},
+            #{backupTime},
+            #{enabled},
+            #{jobId},
+            #{retainDays},
+            #{lastBackupTime},
+            #{lastBackupStatus},
+            #{lastBackupMessage},
+            #{createBy},
+            #{createByName},
+            sysdate(),
+            #{remark},
+            0)</insert>
 
     <update id="update" parameterType="com.spd.system.domain.SysDataBackupConfig">
         update sys_data_backup_config

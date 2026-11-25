@@ -5,10 +5,19 @@
     <insert id="insertHisChargeFetchBatch">
         INSERT INTO his_charge_fetch_batch (
             id, tenant_id, charge_kind, window_start, window_end,
-            inserted_count, skipped_count, drift_count, remark, create_by, create_by_name, create_time, is_deleted) VALUES (
-            #{id}, #{tenantId}, #{chargeKind}, #{windowStart}, #{windowEnd},
-            #{insertedCount}, #{skippedCount}, #{driftCount}, #{remark}, #{createBy}, #{createTime}, 0)
-    </insert>
+            inserted_count, skipped_count, drift_count, remark, create_by, create_by_name, create_time, is_deleted) VALUES (#{id},
+            #{tenantId},
+            #{chargeKind},
+            #{windowStart},
+            #{windowEnd},
+            #{insertedCount},
+            #{skippedCount},
+            #{driftCount},
+            #{remark},
+            #{createBy},
+            #{createByName},
+            #{createTime},
+            0)</insert>
 
     <select id="selectByIdAndTenant" resultType="com.spd.his.domain.HisChargeFetchBatch">
         select id, tenant_id as tenantId, charge_kind as chargeKind,

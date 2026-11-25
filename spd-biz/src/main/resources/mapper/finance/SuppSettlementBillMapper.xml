@@ -87,9 +87,26 @@
     <insert id="insert" parameterType="com.spd.finance.domain.SuppSettlementBill">
         insert into supp_settlement_bill (id, tenant_id, bill_no, supplier_id, supplier_name, wh_settlement_id,
             create_by, create_by_name, create_time, audit_by, audit_time, audit_status, del_flag, delete_by, delete_by_name, delete_time, remark, update_by, update_by_name, update_time)
-        values (#{id}, #{tenantId}, #{billNo}, #{supplierId}, #{supplierName}, #{whSettlementId},
-            #{createBy}, #{createTime}, #{auditBy}, #{auditTime}, 0, 0, #{deleteBy}, #{deleteTime}, #{remark}, #{updateBy}, #{updateTime})
-    </insert>
+        values (#{id},
+            #{tenantId},
+            #{billNo},
+            #{supplierId},
+            #{supplierName},
+            #{whSettlementId},
+            #{createBy},
+            #{createByName},
+            #{createTime},
+            #{auditBy},
+            #{auditTime},
+            0,
+            0,
+            #{deleteBy},
+            #{deleteByName},
+            #{deleteTime},
+            #{remark},
+            #{updateBy},
+            #{updateByName},
+            #{updateTime})</insert>
 
     <update id="update" parameterType="com.spd.finance.domain.SuppSettlementBill">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
