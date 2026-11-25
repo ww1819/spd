@@ -6,7 +6,7 @@
     insert into hc_user_permission_menu (id, user_id, tenant_id, menu_id, create_by, create_by_name, create_time, is_deleted)
     values
     <foreach collection="list" item="item" separator=",">
-      (#{item.id}, #{item.userId}, #{item.tenantId}, #{item.menuId}, #{item.createBy}, now(), 0)
+      (#{item.id}, #{item.userId}, #{item.tenantId}, #{item.menuId}, #{item.createBy}, #{item.createByName}, now(), 0)
     </foreach>
   </insert>
 

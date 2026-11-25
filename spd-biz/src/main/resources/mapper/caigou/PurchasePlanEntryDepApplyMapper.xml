@@ -7,7 +7,7 @@
         insert into purchase_plan_entry_dep_apply (purchase_plan_entry_id, dep_purchase_apply_entry_id, dep_purchase_apply_id, purchase_bill_no, purchase_plan_id, plan_no, del_flag, tenant_id, create_by, create_by_name, create_time)
         values
         <foreach collection="list" item="item" separator=",">
-            (#{item.purchasePlanEntryId}, #{item.depPurchaseApplyEntryId}, #{item.depPurchaseApplyId}, #{item.purchaseBillNo}, #{item.purchasePlanId}, #{item.planNo}, '0', #{item.tenantId}, #{item.createBy}, #{item.createTime})
+            (#{item.purchasePlanEntryId}, #{item.depPurchaseApplyEntryId}, #{item.depPurchaseApplyId}, #{item.purchaseBillNo}, #{item.purchasePlanId}, #{item.planNo}, '0', #{item.tenantId}, #{item.createBy}, #{item.createByName}, #{item.createTime})
         </foreach>
         on duplicate key update
             del_flag = '0',

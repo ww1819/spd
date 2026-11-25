@@ -9,9 +9,7 @@
             remark, del_flag, create_by, create_by_name, create_time, update_by, update_by_name, update_time
         ) values
         <foreach collection="list" item="e" separator=",">
-            (#{e.id}, #{e.tenantId}, #{e.refundOrderId}, #{e.consumeLinkId}, #{e.returnQty},
-            #{e.depInventoryId}, #{e.gzDepInventoryId}, #{e.inHospitalCode}, #{e.batchNo}, #{e.endDateSnapshot},
-            #{e.remark}, ifnull(#{e.delFlag}, 0), #{e.createBy}, #{e.createTime}, #{e.updateBy}, #{e.updateTime})
+            (#{e.id}, #{e.tenantId}, #{e.refundOrderId}, #{e.consumeLinkId}, #{e.returnQty}, #{e.depInventoryId}, #{e.gzDepInventoryId}, #{e.inHospitalCode}, #{e.batchNo}, #{e.endDateSnapshot}, #{e.remark}, ifnull(#{e.delFlag}, 0), #{e.createBy}, #{e.createByName}, #{e.createTime}, #{e.updateBy}, #{e.updateByName}, #{e.updateTime})
         </foreach>
     </insert>
 

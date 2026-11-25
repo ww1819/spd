@@ -8,11 +8,7 @@
             tgt_bill_kind, tgt_main_id, tgt_bill_no, tgt_entry_id, ref_purpose, material_id, material_name, create_by, create_by_name, create_time, is_deleted
         ) values
         <foreach collection="list" item="item" separator=",">
-            (
-                #{item.id}, #{item.tenantId}, #{item.refundGoodsEntryId}, #{item.srcBillKind}, #{item.srcMainId}, #{item.srcBillNo},
-                #{item.srcDetailId}, #{item.srcInHospitalCode}, #{item.tgtBillKind}, #{item.tgtMainId}, #{item.tgtBillNo},
-                #{item.tgtEntryId}, #{item.refPurpose}, #{item.materialId}, #{item.materialName}, #{item.createBy}, #{item.createTime}, 0
-            )
+            (#{item.id}, #{item.tenantId}, #{item.refundGoodsEntryId}, #{item.srcBillKind}, #{item.srcMainId}, #{item.srcBillNo}, #{item.srcDetailId}, #{item.srcInHospitalCode}, #{item.tgtBillKind}, #{item.tgtMainId}, #{item.tgtBillNo}, #{item.tgtEntryId}, #{item.refPurpose}, #{item.materialId}, #{item.materialName}, #{item.createBy}, #{item.createByName}, #{item.createTime}, 0)
         </foreach>
     </insert>
 

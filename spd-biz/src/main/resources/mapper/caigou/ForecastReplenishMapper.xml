@@ -170,12 +170,7 @@
       tenant_id, del_flag, create_by, create_by_name, create_time, remark
     ) values
     <foreach collection="list" item="e" separator=",">
-      (
-        #{e.taskId}, #{e.warehouseId}, #{e.materialId}, #{e.supplierId},
-        #{e.stockQty}, #{e.inTransitQty}, #{e.avgDailyQty}, #{e.lowerLimit}, #{e.upperLimit},
-        #{e.ropQty}, #{e.suggestQty}, #{e.confirmQty}, #{e.selected}, #{e.price}, #{e.formulaRemark},
-        #{e.tenantId}, '0', #{e.createBy}, #{e.createTime}, #{e.remark}
-      )
+      (#{e.taskId}, #{e.warehouseId}, #{e.materialId}, #{e.supplierId}, #{e.stockQty}, #{e.inTransitQty}, #{e.avgDailyQty}, #{e.lowerLimit}, #{e.upperLimit}, #{e.ropQty}, #{e.suggestQty}, #{e.confirmQty}, #{e.selected}, #{e.price}, #{e.formulaRemark}, #{e.tenantId}, '0', #{e.createBy}, #{e.createByName}, #{e.createTime}, #{e.remark})
     </foreach>
   </insert>
 

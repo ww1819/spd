@@ -420,13 +420,7 @@
             create_by, create_by_name, create_time
         ) values
         <foreach collection="list" item="item" separator=",">
-            (
-                #{item.parentId}, #{item.billNo}, #{item.lineNo}, #{item.materialId},
-                #{item.materialCode}, #{item.materialName}, #{item.speci}, #{item.model},
-                #{item.unitName}, #{item.oldPrice}, #{item.newPrice}, #{item.financeClass},
-                #{item.manufacturer}, #{item.regNo}, #{item.regValidDate}, #{item.packSpeci},
-                #{item.remark}, #{item.delFlag}, #{item.tenantId}, #{item.createBy}, #{item.createTime}
-            )
+            (#{item.parentId}, #{item.billNo}, #{item.lineNo}, #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.speci}, #{item.model}, #{item.unitName}, #{item.oldPrice}, #{item.newPrice}, #{item.financeClass}, #{item.manufacturer}, #{item.regNo}, #{item.regValidDate}, #{item.packSpeci}, #{item.remark}, #{item.delFlag}, #{item.tenantId}, #{item.createBy}, #{item.createByName}, #{item.createTime})
         </foreach>
     </insert>
 

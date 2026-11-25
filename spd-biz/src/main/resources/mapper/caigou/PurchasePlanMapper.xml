@@ -399,7 +399,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into purchase_plan_entry(parent_id, plan_no, material_id, supplier_id, qty, apply_qty, price, amt, speci, model, remark, del_flag, apply_department_id, tenant_id, create_by, create_by_name, create_time)
         values
         <foreach collection="list" item="item" index="index" separator=",">
-            (#{item.parentId}, #{item.planNo}, #{item.materialId}, #{item.supplierId}, #{item.qty}, #{item.applyQty}, #{item.price}, #{item.amt}, #{item.speci}, #{item.model}, #{item.remark}, #{item.delFlag}, #{item.applyDepartmentId}, #{item.tenantId}, #{item.createBy}, #{item.createTime})
+            (#{item.parentId}, #{item.planNo}, #{item.materialId}, #{item.supplierId}, #{item.qty}, #{item.applyQty}, #{item.price}, #{item.amt}, #{item.speci}, #{item.model}, #{item.remark}, #{item.delFlag}, #{item.applyDepartmentId}, #{item.tenantId}, #{item.createBy}, #{item.createByName}, #{item.createTime})
         </foreach>
     </insert>
 

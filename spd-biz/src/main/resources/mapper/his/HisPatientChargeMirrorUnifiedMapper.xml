@@ -588,14 +588,7 @@
             process_status, process_type, process_time, process_by, value_level, create_by, create_by_name, create_time
         ) values
         <foreach collection="list" item="e" separator=",">
-            (#{e.id}, #{e.tenantId}, #{e.visitKind}, #{e.fetchBatchId},
-            #{e.hisInpatientChargeId}, #{e.hisOutpatientChargeId}, #{e.hisInpatientChargeIdTf}, #{e.hisOutpatientChargeIdTf},
-            #{e.patientId}, #{e.patientName}, #{e.patientNameReferred}, #{e.inpatientNo}, #{e.outpatientNo},
-            #{e.deptCode}, #{e.deptName}, #{e.clinicCode}, #{e.clinicName}, #{e.execDeptId}, #{e.execDeptName},
-            #{e.doctorId}, #{e.doctorName}, #{e.chargeItemId}, #{e.itemName}, #{e.specModel}, #{e.batchNo}, #{e.expireDate},
-            #{e.useDate}, #{e.chargeDateDisplay}, #{e.chargeAt},
-            #{e.quantity}, #{e.unitPrice}, #{e.totalAmount}, #{e.chargeOperator}, #{e.paymentType}, #{e.receiptNo}, #{e.remark}, #{e.rowFingerprint},
-            #{e.processStatus}, #{e.processType}, #{e.processTime}, #{e.processBy}, #{e.valueLevel}, #{e.createBy}, #{e.createTime})
+            (#{e.id}, #{e.tenantId}, #{e.visitKind}, #{e.fetchBatchId}, #{e.hisInpatientChargeId}, #{e.hisOutpatientChargeId}, #{e.hisInpatientChargeIdTf}, #{e.hisOutpatientChargeIdTf}, #{e.patientId}, #{e.patientName}, #{e.patientNameReferred}, #{e.inpatientNo}, #{e.outpatientNo}, #{e.deptCode}, #{e.deptName}, #{e.clinicCode}, #{e.clinicName}, #{e.execDeptId}, #{e.execDeptName}, #{e.doctorId}, #{e.doctorName}, #{e.chargeItemId}, #{e.itemName}, #{e.specModel}, #{e.batchNo}, #{e.expireDate}, #{e.useDate}, #{e.chargeDateDisplay}, #{e.chargeAt}, #{e.quantity}, #{e.unitPrice}, #{e.totalAmount}, #{e.chargeOperator}, #{e.paymentType}, #{e.receiptNo}, #{e.remark}, #{e.rowFingerprint}, #{e.processStatus}, #{e.processType}, #{e.processTime}, #{e.processBy}, #{e.valueLevel}, #{e.createBy}, #{e.createByName}, #{e.createTime})
         </foreach>
     </insert>
 

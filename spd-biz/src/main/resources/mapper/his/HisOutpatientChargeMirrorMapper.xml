@@ -64,10 +64,7 @@
             charge_operator, payment_type, receipt_no, remark, row_fingerprint, process_status, create_by, create_by_name, create_time
         ) values
         <foreach collection="list" item="e" separator=",">
-            (#{e.id}, #{e.tenantId}, #{e.fetchBatchId}, #{e.hisOutpatientChargeId}, #{e.hisOutpatientChargeIdTf}, #{e.patientId}, #{e.patientName}, #{e.outpatientNo},
-            #{e.clinicCode}, #{e.clinicName}, #{e.execDeptId}, #{e.execDeptName}, #{e.doctorId}, #{e.doctorName}, #{e.chargeItemId}, #{e.itemName}, #{e.specModel},
-            #{e.batchNo}, #{e.expireDate}, #{e.chargeDate}, #{e.quantity}, #{e.unitPrice}, #{e.totalAmount},
-            #{e.chargeOperator}, #{e.paymentType}, #{e.receiptNo}, #{e.remark}, #{e.rowFingerprint}, #{e.processStatus}, #{e.createBy}, #{e.createTime})
+            (#{e.id}, #{e.tenantId}, #{e.fetchBatchId}, #{e.hisOutpatientChargeId}, #{e.hisOutpatientChargeIdTf}, #{e.patientId}, #{e.patientName}, #{e.outpatientNo}, #{e.clinicCode}, #{e.clinicName}, #{e.execDeptId}, #{e.execDeptName}, #{e.doctorId}, #{e.doctorName}, #{e.chargeItemId}, #{e.itemName}, #{e.specModel}, #{e.batchNo}, #{e.expireDate}, #{e.chargeDate}, #{e.quantity}, #{e.unitPrice}, #{e.totalAmount}, #{e.chargeOperator}, #{e.paymentType}, #{e.receiptNo}, #{e.remark}, #{e.rowFingerprint}, #{e.processStatus}, #{e.createBy}, #{e.createByName}, #{e.createTime})
         </foreach>
     </insert>
 

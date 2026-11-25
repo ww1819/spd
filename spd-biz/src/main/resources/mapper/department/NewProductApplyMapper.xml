@@ -343,16 +343,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <insert id="batchNewProductApplyEntry">
         insert into new_product_apply_entry(parent_id, material_id, material_name, speci, model, unit_name, price, qty, amt, factory_name, supplier_name, remark, brand_requirement, special_note, case_fee_category, create_by, create_by_name, create_time, tenant_id) values
         <foreach item="item" index="index" collection="list" separator=",">
-            (#{item.parentId}, #{item.materialId}, #{item.materialName}, #{item.speci}, #{item.model}, #{item.unitName}, #{item.price}, #{item.qty}, #{item.amt}, #{item.factoryName}, #{item.supplierName}, #{item.remark}, #{item.brandRequirement}, #{item.specialNote}, #{item.caseFeeCategory}, #{item.createBy}, #{item.createTime},
-             (select m.tenant_id from new_product_apply m where m.id = #{item.parentId} limit 1))
+            (#{item.parentId}, #{item.materialId}, #{item.materialName}, #{item.speci}, #{item.model}, #{item.unitName}, #{item.price}, #{item.qty}, #{item.amt}, #{item.factoryName}, #{item.supplierName}, #{item.remark}, #{item.brandRequirement}, #{item.specialNote}, #{item.caseFeeCategory}, #{item.createBy}, #{item.createByName}, #{item.createTime}, (select m.tenant_id from new_product_apply m where m.id = #{item.parentId} limit 1))
         </foreach>
     </insert>
 
     <insert id="batchNewProductApplyDetail">
         insert into new_product_apply_detail(parent_id, similar_product, speci, model, create_by, create_by_name, create_time, tenant_id) values
         <foreach item="item" index="index" collection="list" separator=",">
-            (#{item.parentId}, #{item.similarProduct}, #{item.speci}, #{item.model}, #{item.createBy}, #{item.createTime},
-             (select m.tenant_id from new_product_apply m where m.id = #{item.parentId} limit 1))
+            (#{item.parentId}, #{item.similarProduct}, #{item.speci}, #{item.model}, #{item.createBy}, #{item.createByName}, #{item.createTime}, (select m.tenant_id from new_product_apply m where m.id = #{item.parentId} limit 1))
         </foreach>
     </insert>
 

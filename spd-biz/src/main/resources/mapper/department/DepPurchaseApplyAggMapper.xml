@@ -378,7 +378,7 @@
                 #{item.id}, #{item.parentId}, #{item.tenantId}, #{item.materialId}, #{item.materialName},
                 #{item.materialSpec}, #{item.unit}, #{item.unitPrice}, #{item.qty}, #{item.amt},
                 #{item.reason}, #{item.supplierName}, #{item.brand}, #{item.model}, #{item.producer}, #{item.lineNo},
-                #{item.warehouseId}, #{item.isGz}, #{item.delFlag}, #{item.createBy}, #{item.createTime}, #{item.remark}
+                #{item.warehouseId}, #{item.isGz}, #{item.delFlag}, #{item.createBy}, #{item.createByName}, #{item.createTime}, #{item.remark}
             )
         </foreach>
     </insert>

@@ -277,13 +277,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         )
         values
         <foreach item="item" collection="list" separator=",">
-            ( #{item.entryUuid}, #{item.parenId}, #{item.billNo}, #{item.stocktakingEntryId}, #{item.stocktakingLineUuid}, #{item.kcNo}, #{item.depInventoryId}, #{item.materialId},
-              #{item.batchNo}, #{item.origBatchNo}, #{item.origBatchId}, #{item.batchNumber}, #{item.plKind},
-              #{item.bookQty}, #{item.stockQty}, #{item.profitQty}, #{item.unitPrice}, #{item.profitAmount},
-              #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplerId},
-              #{item.materialNameSnap}, #{item.materialSpeciSnap}, #{item.warehouseNameSnap}, #{item.departmentNameSnap}, #{item.returnWarehouseId},
-              #{item.surplusStkBatchId}, #{item.resultStkInventoryId}, #{item.resultDepInventoryId},
-              #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime}, #{item.tenantId} )
+            (#{item.entryUuid}, #{item.parenId}, #{item.billNo}, #{item.stocktakingEntryId}, #{item.stocktakingLineUuid}, #{item.kcNo}, #{item.depInventoryId}, #{item.materialId}, #{item.batchNo}, #{item.origBatchNo}, #{item.origBatchId}, #{item.batchNumber}, #{item.plKind}, #{item.bookQty}, #{item.stockQty}, #{item.profitQty}, #{item.unitPrice}, #{item.profitAmount}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.mainBarcode}, #{item.subBarcode}, #{item.supplerId}, #{item.materialNameSnap}, #{item.materialSpeciSnap}, #{item.warehouseNameSnap}, #{item.departmentNameSnap}, #{item.returnWarehouseId}, #{item.surplusStkBatchId}, #{item.resultStkInventoryId}, #{item.resultDepInventoryId}, #{item.createBy}, #{item.createByName}, #{item.createTime}, #{item.updateBy}, #{item.updateByName}, #{item.updateTime}, #{item.tenantId})
         </foreach>
     </insert>
 

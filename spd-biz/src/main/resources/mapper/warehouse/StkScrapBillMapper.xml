@@ -218,12 +218,7 @@
             manufacturer, remark, del_flag, tenant_id, create_by, create_by_name, create_time
         ) values
         <foreach collection="list" item="e" separator=",">
-            (
-                #{e.parentId}, #{e.billNo}, #{e.lineNo}, #{e.inventoryId}, #{e.materialId},
-                #{e.materialCode}, #{e.materialName}, #{e.speci}, #{e.model}, #{e.unitName},
-                #{e.qty}, #{e.price}, #{e.amount}, #{e.batchNo}, #{e.batchNumber}, #{e.produceDate}, #{e.expiryDate},
-                #{e.manufacturer}, #{e.remark}, #{e.delFlag}, #{e.tenantId}, #{e.createBy}, #{e.createTime}
-            )
+            (#{e.parentId}, #{e.billNo}, #{e.lineNo}, #{e.inventoryId}, #{e.materialId}, #{e.materialCode}, #{e.materialName}, #{e.speci}, #{e.model}, #{e.unitName}, #{e.qty}, #{e.price}, #{e.amount}, #{e.batchNo}, #{e.batchNumber}, #{e.produceDate}, #{e.expiryDate}, #{e.manufacturer}, #{e.remark}, #{e.delFlag}, #{e.tenantId}, #{e.createBy}, #{e.createByName}, #{e.createTime})
         </foreach>
     </insert>
 

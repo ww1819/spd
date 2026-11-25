@@ -28,7 +28,7 @@
         insert into purchase_plan_entry_apply (purchase_plan_entry_id, bas_apply_entry_id, del_flag, tenant_id, create_by, create_by_name, create_time)
         values
         <foreach collection="list" item="item" separator=",">
-            (#{item.purchasePlanEntryId}, #{item.basApplyEntryId}, '0', #{item.tenantId}, #{item.createBy}, #{item.createTime})
+            (#{item.purchasePlanEntryId}, #{item.basApplyEntryId}, '0', #{item.tenantId}, #{item.createBy}, #{item.createByName}, #{item.createTime})
         </foreach>
         on duplicate key update
             del_flag = '0',

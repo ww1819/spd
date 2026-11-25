@@ -48,7 +48,7 @@
     insert into hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_by_name, create_time, is_deleted)
     values
     <foreach item="item" collection="list" separator=",">
-      (#{item.tenantId}, #{item.menuId}, ifnull(#{item.status},'0'), ifnull(#{item.isEnabled},'1'), #{item.createBy}, now(), 0)
+      (#{item.tenantId}, #{item.menuId}, ifnull(#{item.status},'0'), ifnull(#{item.isEnabled},'1'), #{item.createBy}, #{item.createByName}, now(), 0)
     </foreach>
   </insert>
 </mapper>

@@ -373,14 +373,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                                        actual_delivery_date, quality_status, remark, del_flag, plan_id, plan_no, plan_entry_id, tenant_id, create_by, create_by_name, create_time)
         values
         <foreach collection="list" item="item" index="index" separator=",">
-            (#{item.parentId}, #{item.orderNo}, #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.materialSpec}, 
-             #{item.materialUnit}, 
-             <![CDATA[#{item.orderQty}]]>, 
-             <![CDATA[#{item.receivedQty}]]>, 
-             <![CDATA[#{item.unitPrice}]]>, 
-             <![CDATA[#{item.totalAmount}]]>, 
-             #{item.expectedDeliveryDate}, #{item.actualDeliveryDate}, #{item.qualityStatus}, #{item.remark}, 
-             #{item.delFlag}, #{item.planId}, #{item.planNo}, #{item.planEntryId}, #{item.tenantId}, #{item.createBy}, #{item.createTime})
+            (#{item.parentId}, #{item.orderNo}, #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.materialSpec}, #{item.materialUnit}, <![CDATA[#{item.orderQty}]]>, <![CDATA[#{item.receivedQty}]]>, <![CDATA[#{item.unitPrice}]]>, <![CDATA[#{item.totalAmount}]]>, #{item.expectedDeliveryDate}, #{item.actualDeliveryDate}, #{item.qualityStatus}, #{item.remark}, #{item.delFlag}, #{item.planId}, #{item.planNo}, #{item.planEntryId}, #{item.tenantId}, #{item.createBy}, #{item.createByName}, #{item.createTime})
         </foreach>
     </insert>
 
