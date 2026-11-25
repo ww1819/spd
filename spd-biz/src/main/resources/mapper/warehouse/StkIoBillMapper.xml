@@ -55,7 +55,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="whWarehouseApplyBillNo"    column="wh_warehouse_apply_bill_no"    />
         <result property="depPurchaseApplyId"    column="dep_purchase_apply_id"    />
         <result property="depPurchaseApplyBillNo"    column="dep_purchase_apply_bill_no"    />
-        <result property="recipientName"    column="recipient_name"    />
         <result property="deliveryRefWarehouseId"    column="delivery_ref_warehouse_id"    />
         <result property="deliveryRefWarehouseName"    column="delivery_ref_warehouse_name"    />
         <result property="deliveryRefSupplierId"    column="delivery_ref_supplier_id"    />
@@ -255,7 +254,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 				stk.invoice_time,stk.pro_person,stk.return_reason,stk.is_month_init,stk.receipt_confirm_status,stk.audit_by,
 				stk.his_push_status,stk.his_push_msg,stk.his_push_time,stk.print_date,stk.print_person,
 				stk.d_apply_id,stk.wh_warehouse_apply_id,stk.wh_warehouse_apply_bill_no,
-				stk.dep_purchase_apply_id,stk.dep_purchase_apply_bill_no,stk.recipient_name,
+				stk.dep_purchase_apply_id,stk.dep_purchase_apply_bill_no,
 				stk.delivery_ref_warehouse_id,stk.delivery_ref_warehouse_name,stk.delivery_ref_supplier_id,
 				stk.delivery_ref_supplier_name,stk.delivery_ref_dept_id,stk.delivery_ref_dept_name,
 				s.id sId,s.code supplierCode,s.name supplierName,
@@ -1261,7 +1260,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select a.id, a.bill_no, a.ref_bill_no, a.suppler_id, a.bill_date, a.warehouse_id, a.department_id, a.bill_status, a.user_id as stk_user_id, a.bill_type, a.del_flag, a.tenant_id, a.delete_by, a.delete_time, a.settlement_type, a.audit_date, a.create_by, a.create_time, a.update_by, a.update_time, a.remark,
                 a.d_apply_id, a.wh_warehouse_apply_id, a.wh_warehouse_apply_bill_no,
-                a.dep_purchase_apply_id, a.dep_purchase_apply_bill_no, a.recipient_name,
+                a.dep_purchase_apply_id, a.dep_purchase_apply_bill_no,
                 a.delivery_ref_warehouse_id, a.delivery_ref_warehouse_name, a.delivery_ref_supplier_id,
                 a.delivery_ref_supplier_name, a.delivery_ref_dept_id, a.delivery_ref_dept_name,
                 a.del_person,a.telephone,a.recipient_name,a.total_amount,a.invoice_number,a.invoice_amount,
@@ -1283,7 +1282,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                 b.his_push_status as sub_his_push_status, b.his_push_msg as sub_his_push_msg,
                 b.his_drug_id as sub_his_drug_id, b.his_drug_spec_packing_id as sub_his_drug_spec_packing_id,
                 au.nick_name auditNickName,au.user_name auditUserName,
-               cu.nick_name createrNickName,cu.user_name createrUserName,a.audit_by,
+               cu.nick_name createrNickName,cu.user_name createrUserName,
                wh.id as wId, wh.code as warehouseCode, wh.name as warehouseName,
                d.id as dId, d.code as departmentCode, d.name as departmentName, d.his_id as departmentHisId,
                op.user_id as userId, op.nick_name as nickName, op.user_name as userName,
@@ -1294,7 +1293,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                u.unit_id AS u_unit_id, u.unit_code as u_code, u.unit_name as u_name,
                f.factory_id AS f_factory_id, f.factory_code as f_code, f.factory_name as f_name,
                wc.warehouse_category_id as wid, wc.warehouse_category_code as wc_code, wc.warehouse_category_name as wc_name,
-               fc.finance_category_id, fc.finance_category_code as fc_code, fc.finance_category_name as fc_name,
+               fc.finance_category_code as fc_code, fc.finance_category_name as fc_name,
                s.id as sid, s.code as supplier_code, s.name as supplier_name
         from stk_io_bill a
         left join fd_warehouse wh on a.warehouse_id = wh.id
@@ -2172,18 +2171,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             m.model,
             m.supplier_id,
             m.storeroom_id,
-            m.factory_id,
-            m.unit_id,
+            m.factory_id AS mat_factory_id,
+            m.unit_id AS m_unit_id,
             m.finance_category_id,
             m.package_speci,
             m.register_no,
-            u.unit_id,
+            u.unit_id AS u_unit_id,
             u.unit_code as u_code,
             u.unit_name as u_name,
-            f.factory_id,
+            f.factory_id AS f_factory_id,
             f.factory_code as f_code,
             f.factory_name as f_name,
-            fc.finance_category_id,
             fc.finance_category_code as fc_code,
             fc.finance_category_name as fc_name,
             wc.warehouse_category_id as wid,
@@ -2192,7 +2190,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             s.id as sid,
             s.code as supplier_code,
             s.name as supplier_name,
-            w.id as wId,
+            w.id as settlement_warehouse_id,
             w.name as warehouseName,
             w.settlement_type as settlementType
         from stk_io_bill stk
