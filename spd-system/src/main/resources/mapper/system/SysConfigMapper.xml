@@ -11,13 +11,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="configValue"   column="config_value"   />
         <result property="configType"    column="config_type"    />
         <result property="createBy"      column="create_by"      />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"      column="update_by"      />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
     </resultMap>
     
     <sql id="selectConfigVo">
-        select config_id, config_name, config_key, config_value, config_type, create_by, create_time, update_by, update_time, remark 
+        select config_id, config_name, config_key, config_value, config_type, create_by, create_by_name, create_time, update_by, update_by_name, update_time, remark 
 		from sys_config
     </sql>
     
@@ -76,6 +78,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			<if test="configValue != null and configValue != '' ">config_value,</if>
 			<if test="configType != null and configType != '' ">config_type,</if>
 			<if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
 			<if test="remark != null and remark != ''">remark,</if>
  			create_time
         )values(
@@ -84,6 +87,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			<if test="configValue != null and configValue != ''">#{configValue},</if>
 			<if test="configType != null and configType != ''">#{configType},</if>
 			<if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
 			<if test="remark != null and remark != ''">#{remark},</if>
  			sysdate()
 		)
@@ -97,6 +101,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="configValue != null and configValue != ''">config_value = #{configValue},</if>
             <if test="configType != null and configType != ''">config_type = #{configType},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="remark != null">remark = #{remark},</if>
  			update_time = sysdate()
         </set>

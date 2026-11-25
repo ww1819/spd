@@ -11,12 +11,15 @@
         <result property="warehouseName" column="warehouse_name"/>
         <result property="settlementMethod" column="settlement_method"/>
         <result property="createBy" column="create_by"/>
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime" column="create_time"/>
         <result property="auditBy" column="audit_by"/>
+        <result property="auditByName"    column="audit_by_name"    />
         <result property="auditTime" column="audit_time"/>
         <result property="auditStatus" column="audit_status"/>
         <result property="delFlag" column="del_flag"/>
         <result property="deleteBy" column="delete_by"/>
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime" column="delete_time"/>
         <result property="remark" column="remark"/>
     </resultMap>
@@ -48,6 +51,7 @@
         <result property="supplierName" column="supplier_name"/>
         <result property="delFlag" column="del_flag"/>
         <result property="deleteBy" column="delete_by"/>
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime" column="delete_time"/>
         <result property="sortOrder" column="sort_order"/>
     </resultMap>
@@ -82,7 +86,7 @@
 
     <insert id="insert" parameterType="com.spd.finance.domain.WhSettlementBill">
         insert into wh_settlement_bill (id, tenant_id, bill_no, warehouse_id, warehouse_code, warehouse_name, settlement_method,
-            create_by, create_time, audit_by, audit_time, audit_status, del_flag, delete_by, delete_time, remark, update_by, update_time)
+            create_by, create_by_name, create_time, audit_by, audit_time, audit_status, del_flag, delete_by, delete_by_name, delete_time, remark, update_by, update_by_name, update_time)
         values (#{id}, #{tenantId}, #{billNo}, #{warehouseId}, #{warehouseCode}, #{warehouseName}, #{settlementMethod},
             #{createBy}, #{createTime}, #{auditBy}, #{auditTime}, 0, 0, #{deleteBy}, #{deleteTime}, #{remark}, #{updateBy}, #{updateTime})
     </insert>
@@ -117,18 +121,20 @@
     <select id="selectEntriesByParenId" resultMap="WhSettlementBillEntryResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         select id, tenant_id, paren_id, bill_no, material_id, material_name, speci, model, unit, unit_price, qty, amt,
-               batch_number, end_time, batch_no, factory_id, factory_code, factory_name, source_bill_type, source_bill_id, source_bill_no, source_entry_id, supplier_id, supplier_name, del_flag, delete_by, delete_time, sort_order
+               batch_number, end_time, batch_no, factory_id, factory_code, factory_name, source_bill_type, source_bill_id, source_bill_no, source_entry_id, supplier_id, supplier_name, del_flag, delete_by, delete_by_name, delete_time, sort_order
         from wh_settlement_bill_entry where paren_id = #{parenId} and tenant_id = #{scopedTenantId} and (del_flag = 0 or del_flag is null) order by sort_order, id
     </select>
 
     <update id="deleteEntriesByParenId">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update wh_settlement_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
+        update wh_settlement_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteEntriesByIds">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update wh_settlement_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId} and id in
+        update wh_settlement_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId} and id in
         <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
     </update>
 
@@ -139,8 +145,9 @@
     </update>
 
     <update id="deleteById">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update wh_settlement_bill set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
+        update wh_settlement_bill set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <select id="selectMaxBillNo" resultType="string">

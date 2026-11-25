@@ -47,10 +47,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag,</if>
             tenant_id,
             <if test="deleteBy != null">delete_by,</if>
+            <if test="deleteByName != null">delete_by_name,</if>
             <if test="deleteTime != null">delete_time,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -93,10 +96,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">#{delFlag},</if>
             #{scopedTenantId},
             <if test="deleteBy != null">#{deleteBy},</if>
+            <if test="deleteByName != null">#{deleteByName},</if>
             <if test="deleteTime != null">#{deleteTime},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
         </trim>
     </insert>

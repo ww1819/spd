@@ -10,12 +10,13 @@
     <result property="startTime" column="start_time"/>
     <result property="endTime" column="end_time"/>
     <result property="createBy" column="create_by"/>
+        <result property="createByName"    column="create_by_name"    />
     <result property="createTime" column="create_time"/>
           <result property="isDeleted" column="is_deleted"/>
     </resultMap>
 
   <select id="selectByTenantIdAndMenuId" resultMap="Result">
-    select period_id, tenant_id, menu_id, period_type, start_time, end_time, create_by, create_time
+    select period_id, tenant_id, menu_id, period_type, start_time, end_time, create_by, create_by_name, create_time
     from hc_customer_menu_period_log
     where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId} and menu_id = #{menuId}
     AND IFNULL(is_deleted,0)=0
@@ -23,7 +24,7 @@
   </select>
 
   <select id="selectLastWithNullEnd" resultMap="Result">
-    select period_id, tenant_id, menu_id, period_type, start_time, end_time, create_by, create_time
+    select period_id, tenant_id, menu_id, period_type, start_time, end_time, create_by, create_by_name, create_time
     from hc_customer_menu_period_log
     where IFNULL(is_deleted,0)=0 AND tenant_id = #{tenantId} and menu_id = #{menuId} and period_type = #{periodType} and end_time is null
     AND IFNULL(is_deleted,0)=0
@@ -35,7 +36,7 @@
   </update>
 
   <insert id="insert" parameterType="com.spd.system.domain.hc.HcCustomerMenuPeriodLog">
-    INSERT INTO hc_customer_menu_period_log (period_id, tenant_id, menu_id, period_type, start_time, end_time, create_by, create_time, is_deleted)
+    INSERT INTO hc_customer_menu_period_log (period_id, tenant_id, menu_id, period_type, start_time, end_time, create_by, create_by_name, create_time, is_deleted)
     VALUES (#{periodId}, #{tenantId}, #{menuId}, #{periodType}, #{startTime}, #{endTime}, #{createBy}, #{createTime}, 0)
   </insert>
 </mapper>

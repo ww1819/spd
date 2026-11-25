@@ -18,8 +18,10 @@
     <result property="delFlag" column="del_flag"/>
     <result property="remark" column="remark"/>
     <result property="createBy" column="create_by"/>
+        <result property="createByName"    column="create_by_name"    />
     <result property="createTime" column="create_time"/>
     <result property="updateBy" column="update_by"/>
+        <result property="updateByName"    column="update_by_name"    />
     <result property="updateTime" column="update_time"/>
     <association property="warehouse" javaType="com.spd.foundation.domain.FdWarehouse">
       <id property="id" column="w_id"/>
@@ -130,7 +132,7 @@
     insert into purchase_forecast_task (
       task_no, warehouse_id, is_gz, calc_days, lead_time_days, safety_days,
       status, generated_plan_ids, generated_plan_nos, tenant_id, del_flag,
-      create_by, create_time, remark
+      create_by, create_by_name, create_time, remark
     ) values (
       #{taskNo}, #{warehouseId}, #{isGz}, #{calcDays}, #{leadTimeDays}, #{safetyDays},
       #{status}, #{generatedPlanIds}, #{generatedPlanNos}, #{tenantId}, '0',
@@ -156,7 +158,7 @@
       task_id, warehouse_id, material_id, supplier_id,
       stock_qty, in_transit_qty, avg_daily_qty, lower_limit, upper_limit,
       rop_qty, suggest_qty, confirm_qty, selected, price, formula_remark,
-      tenant_id, del_flag, create_by, create_time, remark
+      tenant_id, del_flag, create_by, create_by_name, create_time, remark
     ) values
     <foreach collection="list" item="e" separator=",">
       (

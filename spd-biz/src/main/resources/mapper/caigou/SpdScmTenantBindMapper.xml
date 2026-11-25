@@ -19,7 +19,7 @@
     </select>
 
     <insert id="insert" parameterType="com.spd.caigou.domain.SpdScmTenantBind">
-        insert into spd_scm_tenant_bind(id, tenant_id, scm_hospital_code, remark, del_flag, create_by, create_time)
+        insert into spd_scm_tenant_bind(id, tenant_id, scm_hospital_code, remark, del_flag, create_by, create_by_name, create_time)
         values(#{id}, #{tenantId}, #{scmHospitalCode}, #{remark}, '0', #{createBy}, now())
     </insert>
 

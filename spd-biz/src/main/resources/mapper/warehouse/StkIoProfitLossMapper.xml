@@ -12,10 +12,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="warehouseId"    column="warehouse_id"    />
         <result property="billStatus"    column="bill_status"    />
         <result property="auditBy"    column="audit_by"    />
+        <result property="auditByName"    column="audit_by_name"    />
         <result property="auditDate"    column="audit_date"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="tenantId"    column="tenant_id"    />
@@ -186,10 +189,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseId != null">warehouse_id,</if>
             <if test="billStatus != null">bill_status,</if>
             <if test="auditBy != null">audit_by,</if>
+            <if test="auditByName != null">audit_by_name,</if>
             <if test="auditDate != null">audit_date,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="uuidId != null">uuid_id,</if>
@@ -206,10 +212,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="warehouseId != null">#{warehouseId},</if>
             <if test="billStatus != null">#{billStatus},</if>
             <if test="auditBy != null">#{auditBy},</if>
+            <if test="auditByName != null">#{auditByName},</if>
             <if test="auditDate != null">#{auditDate},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="uuidId != null">#{uuidId},</if>
@@ -234,8 +243,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="departmentNameSnap != null">department_name_snap = #{departmentNameSnap},</if>
             <if test="billStatus != null">bill_status = #{billStatus},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditByName != null">audit_by_name = #{auditByName},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
         </trim>
@@ -243,13 +254,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <update id="deleteStkIoProfitLossById" parameterType="Long">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update stk_io_profit_loss set del_flag = 1, update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
+        update stk_io_profit_loss set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteStkIoProfitLossEntryByParenId">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update stk_io_profit_loss_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
+        update stk_io_profit_loss_entry set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </update>
 
     <insert id="batchStkIoProfitLossEntry">
@@ -260,7 +273,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             begin_time, end_time, del_flag, main_barcode, sub_barcode, suppler_id,
             material_name_snap, material_speci_snap, warehouse_name_snap, department_name_snap, return_warehouse_id,
             surplus_stk_batch_id, result_stk_inventory_id, result_dep_inventory_id,
-            create_by, create_time, update_by, update_time, tenant_id
+            create_by, create_by_name, create_time, update_by, update_by_name, update_time, tenant_id
         )
         values
         <foreach item="item" collection="list" separator=",">

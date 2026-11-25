@@ -27,8 +27,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="remark"    column="remark"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <association property="applyDept"    column="apply_dept_id" javaType="FdDepartment" resultMap="applyDeptResult" />
         <association property="execDept"    column="exec_dept_id" javaType="FdDepartment" resultMap="execDeptResult" />
@@ -111,8 +113,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">remark,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             tenant_id,
          </trim>
@@ -138,8 +142,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">#{remark},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             #{scopedTenantId},
          </trim>
@@ -169,6 +175,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="surgeryId != null">surgery_id = #{surgeryId},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
@@ -178,7 +185,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_patient_info
         set del_flag = '2',
-            delete_by = #{deleteBy},
+            delete_by = #{deleteBy}, delete_by_name = #{deleteByName},
             delete_time = now(),
             update_by = #{deleteBy},
             update_time = now()
@@ -189,7 +196,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_patient_info
         set del_flag = '2',
-            delete_by = #{deleteBy},
+            delete_by = #{deleteBy}, delete_by_name = #{deleteByName},
             delete_time = now(),
             update_by = #{deleteBy},
             update_time = now()

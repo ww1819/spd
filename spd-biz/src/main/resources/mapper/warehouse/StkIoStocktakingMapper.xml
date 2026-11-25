@@ -17,8 +17,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="delFlag"    column="del_flag"    />
         <result property="auditDate"    column="audit_date"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <result property="remark"    column="remark"    />
         <result property="rejectReason"    column="reject_reason"    />
@@ -344,8 +346,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag,</if>
             <if test="auditDate != null">audit_date,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
             <if test="rejectReason != null">reject_reason,</if>
@@ -366,8 +370,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">#{delFlag},</if>
             <if test="auditDate != null">#{auditDate},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
             <if test="rejectReason != null">#{rejectReason},</if>
@@ -393,8 +399,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createByName != null">create_by_name = #{createByName},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="rejectReason != null">reject_reason = #{rejectReason},</if>
@@ -408,12 +416,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <delete id="deleteStkIoStocktakingById">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update stk_io_stocktaking set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
+        update stk_io_stocktaking set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteStkIoStocktakingByIds">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update stk_io_stocktaking set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
+        update stk_io_stocktaking set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -421,7 +429,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <delete id="deleteStkIoStocktakingEntryByParenIds">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update stk_io_stocktaking_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where tenant_id = #{scopedTenantId} and paren_id in
+        update stk_io_stocktaking_entry set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now() where tenant_id = #{scopedTenantId} and paren_id in
         <foreach item="parenId" collection="ids" open="(" separator="," close=")">
             #{parenId}
         </foreach>
@@ -429,7 +437,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <delete id="deleteStkIoStocktakingEntryByParenId">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update stk_io_stocktaking_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
+        update stk_io_stocktaking_entry set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <update id="updateStkIoStocktakingEntry" parameterType="StkIoStocktakingEntry">
@@ -457,7 +465,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             orig_batch_id, orig_batch_no_snapshot, batch_number, begin_time, end_time, del_flag, remark,
             stock_qty, profit_qty, profit_loss_flag, stock_amount, profit_amount, main_barcode, sub_barcode, supplier_id, return_warehouse_id, counted_flag,
             his_id, third_party_batch_no,
-            tenant_id, create_by, create_time, update_by, update_time)
+            tenant_id, create_by, create_by_name, create_time, update_by, update_by_name, update_time)
         values (
             #{entryUuid}, #{parenId}, #{stockNo}, #{commodityId}, #{materialId}, #{unitPrice}, #{qty}, #{price}, #{amt}, #{batchNo}, #{kcNo}, #{kcNoStr}, #{depInventoryId},
             #{warehouseIdStr}, #{departmentIdStr}, #{supplierIdStr},
@@ -468,8 +476,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <update id="deleteStkIoStocktakingEntryByParenIdExceptIds">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update stk_io_stocktaking_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId} and (del_flag is null or del_flag != 1)
+        update stk_io_stocktaking_entry set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId} and (del_flag is null or del_flag != 1)
         <if test="keepIds != null and keepIds.size() > 0">
             and id not in
             <foreach item="id" collection="keepIds" open="(" separator="," close=")">#{id}</foreach>
@@ -483,7 +492,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             orig_batch_id, orig_batch_no_snapshot, batch_number, begin_time, end_time, del_flag, remark,
             stock_qty, profit_qty, profit_loss_flag, stock_amount, profit_amount, main_barcode, sub_barcode, supplier_id, return_warehouse_id, counted_flag,
             his_id, third_party_batch_no,
-            tenant_id, create_by, create_time, update_by, update_time)
+            tenant_id, create_by, create_by_name, create_time, update_by, update_by_name, update_time)
         values
         <foreach item="item" index="index" collection="list" separator=",">
             ( #{item.entryUuid}, #{item.parenId}, #{item.stockNo}, #{item.commodityId}, #{item.materialId}, #{item.unitPrice}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.kcNo}, #{item.kcNoStr}, #{item.depInventoryId},

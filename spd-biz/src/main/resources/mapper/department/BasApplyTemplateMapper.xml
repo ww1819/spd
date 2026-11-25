@@ -13,10 +13,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="remark" column="remark"/>
         <result property="delFlag" column="del_flag"/>
         <result property="deleteBy" column="delete_by"/>
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime" column="delete_time"/>
         <result property="createBy" column="create_by"/>
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime" column="update_time"/>
         <association property="warehouse" column="warehouse_id" javaType="com.spd.foundation.domain.FdWarehouse" resultMap="warehouseResult"/>
     </resultMap>
@@ -80,7 +83,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectTemplateVo">
-        select id, template_name, template_type, warehouse_id, tenant_id, remark, del_flag, create_by, create_time, update_by, update_time, delete_by, delete_time
+        select id, template_name, template_type, warehouse_id, tenant_id, remark, del_flag, create_by, create_by_name, create_time, update_by, update_by_name, update_time, delete_by, delete_by_name, delete_time
         from bas_apply_template
     </sql>
 
@@ -151,8 +154,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">remark,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -163,8 +168,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">#{remark},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
         </trim>
     </insert>
@@ -180,22 +187,25 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">remark = #{remark},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteBasApplyTemplateById">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update bas_apply_template set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
+        update bas_apply_template set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <!-- 逻辑删除：表有 delete_by、delete_time，使用更新代替物理删除 -->
     <update id="deleteEntryByParenId">
+        <bind name="_auditDeleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="auditDeleteBy" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
         <bind name="auditDeleteByName" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update bas_apply_template_entry set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{auditDeleteByName}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId} and (delete_time is null)
+        update bas_apply_template_entry set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{_auditDeleteByNameAuto}, delete_time = now() where paren_id = #{parenId} and tenant_id = #{scopedTenantId} and (delete_time is null)
     </update>
 
     <insert id="batchInsertEntry">

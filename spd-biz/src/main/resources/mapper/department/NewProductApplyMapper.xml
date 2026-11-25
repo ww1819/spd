@@ -14,8 +14,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="delFlag"    column="del_flag"    />
         <result property="auditDate"    column="audit_date"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <result property="remark"    column="remark"    />
         <result property="reasonAndBenefit"    column="reason_and_benefit"    />
@@ -244,8 +246,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag,</if>
             <if test="auditDate != null">audit_date,</if>
             <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null and updateBy != ''">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null and remark != ''">remark,</if>
             <if test="reasonAndBenefit != null and reasonAndBenefit != ''">reason_and_benefit,</if>
@@ -264,8 +268,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">#{delFlag},</if>
             <if test="auditDate != null">#{auditDate},</if>
             <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null and updateBy != ''">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null and remark != ''">#{remark},</if>
             <if test="reasonAndBenefit != null and reasonAndBenefit != ''">#{reasonAndBenefit},</if>
@@ -289,8 +295,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="createBy != null and createBy != ''">create_by = #{createBy},</if>
+            <if test="createByName != null">create_by_name = #{createByName},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null and remark != ''">remark = #{remark},</if>
             <if test="reasonAndBenefit != null and reasonAndBenefit != ''">reason_and_benefit = #{reasonAndBenefit},</if>
@@ -304,12 +312,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <delete id="deleteNewProductApplyById">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update new_product_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
+        update new_product_apply set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteNewProductApplyByIds">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update new_product_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
+        update new_product_apply set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -317,19 +325,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <delete id="deleteNewProductApplyEntryByParentId">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update new_product_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
+        update new_product_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteNewProductApplyEntryByParentIds">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update new_product_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and parent_id in
+        update new_product_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and parent_id in
         <foreach item="parentId" collection="ids" open="(" separator="," close=")">
             #{parentId}
         </foreach>
     </delete>
 
     <insert id="batchNewProductApplyEntry">
-        insert into new_product_apply_entry(parent_id, material_id, material_name, speci, model, unit_name, price, qty, amt, factory_name, supplier_name, remark, brand_requirement, special_note, case_fee_category, create_by, create_time, tenant_id) values
+        insert into new_product_apply_entry(parent_id, material_id, material_name, speci, model, unit_name, price, qty, amt, factory_name, supplier_name, remark, brand_requirement, special_note, case_fee_category, create_by, create_by_name, create_time, tenant_id) values
         <foreach item="item" index="index" collection="list" separator=",">
             (#{item.parentId}, #{item.materialId}, #{item.materialName}, #{item.speci}, #{item.model}, #{item.unitName}, #{item.price}, #{item.qty}, #{item.amt}, #{item.factoryName}, #{item.supplierName}, #{item.remark}, #{item.brandRequirement}, #{item.specialNote}, #{item.caseFeeCategory}, #{item.createBy}, #{item.createTime},
              (select m.tenant_id from new_product_apply m where m.id = #{item.parentId} limit 1))
@@ -337,7 +345,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </insert>
 
     <insert id="batchNewProductApplyDetail">
-        insert into new_product_apply_detail(parent_id, similar_product, speci, model, create_by, create_time, tenant_id) values
+        insert into new_product_apply_detail(parent_id, similar_product, speci, model, create_by, create_by_name, create_time, tenant_id) values
         <foreach item="item" index="index" collection="list" separator=",">
             (#{item.parentId}, #{item.similarProduct}, #{item.speci}, #{item.model}, #{item.createBy}, #{item.createTime},
              (select m.tenant_id from new_product_apply m where m.id = #{item.parentId} limit 1))
@@ -346,7 +354,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <delete id="deleteNewProductApplyDetailByParentId">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update new_product_apply_detail set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
+        update new_product_apply_detail set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
     </delete>
 
 </mapper>

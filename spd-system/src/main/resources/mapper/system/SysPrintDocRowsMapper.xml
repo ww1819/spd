@@ -9,15 +9,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="docKind"       column="doc_kind" />
         <result property="rowsPerPage"   column="rows_per_page" />
         <result property="createBy"     column="create_by" />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"   column="create_time" />
         <result property="updateBy"     column="update_by" />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"   column="update_time" />
         <result property="remark"       column="remark" />
         <result property="isDeleted"    column="is_deleted" />
     </resultMap>
 
     <sql id="selectSysPrintDocRowsVo">
-        select id, doc_kind, rows_per_page, create_by, create_time, update_by, update_time, remark, is_deleted
+        select id, doc_kind, rows_per_page, create_by, create_by_name, create_time, update_by, update_by_name, update_time, remark, is_deleted
         from sys_print_doc_rows
     </sql>
 
@@ -34,8 +36,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="docKind != null and docKind != ''">doc_kind,</if>
             <if test="rowsPerPage != null">rows_per_page,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             create_time,
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="remark != null">remark,</if>
             is_deleted,
         </trim>
@@ -43,8 +47,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="docKind != null and docKind != ''">#{docKind},</if>
             <if test="rowsPerPage != null">#{rowsPerPage},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             sysdate(),
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="remark != null">#{remark},</if>
             0,
         </trim>
@@ -55,6 +61,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <set>
             rows_per_page = #{rowsPerPage},
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             update_time = sysdate()
         </set>
         where IFNULL(is_deleted,0)=0 AND doc_kind = #{docKind}

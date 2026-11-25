@@ -32,6 +32,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="billType"    column="bill_type"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime"    column="delete_time"    />
         <result property="kcNo"    column="kc_no"    />
         <result property="batchNumber"    column="batch_number"    />
@@ -528,7 +529,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_dep_inventory
         set del_flag = 1,
-            delete_by = #{deleteBy},
+            delete_by = #{deleteBy}, delete_by_name = #{deleteByName},
             delete_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
@@ -537,7 +538,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update stk_dep_inventory
         set del_flag = 1,
-            delete_by = #{deleteBy},
+            delete_by = #{deleteBy}, delete_by_name = #{deleteByName},
             delete_time = now()
         where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">

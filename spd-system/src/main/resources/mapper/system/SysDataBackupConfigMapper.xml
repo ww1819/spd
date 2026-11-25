@@ -17,8 +17,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="lastBackupStatus"   column="last_backup_status"/>
         <result property="lastBackupMessage"  column="last_backup_message"/>
         <result property="createBy"           column="create_by"/>
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"         column="create_time"/>
         <result property="updateBy"           column="update_by"/>
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"         column="update_time"/>
         <result property="remark"             column="remark"/>
     </resultMap>
@@ -26,7 +28,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <sql id="selectVo">
         select id, tenant_id, backup_path, mysqldump_path, backup_time, enabled, job_id, retain_days,
                last_backup_time, last_backup_status, last_backup_message,
-               create_by, create_time, update_by, update_time, remark
+               create_by, create_by_name, create_time, update_by, update_by_name, update_time, remark
         from sys_data_backup_config
     </sql>
 
@@ -42,7 +44,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         INSERT INTO sys_data_backup_config (
             tenant_id, backup_path, mysqldump_path, backup_time, enabled, job_id, retain_days,
             last_backup_time, last_backup_status, last_backup_message,
-            create_by, create_time, remark, is_deleted) VALUES (
+            create_by, create_by_name, create_time, remark, is_deleted) VALUES (
             #{tenantId}, #{backupPath}, #{mysqldumpPath}, #{backupTime}, #{enabled}, #{jobId}, #{retainDays},
             #{lastBackupTime}, #{lastBackupStatus}, #{lastBackupMessage},
             #{createBy}, sysdate(), #{remark}, 0
@@ -60,6 +62,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="retainDays != null">retain_days = #{retainDays},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             update_time = sysdate()
         </set>
         where id = #{id}

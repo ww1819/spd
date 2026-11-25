@@ -9,25 +9,27 @@
         <result property="invoiceId" column="invoice_id"/>
         <result property="createTime" column="create_time"/>
         <result property="deleteBy" column="delete_by"/>
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime" column="delete_time"/>
     </resultMap>
 
     <insert id="insert" parameterType="com.spd.finance.domain.SuppSettlementInvoice">
-        INSERT INTO supp_settlement_invoice (id, tenant_id, supp_settlement_id, invoice_id, create_time, delete_by, delete_time, is_deleted)
+        INSERT INTO supp_settlement_invoice (id, tenant_id, supp_settlement_id, invoice_id, create_time, delete_by, delete_by_name, delete_time, is_deleted)
         VALUES (#{id}, #{tenantId}, #{suppSettlementId}, #{invoiceId}, now(), null, null, 0)
     </insert>
 
     <update id="logicalDeleteBySuppSettlementAndInvoice">
+        <bind name="_auditDeleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="auditDeleteBy" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
         <bind name="auditDeleteByName" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update supp_settlement_invoice set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{auditDeleteByName}, delete_time = now()
+        update supp_settlement_invoice set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{_auditDeleteByNameAuto}, delete_time = now()
         where supp_settlement_id = #{suppSettlementId} and invoice_id = #{invoiceId} and tenant_id = #{scopedTenantId} and (delete_by is null or delete_by = '')
     </update>
 
     <select id="selectBySuppSettlementId" resultMap="SuppSettlementInvoiceResult">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        select id, tenant_id, supp_settlement_id, invoice_id, create_time, delete_by, delete_time
+        select id, tenant_id, supp_settlement_id, invoice_id, create_time, delete_by, delete_by_name, delete_time
         from supp_settlement_invoice where IFNULL(is_deleted,0)=0 AND supp_settlement_id = #{suppSettlementId} and tenant_id = #{scopedTenantId} and (delete_by is null or delete_by = '') order by create_time
     </select>
 </mapper>

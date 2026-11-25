@@ -622,9 +622,10 @@
     </update>
 
     <update id="softDeleteLinkById">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         update his_mirror_consume_link
         set del_flag = 1,
-            delete_by = #{deleteBy},
+            delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto},
             delete_time = now(),
             update_by = #{deleteBy},
             update_time = now()
@@ -634,9 +635,10 @@
     </update>
 
     <update id="softDeleteLinksByTraceabilityId">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         update his_mirror_consume_link
         set del_flag = 1,
-            delete_by = #{deleteBy},
+            delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto},
             delete_time = now(),
             update_by = #{deleteBy},
             update_time = now()
@@ -647,9 +649,11 @@
 
     <!-- 高值追溯单已删但关联行未软删：清理孤儿关联，避免误判「已全部核销」 -->
     <update id="softDeleteOrphanHighLinksForMirrorRow">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         update his_mirror_consume_link l
         set l.del_flag = 1,
             l.delete_by = #{deleteBy},
+            l.delete_by_name = #{_deleteByNameAuto},
             l.delete_time = now(),
             l.update_by = #{deleteBy},
             l.update_time = now()

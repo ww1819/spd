@@ -27,12 +27,16 @@
         <result property="rejectReason" column="reject_reason"/>
         <result property="delFlag" column="del_flag"/>
         <result property="deleteBy" column="delete_by"/>
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime" column="delete_time"/>
         <result property="createBy" column="create_by"/>
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime" column="update_time"/>
         <result property="auditBy" column="audit_by"/>
+        <result property="auditByName"    column="audit_by_name"    />
         <result property="auditDate" column="audit_date"/>
         <result property="auditPersonName" column="audit_person_name"/>
         <result property="createrPersonName" column="creater_person_name"/>
@@ -258,7 +262,7 @@
         insert into dep_purchase_apply_agg (
             id, tenant_id, purchase_bill_no, purchase_bill_date, department_id, user_id,
             purchase_bill_status, split_status, total_amount, urgency_level, expected_delivery_date,
-            reject_reason, del_flag, create_by, create_time, remark
+            reject_reason, del_flag, create_by, create_by_name, create_time, remark
         ) values (
             #{id}, #{tenantId}, #{purchaseBillNo}, #{purchaseBillDate}, #{departmentId}, #{userId},
             #{purchaseBillStatus}, #{splitStatus}, #{totalAmount}, #{urgencyLevel}, #{expectedDeliveryDate},
@@ -281,8 +285,10 @@
             <if test="expectedDeliveryDate != null">expected_delivery_date = #{expectedDeliveryDate},</if>
             <if test="rejectReason != null">reject_reason = #{rejectReason},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditByName != null">audit_by_name = #{auditByName},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             update_time = now(),
             <if test="remark != null">remark = #{remark},</if>
         </trim>
@@ -290,31 +296,35 @@
     </update>
 
     <update id="deleteDepPurchaseApplyAggById">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         update dep_purchase_apply_agg
-        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now(), update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteDepPurchaseApplyAggByIds">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         update dep_purchase_apply_agg
-        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now(), update_time = now()
         where tenant_id = #{scopedTenantId} and id in
         <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
     </update>
 
     <update id="deleteDepPurchaseApplyAggEntryByParentId">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         update dep_purchase_apply_agg_entry
-        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now(), update_time = now()
         where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteDepPurchaseApplyAggEntryByIds">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         update dep_purchase_apply_agg_entry
-        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now(), update_time = now()
         where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
           and id in
         <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
@@ -350,7 +360,7 @@
     <insert id="batchInsertDepPurchaseApplyAggEntry">
         insert into dep_purchase_apply_agg_entry (
             id, parent_id, tenant_id, material_id, material_name, material_spec, unit, unit_price, qty, amt,
-            reason, supplier_name, brand, model, producer, line_no, warehouse_id, is_gz, del_flag, create_by, create_time, remark
+            reason, supplier_name, brand, model, producer, line_no, warehouse_id, is_gz, del_flag, create_by, create_by_name, create_time, remark
         ) values
         <foreach collection="list" item="item" separator=",">
             (

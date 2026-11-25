@@ -11,15 +11,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="payloadJson" column="payload_json" />
         <result property="signature"    column="signature" />
         <result property="createBy"    column="create_by" />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"  column="create_time" />
         <result property="updateBy"    column="update_by" />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"  column="update_time" />
         <result property="remark"      column="remark" />
     </resultMap>
 
     <sql id="selectSysLicenseVo">
         select id, instance_id, expire_time, payload_json, signature,
-               create_by, create_time, update_by, update_time, remark
+               create_by, create_by_name, create_time, update_by, update_by_name, update_time, remark
         from sys_license
     </sql>
 
@@ -31,15 +33,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <insert id="insertSysLicense" parameterType="SysLicense">
         INSERT INTO sys_license (
             id, instance_id, expire_time, payload_json, signature,
-            create_by, create_time, update_by, update_time, remark, is_deleted) VALUES (
+            create_by, create_by_name, create_time, update_by, update_by_name, update_time, remark, is_deleted) VALUES (
             #{id}, #{instanceId}, #{expireTime}, #{payloadJson}, #{signature},
             #{createBy}, #{createTime}, #{updateBy}, #{updateTime}, #{remark}, 0)
     </insert>
 
     <update id="deleteSysLicenseById">
+        <bind name="_auditDeleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="auditDeleteBy" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
         <bind name="auditDeleteByName" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
-        update sys_license set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{auditDeleteByName}, delete_time = now()
+        update sys_license set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{_auditDeleteByNameAuto}, delete_time = now()
         where id = #{id}
     </update>
 

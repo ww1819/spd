@@ -6,7 +6,7 @@
         insert into his_billing_refund_order_line (
             id, tenant_id, refund_order_id, consume_link_id, return_qty,
             dep_inventory_id, gz_dep_inventory_id, in_hospital_code, batch_no, end_date_snapshot,
-            remark, del_flag, create_by, create_time, update_by, update_time
+            remark, del_flag, create_by, create_by_name, create_time, update_by, update_by_name, update_time
         ) values
         <foreach collection="list" item="e" separator=",">
             (#{e.id}, #{e.tenantId}, #{e.refundOrderId}, #{e.consumeLinkId}, #{e.returnQty},

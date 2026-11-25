@@ -18,10 +18,13 @@
         <result property="tenantId" column="tenant_id"/>
         <result property="remark" column="remark"/>
         <result property="deleteBy" column="delete_by"/>
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime" column="delete_time"/>
         <result property="createBy" column="create_by"/>
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime" column="update_time"/>
         <result property="supplierName" column="supplierName"/>
         <result property="factoryName" column="factoryName"/>
@@ -131,7 +134,7 @@
 
     <insert id="insertDeptFixedNumber" parameterType="DeptFixedNumber">
         insert into dept_fixed_number
-        (id, material_id, department_id, upper_limit, lower_limit, expiry_reminder, monitoring, location, location_id, del_flag, tenant_id, create_by, create_time)
+        (id, material_id, department_id, upper_limit, lower_limit, expiry_reminder, monitoring, location, location_id, del_flag, tenant_id, create_by, create_by_name, create_time)
         values
         (#{id}, #{materialId}, #{departmentId}, #{upperLimit}, #{lowerLimit}, #{expiryReminder}, #{monitoring}, #{location}, #{locationId}, 0, #{tenantId}, #{createBy}, now())
     </insert>
@@ -154,20 +157,22 @@
     </update>
 
     <update id="deleteDeptFixedNumberById">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update dept_fixed_number
         set del_flag = 1,
-            delete_by = #{deleteBy},
+            delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto},
             delete_time = now(),
             update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteDeptFixedNumberByIds">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update dept_fixed_number
         set del_flag = 1,
-            delete_by = #{deleteBy},
+            delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto},
             delete_time = now(),
             update_time = now()
         where tenant_id = #{scopedTenantId}

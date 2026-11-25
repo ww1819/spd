@@ -7,7 +7,7 @@
             id, tenant_id, biz_domain, ref_type, src_bill_kind, src_bill_id, src_bill_no, src_entry_id, src_entry_line_no,
             tgt_bill_kind, tgt_bill_id, tgt_bill_no, tgt_entry_id, line_no, ref_qty, ref_amt,
             lock_warehouse_id, lock_supplier_id, lock_department_id, remark,
-            del_flag, create_by, create_time
+            del_flag, create_by, create_by_name, create_time
         ) values (
             #{id}, #{tenantId}, #{bizDomain}, #{refType}, #{srcBillKind}, #{srcBillId}, #{srcBillNo}, #{srcEntryId}, #{srcEntryLineNo},
             #{tgtBillKind}, #{tgtBillId}, #{tgtBillNo}, #{tgtEntryId}, #{lineNo}, #{refQty}, #{refAmt},
@@ -18,9 +18,10 @@
 
     <!-- 同一目标单重新保存时：软删旧关联行，保留审计痕迹 -->
     <update id="softDeleteByTgtBillId">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         update hc_doc_bill_ref
         set del_flag = 1,
-            delete_by = #{deleteBy},
+            delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto},
             delete_time = now(),
             update_by = #{deleteBy},
             update_time = now()

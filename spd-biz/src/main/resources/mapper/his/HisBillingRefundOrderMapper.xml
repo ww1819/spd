@@ -6,7 +6,7 @@
         insert into his_billing_refund_order (
             id, tenant_id, visit_kind, refund_mirror_row_id, origin_charge_detail_id, origin_mirror_row_id,
             refund_qty, value_level, process_status, fail_reason, patient_name, department_id, department_name,
-            remark, del_flag, create_by, create_time, update_by, update_time
+            remark, del_flag, create_by, create_by_name, create_time, update_by, update_by_name, update_time
         ) values (
             #{id}, #{tenantId}, #{visitKind}, #{refundMirrorRowId}, #{originChargeDetailId}, #{originMirrorRowId},
             #{refundQty}, #{valueLevel}, #{processStatus}, #{failReason}, #{patientName}, #{departmentId}, #{departmentName},

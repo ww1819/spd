@@ -16,14 +16,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="delBy"           column="del_by"           />
         <result property="delTime"         column="del_time"         />
         <result property="createBy"       column="create_by"        />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"      column="create_time"     />
         <result property="updateBy"        column="update_by"       />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"       column="update_time"     />
     </resultMap>
 
     <sql id="selectVo">
         select id, customer_id, ref_category68_id, parent_id, category68_code, category68_name, name_pinyin,
-               del_flag, del_by, del_time, create_by, create_time, update_by, update_time
+               del_flag, del_by, del_time, create_by, create_by_name, create_time, update_by, update_by_name, update_time
         from sb_customer_category68
     </sql>
 
@@ -66,7 +68,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <insert id="insert" parameterType="com.spd.foundation.domain.SbCustomerCategory68">
         insert into sb_customer_category68 (
             id, customer_id, ref_category68_id, parent_id, category68_code, category68_name, name_pinyin,
-            del_flag, create_by, create_time, update_by, update_time
+            del_flag, create_by, create_by_name, create_time, update_by, update_by_name, update_time
         ) values (
             #{id}, #{customerId}, #{refCategory68Id}, #{parentId}, #{category68Code}, #{category68Name}, #{namePinyin},
             #{delFlag}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime}
@@ -84,6 +86,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delBy != null">del_by = #{delBy},</if>
             <if test="delTime != null">del_time = #{delTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
         where id = #{id} and customer_id = #{customerId}

@@ -14,10 +14,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="price"    column="price"    />
         <result property="defaultWarehouseId"    column="default_warehouse_id"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime"    column="delete_time"    />
         <result property="tenantId"    column="tenant_id"    />
         <result property="delFlag"    column="del_flag"    />
@@ -559,8 +562,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isSunshineProcurement != null">is_sunshine_procurement,</if>
             <if test="sunshineCode != null">sunshine_code,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             tenant_id,
             <if test="isGz != null">is_gz,</if>
@@ -636,8 +641,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isSunshineProcurement != null">#{isSunshineProcurement},</if>
             <if test="sunshineCode != null">#{sunshineCode},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             #{insertTenantId},
             <if test="isGz != null">#{isGz},</if>
@@ -720,10 +727,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isSunshineProcurement != null">is_sunshine_procurement = #{isSunshineProcurement},</if>
             <if test="sunshineCode != null">sunshine_code = #{sunshineCode},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createByName != null">create_by_name = #{createByName},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="deleteBy != null">delete_by = #{deleteBy},</if>
+            <if test="deleteByName != null">delete_by_name = #{deleteByName},</if>
             <if test="deleteTime != null">delete_time = #{deleteTime},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="isGz != null">is_gz = #{isGz},</if>
@@ -770,13 +780,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <delete id="deleteFdMaterialById">
         <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
-        update fd_material set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
+        update fd_material set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteFdMaterialByIds">
         <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
-        update fd_material set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
+        update fd_material set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}
         </foreach>

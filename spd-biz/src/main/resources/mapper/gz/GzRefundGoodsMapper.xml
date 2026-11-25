@@ -16,9 +16,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="delFlag"    column="del_flag"    />
         <result property="auditDate"    column="audit_date"    />
         <result property="auditBy"    column="audit_by"    />
+        <result property="auditByName"    column="audit_by_name"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <result property="remark"    column="remark"    />
         <result property="totalAmt"    column="totalAmt"    />
@@ -164,9 +167,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag,</if>
             <if test="auditDate != null">audit_date,</if>
             <if test="auditBy != null">audit_by,</if>
+            <if test="auditByName != null">audit_by_name,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
             tenant_id,
@@ -182,9 +188,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">#{delFlag},</if>
             <if test="auditDate != null">#{auditDate},</if>
             <if test="auditBy != null">#{auditBy},</if>
+            <if test="auditByName != null">#{auditByName},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
             #{scopedTenantId},
@@ -205,9 +214,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditByName != null">audit_by_name = #{auditByName},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createByName != null">create_by_name = #{createByName},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
         </trim>
@@ -217,14 +229,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <delete id="deleteGzRefundGoodsById" parameterType="Long">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_refund_goods
-        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteGzRefundGoodsEntryByParenIds" parameterType="String">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_refund_goods_entry
-        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now()
         where tenant_id = #{scopedTenantId} and paren_id in
         <foreach item="parenId" collection="array" open="(" separator="," close=")">
             #{parenId}
@@ -234,12 +246,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <delete id="deleteGzRefundGoodsEntryByParenId" parameterType="Long">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_refund_goods_entry
-        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now()
         where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <insert id="batchGzRefundGoodsEntry">
-        insert into gz_refund_goods_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, master_barcode, secondary_barcode, in_hospital_code, begin_time, end_time, del_flag, supplier_id, warehouse_id, department_id, bill_no, remark, tenant_id, create_by, create_time, update_by, update_time) values
+        insert into gz_refund_goods_entry( id, paren_id, material_id, qty, price, amt, batch_no, batch_number, master_barcode, secondary_barcode, in_hospital_code, begin_time, end_time, del_flag, supplier_id, warehouse_id, department_id, bill_no, remark, tenant_id, create_by, create_by_name, create_time, update_by, update_by_name, update_time) values
 		<foreach item="item" index="index" collection="list" separator=",">
             ( #{item.id}, #{item.parenId}, #{item.materialId}, #{item.qty}, #{item.price}, #{item.amt}, #{item.batchNo}, #{item.batchNumber}, #{item.masterBarcode}, #{item.secondaryBarcode}, #{item.inHospitalCode}, #{item.beginTime}, #{item.endTime}, #{item.delFlag}, #{item.supplierId}, #{item.warehouseId}, #{item.departmentId}, #{item.billNo}, #{item.remark}, #{item.tenantId}, #{item.createBy}, #{item.createTime}, #{item.updateBy}, #{item.updateTime})
         </foreach>
@@ -265,6 +277,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="delFlag != null and delFlag == 1">delete_by = #{updateBy}, delete_time = now(),</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             update_time = now(),
         </trim>
         where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
@@ -312,6 +325,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="delFlag != null and delFlag == 1">delete_by = #{updateBy}, delete_time = now(),</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             update_time = now(),
         </trim>
         where id = #{id}
@@ -413,9 +427,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag,</if>
             <if test="auditDate != null">audit_date,</if>
             <if test="auditBy != null">audit_by,</if>
+            <if test="auditByName != null">audit_by_name,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
             tenant_id,
@@ -430,9 +447,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">#{delFlag},</if>
             <if test="auditDate != null">#{auditDate},</if>
             <if test="auditBy != null">#{auditBy},</if>
+            <if test="auditByName != null">#{auditByName},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
             #{scopedTenantId},
@@ -452,9 +472,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditByName != null">audit_by_name = #{auditByName},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createByName != null">create_by_name = #{createByName},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
         </trim>
@@ -464,7 +487,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <delete id="deleteGzRefundStockById" parameterType="Long">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_refund_stock
-        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
@@ -472,7 +495,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into gz_refund_stock_entry(
             id, paren_id, material_id, qty, price, amt, batch_no, batch_number, in_hospital_code,
             begin_time, end_time, del_flag, supplier_id, warehouse_id, department_id, bill_no, remark,
-            tenant_id, create_by, create_time, update_by, update_time
+            tenant_id, create_by, create_by_name, create_time, update_by, update_by_name, update_time
         ) values
         <foreach item="item" index="index" collection="list" separator=",">
             (
@@ -487,7 +510,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <delete id="deleteGzRefundStockEntryByParenId" parameterType="Long">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_refund_stock_entry
-        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now()
         where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </delete>
 
@@ -531,6 +554,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="delFlag != null and delFlag == 1">delete_by = #{updateBy}, delete_time = now(),</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             update_time = now(),
         </trim>
         where id = #{id}

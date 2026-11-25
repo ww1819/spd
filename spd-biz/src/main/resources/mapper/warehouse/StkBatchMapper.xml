@@ -57,10 +57,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="inCodeDetailId"    column="in_code_detail_id"    />
         <result property="auditTime"    column="audit_time"    />
         <result property="auditBy"    column="audit_by"    />
+        <result property="auditByName"    column="audit_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="delTime"    column="del_time"    />
         <result property="delBy"    column="del_by"    />

@@ -19,14 +19,18 @@
         <result property="supplierName" column="supplier_name"/>
         <result property="auditStatus" column="audit_status"/>
         <result property="auditBy" column="audit_by"/>
+        <result property="auditByName"    column="audit_by_name"    />
         <result property="auditTime" column="audit_time"/>
         <result property="delFlag" column="del_flag"/>
         <result property="deleteBy" column="delete_by"/>
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime" column="delete_time"/>
         <result property="remark" column="remark"/>
         <result property="createBy" column="create_by"/>
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime" column="update_time"/>
     </resultMap>
 
@@ -65,7 +69,7 @@
     <insert id="insert" parameterType="com.spd.finance.domain.FinInvoice">
         insert into fin_invoice (id, tenant_id, invoice_no, invoice_code, invoice_date, amount, tax_amount, total_amount,
             buyer_name, buyer_tax_no, seller_name, seller_tax_no, supplier_id, audit_status, audit_by, audit_time,
-            del_flag, delete_by, delete_time, remark, create_by, create_time, update_by, update_time)
+            del_flag, delete_by, delete_by_name, delete_time, remark, create_by, create_by_name, create_time, update_by, update_by_name, update_time)
         values (#{id}, #{tenantId}, #{invoiceNo}, #{invoiceCode}, #{invoiceDate}, #{amount}, #{taxAmount}, #{totalAmount},
             #{buyerName}, #{buyerTaxNo}, #{sellerName}, #{sellerTaxNo}, #{supplierId}, #{auditStatus}, #{auditBy}, #{auditTime},
             0, #{deleteBy}, #{deleteTime}, #{remark}, #{createBy}, #{createTime}, #{updateBy}, #{updateTime})
@@ -88,6 +92,7 @@
             <if test="supplierId != null">supplier_id = #{supplierId},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             update_time = now()
         </set>
         where id = #{id} and tenant_id = #{scopedTenantId}
@@ -100,7 +105,8 @@
     </update>
 
     <update id="deleteById">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update fin_invoice set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
+        update fin_invoice set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </update>
 </mapper>

@@ -9,8 +9,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="code"    column="code"    />
         <result property="name"    column="name"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="warehousePerson"    column="warehouse_person"    />
@@ -39,7 +41,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectFdWarehouseVo">
-        select id, code, name, create_by, create_time, update_by, update_time,warehouse_person,warehouse_phone,warehouse_status,
+        select id, code, name, create_by, create_by_name, create_time, update_by, update_by_name, update_time,warehouse_person,warehouse_phone,warehouse_status,
         COALESCE(warehouse_type, '低值') as warehouse_type,settlement_type,remark,tenant_id,
         lv_audit_gen_inhospital_in, lv_audit_gen_inhospital_out, his_id,
         COALESCE(is_settlement_warehouse, 0) as is_settlement_warehouse,
@@ -156,8 +158,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null and code != ''">code,</if>
             <if test="name != null">name,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="warehousePerson != null">warehouse_person,</if>
             <if test="warehousePhone != null">warehouse_phone,</if>
@@ -179,8 +183,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null and code != ''">#{code},</if>
             <if test="name != null">#{name},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="warehousePerson != null">#{warehousePerson},</if>
             <if test="warehousePhone != null">#{warehousePhone},</if>
@@ -206,8 +212,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="code != null and code != ''">code = #{code},</if>
             <if test="name != null">name = #{name},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createByName != null">create_by_name = #{createByName},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="warehousePerson != null">warehouse_person = #{warehousePerson},</if>

@@ -20,8 +20,10 @@
         <result property="sourceAuditDate" column="source_audit_date"/>
         <result property="delFlag" column="del_flag"/>
         <result property="createBy" column="create_by"/>
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime" column="update_time"/>
         <result property="remark" column="remark"/>
         <result property="pendingOutboundTotal" column="pending_outbound_total"/>
@@ -100,7 +102,7 @@
         insert into wh_warehouse_apply (
             id, tenant_id, apply_bill_no, bas_apply_id, bas_apply_bill_no, warehouse_id, department_id,
             bill_status, void_whole_flag, total_qty, total_amt, source_audit_date, del_flag,
-            create_by, create_time, remark
+            create_by, create_by_name, create_time, remark
         ) values (
             #{id}, #{tenantId}, #{applyBillNo}, #{basApplyId}, #{basApplyBillNo}, #{warehouseId}, #{departmentId},
             #{billStatus},
@@ -116,7 +118,7 @@
             material_id, warehouse_id, stk_inventory_id, unit_price, qty, price, amt,
             batch_no, batch_number, begin_time, end_time, supplier_id, factory_id,
             line_void_status, line_void_qty, del_flag,
-            create_by, create_time, remark
+            create_by, create_by_name, create_time, remark
         ) values (
             #{id}, #{parenId}, #{tenantId}, #{basApplyId}, #{basApplyBillNo}, #{basApplyEntryId}, #{lineNo},
             #{materialId}, #{warehouseId}, #{stkInventoryId}, #{unitPrice}, #{qty}, #{price}, #{amt},
@@ -406,7 +408,7 @@
         insert into wh_wh_apply_ck_entry_ref (
             id, tenant_id, wh_apply_id, wh_apply_bill_no, wh_apply_entry_id,
             ck_bill_id, ck_bill_no, ck_entry_id, ref_qty, ref_amt, link_status, del_flag,
-            create_by, create_time, remark
+            create_by, create_by_name, create_time, remark
         ) values (
             #{id}, #{tenantId}, #{whApplyId}, #{whApplyBillNo}, #{whApplyEntryId},
             #{ckBillId}, #{ckBillNo}, #{ckEntryId}, #{refQty}, #{refAmt}, #{linkStatus}, #{delFlag},

@@ -267,6 +267,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="masterBarcode != null">master_barcode = #{masterBarcode},</if>
             <if test="secondaryBarcode != null">secondary_barcode = #{secondaryBarcode},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             update_time = now(),
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
@@ -275,14 +276,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <delete id="deleteGzDepInventoryById">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_dep_inventory
-        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteGzDepInventoryByIds">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_dep_inventory
-        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now()
         where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}

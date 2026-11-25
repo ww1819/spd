@@ -26,11 +26,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="contactPerson"    column="contact_person"    />
         <result property="contactPhone"    column="contact_phone"    />
         <result property="auditBy"    column="audit_by"    />
+        <result property="auditByName"    column="audit_by_name"    />
         <result property="auditDate"    column="audit_date"    />
         <result property="auditOpinion"    column="audit_opinion"    />
         <result property="remark"    column="remark"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime"    column="delete_time"    />
         <result property="planId"    column="plan_id"    />
         <result property="tenantId"    column="tenant_id"    />
@@ -51,8 +53,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="pushByName"    column="push_by_name"    />
         <result property="voidWholeByName"    column="void_whole_by_name"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <association property="supplier"    column="supplier_id" javaType="com.spd.foundation.domain.FdSupplier" resultMap="supplierResult" />
         <association property="warehouse"    column="warehouse_id" javaType="com.spd.foundation.domain.FdWarehouse" resultMap="warehouseResult" />
@@ -79,14 +83,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="remark"    column="remark"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime"    column="delete_time"    />
         <result property="planId"    column="plan_id"    />
         <result property="planNo"    column="plan_no"    />
         <result property="planEntryId"    column="plan_entry_id"    />
         <result property="tenantId"    column="tenant_id"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <association property="material"    column="material_id" javaType="com.spd.foundation.domain.FdMaterial" resultMap="materialResult" />
     </resultMap>
@@ -249,13 +256,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="contactPerson != null">contact_person,</if>
             <if test="contactPhone != null">contact_phone,</if>
             <if test="auditBy != null">audit_by,</if>
+            <if test="auditByName != null">audit_by_name,</if>
             <if test="auditDate != null">audit_date,</if>
             <if test="auditOpinion != null">audit_opinion,</if>
             <if test="remark != null">remark,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             tenant_id,
          </trim>
@@ -281,13 +291,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="contactPerson != null">#{contactPerson},</if>
             <if test="contactPhone != null">#{contactPhone},</if>
             <if test="auditBy != null">#{auditBy},</if>
+            <if test="auditByName != null">#{auditByName},</if>
             <if test="auditDate != null">#{auditDate},</if>
             <if test="auditOpinion != null">#{auditOpinion},</if>
             <if test="remark != null">#{remark},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             #{scopedTenantId},
          </trim>
@@ -318,8 +331,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="planEntryId != null">plan_entry_id,</if>
             tenant_id,
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -344,8 +359,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="planEntryId != null">#{planEntryId},</if>
             #{scopedTenantId},
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
          </trim>
     </insert>
@@ -353,7 +370,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <insert id="batchPurchaseOrderEntry" parameterType="java.util.List">
         insert into purchase_order_entry(parent_id, order_no, material_id, material_code, material_name, material_spec, material_unit, 
                                        order_qty, received_qty, unit_price, total_amount, expected_delivery_date, 
-                                       actual_delivery_date, quality_status, remark, del_flag, plan_id, plan_no, plan_entry_id, tenant_id, create_by, create_time)
+                                       actual_delivery_date, quality_status, remark, del_flag, plan_id, plan_no, plan_entry_id, tenant_id, create_by, create_by_name, create_time)
         values
         <foreach collection="list" item="item" index="index" separator=",">
             (#{item.parentId}, #{item.orderNo}, #{item.materialId}, #{item.materialCode}, #{item.materialName}, #{item.materialSpec}, 
@@ -391,10 +408,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="contactPerson != null">contact_person = #{contactPerson},</if>
             <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditByName != null">audit_by_name = #{auditByName},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
@@ -406,9 +425,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="orderStatus != null">order_status = #{orderStatus},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditByName != null">audit_by_name = #{auditByName},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="auditOpinion != null">audit_opinion = #{auditOpinion},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
@@ -416,12 +437,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <delete id="deletePurchaseOrderById">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update purchase_order set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
+        update purchase_order set del_flag = '1', delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deletePurchaseOrderByIds">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update purchase_order set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
+        update purchase_order set del_flag = '1', delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -429,7 +450,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <delete id="deletePurchaseOrderEntryByParentId">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update purchase_order_entry set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now() where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
+        update purchase_order_entry set del_flag = '1', delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where parent_id = #{parentId} and tenant_id = #{scopedTenantId}
     </delete>
 
     <select id="selectMaxOrderNo" parameterType="String" resultType="String">

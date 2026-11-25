@@ -21,8 +21,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 		<result property="genPath"        column="gen_path"          />
 		<result property="options"        column="options"           />
 		<result property="createBy"       column="create_by"         />
+        <result property="createByName"    column="create_by_name"    />
 		<result property="createTime"     column="create_time"       />
 		<result property="updateBy"       column="update_by"         />
+        <result property="updateByName"    column="update_by_name"    />
 		<result property="updateTime"     column="update_time"       />
 		<result property="remark"         column="remark"            />
 		<collection  property="columns"  javaType="java.util.List"  resultMap="GenTableColumnResult" />
@@ -48,13 +50,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="dictType"       column="dict_type"      />
         <result property="sort"           column="sort"           />
         <result property="createBy"       column="create_by"      />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"     column="create_time"    />
         <result property="updateBy"       column="update_by"      />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"     column="update_time"    />
     </resultMap>
 	
 	<sql id="selectGenTableVo">
-        select table_id, table_name, table_comment, sub_table_name, sub_table_fk_name, class_name, tpl_category, package_name, module_name, business_name, function_name, function_author, gen_type, gen_path, options, create_by, create_time, update_by, update_time, remark from gen_table
+        select table_id, table_name, table_comment, sub_table_name, sub_table_fk_name, class_name, tpl_category, package_name, module_name, business_name, function_name, function_author, gen_type, gen_path, options, create_by, create_by_name, create_time, update_by, update_by_name, update_time, remark from gen_table
     </sql>
     
     <select id="selectGenTableList" parameterType="GenTable" resultMap="GenTableResult">
@@ -149,6 +153,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			<if test="genPath != null and genPath != ''">gen_path,</if>
 			<if test="remark != null and remark != ''">remark,</if>
  			<if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
 			create_time
          )values(
 			<if test="tableName != null">#{tableName},</if>
@@ -164,6 +169,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 			<if test="genPath != null and genPath != ''">#{genPath},</if>
 			<if test="remark != null and remark != ''">#{remark},</if>
  			<if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
 			sysdate()
          )
     </insert>
@@ -186,6 +192,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="functionName != null and functionName != ''">function_name = #{functionName},</if>
             <if test="options != null and options != ''">options = #{options},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="remark != null">remark = #{remark},</if>
             update_time = sysdate()
         </set>

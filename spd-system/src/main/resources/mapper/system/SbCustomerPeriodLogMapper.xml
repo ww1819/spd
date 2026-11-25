@@ -9,11 +9,12 @@
     <result property="startTime"  column="start_time"/>
     <result property="endTime"    column="end_time"/>
     <result property="createBy"  column="create_by"/>
+        <result property="createByName"    column="create_by_name"    />
     <result property="createTime" column="create_time"/>
   </resultMap>
 
   <select id="selectByCustomerId" resultMap="SbCustomerPeriodLogResult">
-    select period_id, customer_id, period_type, start_time, end_time, create_by, create_time
+    select period_id, customer_id, period_type, start_time, end_time, create_by, create_by_name, create_time
     from sb_customer_period_log
     where customer_id = #{customerId}
     order by start_time desc
@@ -26,7 +27,7 @@
   </select>
 
   <select id="selectLastWithNullEnd" resultMap="SbCustomerPeriodLogResult">
-    select period_id, customer_id, period_type, start_time, end_time, create_by, create_time
+    select period_id, customer_id, period_type, start_time, end_time, create_by, create_by_name, create_time
     from sb_customer_period_log
     where customer_id = #{customerId} and period_type = #{periodType} and end_time is null
     order by start_time desc limit 1
@@ -37,7 +38,7 @@
   </update>
 
   <insert id="insert" parameterType="com.spd.system.domain.SbCustomerPeriodLog">
-    insert into sb_customer_period_log (period_id, customer_id, period_type, start_time, end_time, create_by, create_time)
+    insert into sb_customer_period_log (period_id, customer_id, period_type, start_time, end_time, create_by, create_by_name, create_time)
     values (#{periodId}, #{customerId}, #{periodType}, #{startTime}, #{endTime}, #{createBy}, #{createTime})
   </insert>
 </mapper>

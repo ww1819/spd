@@ -31,8 +31,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="isDefault"    column="is_default"   />
         <result property="status"       column="status"        />
         <result property="createBy"     column="create_by"     />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"   column="create_time"   />
         <result property="updateBy"     column="update_by"     />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"   column="update_time"   />
         <result property="remark"       column="remark"        />
         <result property="isDeleted"    column="is_deleted"    />
@@ -45,7 +47,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                show_purchaser, show_creator, show_auditor, show_receiver,
                purchaser_label, creator_label, auditor_label, receiver_label,
                column_config, is_default, status,
-               create_by, create_time, update_by, update_time, remark, is_deleted
+               create_by, create_by_name, create_time, update_by, update_by_name, update_time, remark, is_deleted
         from sys_print_setting
     </sql>
     
@@ -125,6 +127,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isDefault != null">is_default,</if>
             <if test="status != null and status != ''">status,</if>
             <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="remark != null">remark,</if>
             is_deleted,
@@ -155,6 +158,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isDefault != null">#{isDefault},</if>
             <if test="status != null and status != ''">#{status},</if>
             <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="remark != null">#{remark},</if>
             0,
@@ -189,6 +193,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isDefault != null">is_default = #{isDefault},</if>
             <if test="status != null and status != ''">status = #{status},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
         </trim>
@@ -196,16 +201,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
     
     <update id="deleteSysPrintSettingById">
+        <bind name="_auditDeleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="auditDeleteBy" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
         <bind name="auditDeleteByName" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
-        update sys_print_setting set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{auditDeleteByName}, delete_time = now()
+        update sys_print_setting set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{_auditDeleteByNameAuto}, delete_time = now()
         where id = #{id}
     </update>
     
     <update id="deleteSysPrintSettingByIds">
+        <bind name="_auditDeleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="auditDeleteBy" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
         <bind name="auditDeleteByName" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
-        update sys_print_setting set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{auditDeleteByName}, delete_time = now()
+        update sys_print_setting set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{_auditDeleteByNameAuto}, delete_time = now()
         where id in
         <foreach item="id" collection="array" open="(" separator="," close=")">
             #{id}

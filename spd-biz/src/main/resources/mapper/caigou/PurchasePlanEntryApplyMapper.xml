@@ -8,22 +8,25 @@
         <result property="basApplyEntryId" column="bas_apply_entry_id" />
         <result property="delFlag" column="del_flag" />
         <result property="deleteBy" column="delete_by" />
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime" column="delete_time" />
         <result property="tenantId" column="tenant_id" />
         <result property="createBy" column="create_by" />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime" column="create_time" />
         <result property="updateBy" column="update_by" />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime" column="update_time" />
     </resultMap>
 
     <insert id="insert" parameterType="com.spd.caigou.domain.PurchasePlanEntryApply" useGeneratedKeys="true" keyProperty="id">
-        insert into purchase_plan_entry_apply (purchase_plan_entry_id, bas_apply_entry_id, del_flag, tenant_id, create_by, create_time)
+        insert into purchase_plan_entry_apply (purchase_plan_entry_id, bas_apply_entry_id, del_flag, tenant_id, create_by, create_by_name, create_time)
         values (#{purchasePlanEntryId}, #{basApplyEntryId}, '0', #{tenantId}, #{createBy}, #{createTime})
     </insert>
 
     <!-- 唯一键 uk_plan_entry_apply 含已逻辑删除行；更新计划时复用原行并恢复 del_flag=0 -->
     <insert id="batchInsert">
-        insert into purchase_plan_entry_apply (purchase_plan_entry_id, bas_apply_entry_id, del_flag, tenant_id, create_by, create_time)
+        insert into purchase_plan_entry_apply (purchase_plan_entry_id, bas_apply_entry_id, del_flag, tenant_id, create_by, create_by_name, create_time)
         values
         <foreach collection="list" item="item" separator=",">
             (#{item.purchasePlanEntryId}, #{item.basApplyEntryId}, '0', #{item.tenantId}, #{item.createBy}, #{item.createTime})
@@ -37,17 +40,19 @@
     </insert>
 
     <update id="logicDeleteByPurchasePlanEntryId">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan_entry_apply
-        set del_flag = '1', delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        set del_flag = '1', delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now(), update_time = now()
         where purchase_plan_entry_id = #{purchasePlanEntryId} and tenant_id = #{scopedTenantId} and (del_flag = '0' or del_flag is null)
     </update>
 
     <update id="logicDeleteByPlanId">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update purchase_plan_entry_apply r
         inner join purchase_plan_entry e on r.purchase_plan_entry_id = e.id and e.tenant_id = #{scopedTenantId}
-        set r.del_flag = '1', r.delete_by = #{deleteBy}, r.delete_time = now(), r.update_time = now()
+        set r.del_flag = '1', r.delete_by = #{deleteBy}, r.delete_by_name = #{_deleteByNameAuto}, r.delete_time = now(), r.update_time = now()
         where e.parent_id = #{planId} and r.tenant_id = #{scopedTenantId} and (r.del_flag = '0' or r.del_flag is null)
     </update>
 

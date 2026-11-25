@@ -13,8 +13,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="model"    column="model"    />
         <result property="price"    column="price"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="referredName"    column="referred_name"    />
@@ -201,8 +203,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isProcure != null">is_procure,</if>
             <if test="isMonitor != null">is_monitor,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="isGz != null">is_gz,</if>
             <if test="isFollow != null and isFollow != ''">is_follow,</if>
@@ -255,8 +259,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isProcure != null">#{isProcure},</if>
             <if test="isMonitor != null">#{isMonitor},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="isGz != null">#{isGz},</if>
             <if test="isFollow != null and isFollow != ''">#{isFollow},</if>
@@ -314,8 +320,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isProcure != null">is_procure = #{isProcure},</if>
             <if test="isMonitor != null">is_monitor = #{isMonitor},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createByName != null">create_by_name = #{createByName},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="isGz != null">is_gz = #{isGz},</if>

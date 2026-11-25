@@ -32,10 +32,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="delBy"       column="del_by"      />
         <result property="delTime"     column="del_time"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <result property="auditBy"    column="audit_by"    />
+        <result property="auditByName"    column="audit_by_name"    />
         <result property="auditDate"    column="audit_date"    />
         <result property="remark"    column="remark"    />
         <result property="auditPersonName"    column="audit_display_name"    />
@@ -302,11 +305,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="billType != null">bill_type,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
             <if test="auditBy != null">audit_by,</if>
+            <if test="auditByName != null">audit_by_name,</if>
             <if test="auditDate != null">audit_date,</if>
             <if test="rejectReason != null">reject_reason,</if>
             tenant_id,
@@ -321,11 +327,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="billType != null">#{billType},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
             <if test="auditBy != null">#{auditBy},</if>
+            <if test="auditByName != null">#{auditByName},</if>
             <if test="auditDate != null">#{auditDate},</if>
             <if test="rejectReason != null">#{rejectReason},</if>
             #{scopedTenantId},
@@ -346,11 +355,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="billType != null">bill_type = #{billType},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createByName != null">create_by_name = #{createByName},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditByName != null">audit_by_name = #{auditByName},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="rejectReason != null">reject_reason = #{rejectReason},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
@@ -375,7 +387,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <!-- 逻辑删除明细：bas_apply_entry 表使用 del_flag、delete_by、delete_time -->
     <delete id="deleteBasApplyEntryByParenIds">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update bas_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and paren_id in
+        update bas_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and paren_id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -383,7 +395,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <delete id="deleteBasApplyEntryByParenId">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update bas_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where paren_id = #{id} and tenant_id = #{scopedTenantId}
+        update bas_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where paren_id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <insert id="batchBasApplyEntry">

@@ -27,7 +27,7 @@
     <insert id="insert" parameterType="com.spd.foundation.domain.SpdScmMaterialPushFieldCfg">
         insert into spd_scm_material_push_field_cfg(
           id, tenant_id, field_code, field_label, push_enabled, apply_enabled, sort_no,
-          del_flag, create_by, create_time
+          del_flag, create_by, create_by_name, create_time
         ) values (
           #{id}, #{tenantId}, #{fieldCode}, #{fieldLabel}, #{pushEnabled}, #{applyEnabled}, #{sortNo},
           '0', #{createBy}, now()

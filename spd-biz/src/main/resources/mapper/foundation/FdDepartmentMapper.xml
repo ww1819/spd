@@ -17,11 +17,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="name"    column="name"    />
         <result property="referredName"    column="referred_name"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="deleteBy"    column="del_by"    />
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime"    column="del_time"    />
         <result property="tenantId"    column="tenant_id"    />
         <result property="parentId"    column="parent_id"    />
@@ -32,7 +35,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectFdDepartmentVo">
-        select id, code, name, referred_name, remark, his_id, campus, status, del_flag, del_by, del_time, create_by, create_time, update_by, update_time, tenant_id, parent_id from fd_department
+        select id, code, name, referred_name, remark, his_id, campus, status, del_flag, del_by, delete_by_name, del_time, create_by, create_by_name, create_time, update_by, update_by_name, update_time, tenant_id, parent_id from fd_department
     </sql>
 
     <!-- 与 sb_customer 同 tenant_key 的其它 customer_id 兼容（迁移期 fd_* 可能仍为旧 customer_id） -->
@@ -161,8 +164,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="deptRemark != null">remark,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             tenant_id,
             <if test="parentId != null">parent_id,</if>
@@ -178,8 +183,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="deptRemark != null">#{deptRemark},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             #{scopedTenantId},
             <if test="parentId != null">#{parentId},</if>
@@ -198,11 +205,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="referredName != null">referred_name = #{referredName},</if>
             <if test="deptRemark != null">remark = #{deptRemark},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createByName != null">create_by_name = #{createByName},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="deleteBy != null">del_by = #{deleteBy},</if>
+            <if test="deleteByName != null">delete_by_name = #{deleteByName},</if>
             <if test="deleteTime != null">del_time = #{deleteTime},</if>
             parent_id = #{parentId,jdbcType=BIGINT},
             <choose>

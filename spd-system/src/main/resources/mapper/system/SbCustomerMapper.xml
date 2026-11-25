@@ -19,11 +19,14 @@
     <result property="hcStatus"         column="hc_status"/>
     <result property="hcPlannedDisableTime" column="hc_planned_disable_time"/>
     <result property="createBy"         column="create_by"/>
+        <result property="createByName"    column="create_by_name"    />
     <result property="createTime"       column="create_time"/>
     <result property="updateBy"         column="update_by"/>
+        <result property="updateByName"    column="update_by_name"    />
     <result property="updateTime"       column="update_time"/>
     <result property="remark"           column="remark"/>
     <result property="deleteBy"         column="delete_by"/>
+        <result property="deleteByName"    column="delete_by_name"    />
     <result property="deleteTime"       column="delete_time"/>
   </resultMap>
 
@@ -35,7 +38,7 @@
            ifnull(nullif(trim(money_round_mode), ''), 'HALF_UP') as money_round_mode,
            status, planned_disable_time,
            hc_status, hc_planned_disable_time,
-           create_by, create_time, update_by, update_time, remark, delete_by, delete_time
+           create_by, create_by_name, create_time, update_by, update_by_name, update_time, remark, delete_by, delete_by_name, delete_time
     from sb_customer
   </sql>
 
@@ -92,7 +95,7 @@
       social_credit_code, address, contact_name, contact_phone,
       price_decimal_places, amount_decimal_places, money_round_mode,
       status, planned_disable_time, hc_status, hc_planned_disable_time,
-      remark, create_by, create_time
+      remark, create_by, create_by_name, create_time
     )
     values (
       #{customerId}, #{customerName}, #{customerCode}, #{tenantKey},
@@ -123,6 +126,7 @@
       <if test="moneyRoundMode != null and moneyRoundMode != ''">money_round_mode = #{moneyRoundMode},</if>
       <if test="remark != null">remark = #{remark},</if>
       <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
       update_time = sysdate()
     </set>
     where customer_id = #{customerId}
@@ -142,7 +146,8 @@
   </update>
 
   <update id="deleteSbCustomerById">
+        <bind name="_auditDeleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
     <bind name="auditDeleteByName" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
-    update sb_customer set delete_by = #{deleteBy}, delete_by_name = #{auditDeleteByName}, delete_time = sysdate() where customer_id = #{customerId}
+    update sb_customer set delete_by = #{deleteBy}, delete_by_name = #{_auditDeleteByNameAuto}, delete_time = sysdate() where customer_id = #{customerId}
   </update>
 </mapper>

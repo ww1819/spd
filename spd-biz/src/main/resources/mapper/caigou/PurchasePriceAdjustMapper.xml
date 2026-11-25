@@ -28,6 +28,7 @@
         <result property="createByName" column="create_by_name"/>
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime" column="update_time"/>
     </resultMap>
 
@@ -62,8 +63,10 @@
         <result property="delFlag" column="del_flag"/>
         <result property="tenantId" column="tenant_id"/>
         <result property="createBy" column="create_by"/>
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime" column="update_time"/>
     </resultMap>
 
@@ -299,7 +302,7 @@
         select id, parent_id, bill_no, line_no, material_id, material_code, material_name,
                speci, model, unit_name, old_price, new_price, finance_class, manufacturer,
                reg_no, reg_valid_date, pack_speci, remark, del_flag, tenant_id,
-               create_by, create_time, update_by, update_time
+               create_by, create_by_name, create_time, update_by, update_by_name, update_time
         from purchase_price_adjust_entry
         where parent_id = #{parentId}
           and tenant_id = #{scopedTenantId}
@@ -319,8 +322,8 @@
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         insert into purchase_price_adjust (
             bill_no, adjust_type, supplier_id, bill_date, contact_name, contact_phone,
-            bill_status, audit_by, audit_date, print_by, print_date, adjust_reason, remark, del_flag,
-            tenant_id, create_by, create_time, update_by, update_time
+            bill_status, audit_by, audit_by_name, audit_date, print_by, print_date, adjust_reason, remark, del_flag,
+            tenant_id, create_by, create_by_name, create_time, update_by, update_by_name, update_time
         ) values (
             #{billNo}, #{adjustType}, #{supplierId}, #{billDate}, #{contactName}, #{contactPhone},
             #{billStatus}, #{auditBy}, #{auditDate}, #{printBy}, #{printDate}, #{adjustReason}, #{remark}, #{delFlag},
@@ -339,10 +342,12 @@
             <if test="contactPhone != null">contact_phone = #{contactPhone},</if>
             <if test="billStatus != null">bill_status = #{billStatus},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditByName != null">audit_by_name = #{auditByName},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="adjustReason != null">adjust_reason = #{adjustReason},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             update_time = now()
         </set>
         where id = #{id} and tenant_id = #{scopedTenantId}
@@ -354,6 +359,7 @@
         update purchase_price_adjust
         set bill_status = #{billStatus},
             <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditByName != null">audit_by_name = #{auditByName},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             update_by = #{updateBy},
             update_time = now()
@@ -366,7 +372,7 @@
             parent_id, bill_no, line_no, material_id, material_code, material_name,
             speci, model, unit_name, old_price, new_price, finance_class, manufacturer,
             reg_no, reg_valid_date, pack_speci, remark, del_flag, tenant_id,
-            create_by, create_time
+            create_by, create_by_name, create_time
         ) values (
             #{parentId}, #{billNo}, #{lineNo}, #{materialId}, #{materialCode}, #{materialName},
             #{speci}, #{model}, #{unitName}, #{oldPrice}, #{newPrice}, #{financeClass}, #{manufacturer},
@@ -380,7 +386,7 @@
             parent_id, bill_no, line_no, material_id, material_code, material_name,
             speci, model, unit_name, old_price, new_price, finance_class, manufacturer,
             reg_no, reg_valid_date, pack_speci, remark, del_flag, tenant_id,
-            create_by, create_time
+            create_by, create_by_name, create_time
         ) values
         <foreach collection="list" item="item" separator=",">
             (
@@ -402,9 +408,16 @@
     </update>
 
     <update id="deletePurchasePriceAdjustById">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()"/>
         update purchase_price_adjust
-        set del_flag = '1', update_by = #{updateBy}, update_time = now()
+        set del_flag = '1',
+            delete_by = #{updateBy},
+            delete_by_name = #{_deleteByNameAuto},
+            delete_time = now(),
+            update_by = #{updateBy},
+            update_by_name = #{_deleteByNameAuto},
+            update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
           and (del_flag = '0' or del_flag is null)
     </update>

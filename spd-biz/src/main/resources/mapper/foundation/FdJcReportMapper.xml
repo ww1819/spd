@@ -12,10 +12,13 @@
         <result property="remark"        column="remark" />
         <result property="delFlag"       column="del_flag" />
         <result property="createBy"      column="create_by" />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time" />
         <result property="updateBy"      column="update_by" />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time" />
         <result property="deleteBy"      column="delete_by" />
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime"    column="delete_time" />
         <result property="tenantId"      column="tenant_id" />
         <result property="periodName"    column="period_name" />
@@ -88,8 +91,10 @@
             <if test="remark != null">remark,</if>
             <if test="delFlag != null">del_flag,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             tenant_id,
         </trim>
@@ -102,8 +107,10 @@
             <if test="remark != null">#{remark},</if>
             <if test="delFlag != null">#{delFlag},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             #{scopedTenantId},
         </trim>
@@ -116,15 +123,17 @@
             <if test="reportQty != null">report_qty = #{reportQty},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0
     </update>
 
     <update id="deleteFdJcReportById">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update fd_jc_report
-        set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now()
+        set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now(), update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId} and ifnull(del_flag, 0) = 0
     </update>
 

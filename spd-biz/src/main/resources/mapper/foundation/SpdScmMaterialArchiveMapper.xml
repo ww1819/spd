@@ -55,7 +55,7 @@
           material_name, pinyin_code, specification, model, unit_name, price, sale_price,
           register_no, register_name, manufacturer_name, udi_code, medical_name, medical_no, brand,
           payload_json, scm_update_time, last_sync_batch_id, apply_status, last_apply_log_id,
-          del_flag, create_by, create_time, remark
+          del_flag, create_by, create_by_name, create_time, remark
         ) values (
           #{id}, #{tenantId}, #{scmArchiveId}, #{hospitalCode}, #{scmSupplierCode}, #{spdMaterialId}, #{spdSupplierId},
           #{materialName}, #{pinyinCode}, #{specification}, #{model}, #{unitName}, #{price}, #{salePrice},
@@ -92,6 +92,7 @@
             <if test="applyStatus != null">apply_status = #{applyStatus},</if>
             <if test="lastApplyLogId != null">last_apply_log_id = #{lastApplyLogId},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="remark != null">remark = #{remark},</if>
             update_time = now()
         </set>

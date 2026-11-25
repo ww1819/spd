@@ -14,7 +14,7 @@
     <insert id="insertSbTenantSetting">
         insert into sb_tenant_setting (
             id, tenant_id, setting_key, setting_value, remark, del_flag,
-            create_by, create_time, update_by, update_time
+            create_by, create_by_name, create_time, update_by, update_by_name, update_time
         ) values (
             #{id}, #{tenantId}, #{settingKey}, #{settingValue}, #{remark}, ifnull(#{delFlag}, 0),
             #{createBy}, #{createTime}, #{updateBy}, #{updateTime}
@@ -27,6 +27,7 @@
             <if test="settingValue != null">setting_value = #{settingValue},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             update_time = now()
         </set>
         where tenant_id = #{tenantId} and setting_key = #{settingKey} and ifnull(del_flag, 0) = 0

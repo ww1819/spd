@@ -28,6 +28,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="expectedDeliveryDate"    column="expected_delivery_date"    />
         <result property="delFlag"    column="del_flag"    />
         <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime"    column="delete_time"    />
         <result property="planStatus"    column="plan_status"    />
         <result property="purchasePlanRefStatus" column="purchase_plan_ref_status" />
@@ -35,12 +36,15 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="receiptStatus" column="receipt_status" />
         <result property="rejectReason"    column="reject_reason"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <result property="remark"    column="remark"    />
         <result property="tenantId"    column="tenant_id"    />
         <result property="auditBy"    column="audit_by"    />
+        <result property="auditByName"    column="audit_by_name"    />
         <result property="auditDate"    column="audit_date"    />
         <result property="auditPersonName"    column="audit_person_name"    />
         <result property="createrPersonName"    column="creater_person_name"    />
@@ -397,11 +401,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="receiptStatus != null">receipt_status,</if>
             <if test="rejectReason != null">reject_reason,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
             <if test="auditBy != null and auditBy != ''">audit_by,</if>
+            <if test="auditByName != null">audit_by_name,</if>
             <if test="auditDate != null">audit_date,</if>
             <if test="srcAggApplyId != null and srcAggApplyId != ''">src_agg_apply_id,</if>
             <if test="srcAggBillNo != null and srcAggBillNo != ''">src_agg_bill_no,</if>
@@ -425,11 +432,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="receiptStatus != null">#{receiptStatus},</if>
             <if test="rejectReason != null">#{rejectReason},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
             <if test="auditBy != null and auditBy != ''">#{auditBy},</if>
+            <if test="auditByName != null">#{auditByName},</if>
             <if test="auditDate != null">#{auditDate},</if>
             <if test="srcAggApplyId != null and srcAggApplyId != ''">#{srcAggApplyId},</if>
             <if test="srcAggBillNo != null and srcAggBillNo != ''">#{srcAggBillNo},</if>
@@ -458,11 +468,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="receiptStatus != null">receipt_status = #{receiptStatus},</if>
             <if test="rejectReason != null">reject_reason = #{rejectReason},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createByName != null">create_by_name = #{createByName},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditByName != null">audit_by_name = #{auditByName},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="srcAggApplyId != null">src_agg_apply_id = #{srcAggApplyId},</if>
             <if test="srcAggBillNo != null">src_agg_bill_no = #{srcAggBillNo},</if>
@@ -472,12 +485,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <delete id="deleteDepPurchaseApplyById">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update dep_purchase_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
+        update dep_purchase_apply set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <delete id="deleteDepPurchaseApplyByIds">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update dep_purchase_apply set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
+        update dep_purchase_apply set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -485,7 +498,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <delete id="deleteDepPurchaseApplyEntryByParentIds">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update dep_purchase_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), del_by = #{deleteBy}, del_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and parent_id in
+        update dep_purchase_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), del_by = #{deleteBy}, del_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and parent_id in
         <foreach item="id" collection="ids" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -493,7 +506,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <delete id="deleteDepPurchaseApplyEntryByParentId">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update dep_purchase_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), del_by = #{deleteBy}, del_time = now(), update_time = now() where parent_id = #{id} and tenant_id = #{scopedTenantId}
+        update dep_purchase_apply_entry set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{deleteByName}, delete_time = now(), del_by = #{deleteBy}, del_time = now(), update_time = now() where parent_id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
 
     <!-- 批量新增申购明细，主键ID使用自增，不再从代码端传入，避免重复主键错误 -->
@@ -795,7 +808,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         insert into dep_pur_apply_ck_entry_ref (
             tenant_id, dep_pur_apply_id, dep_pur_apply_bill_no, dep_pur_apply_entry_id,
             ck_bill_id, ck_bill_no, ck_entry_id, ref_qty, ref_amt, link_status, del_flag,
-            create_by, create_time, remark
+            create_by, create_by_name, create_time, remark
         ) values (
             #{tenantId}, #{depPurApplyId}, #{depPurApplyBillNo}, #{depPurApplyEntryId},
             #{ckBillId}, #{ckBillNo}, #{ckEntryId}, #{refQty}, #{refAmt}, #{linkStatus}, #{delFlag},

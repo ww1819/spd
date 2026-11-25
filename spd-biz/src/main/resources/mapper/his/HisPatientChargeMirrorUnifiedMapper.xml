@@ -478,8 +478,10 @@
         <result property="processParty" column="process_party"/>
         <result property="processSituation" column="process_situation"/>
         <result property="createBy" column="create_by"/>
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime" column="create_time"/>
         <result property="updateBy" column="update_by"/>
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime" column="update_time"/>
         <result property="valueLevel" column="value_level"/>
         <result property="materialBound" column="material_bound"/>
@@ -504,7 +506,7 @@
             doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date,
             use_date, charge_date_display, charge_at,
             quantity, unit_price, total_amount, charge_operator, payment_type, receipt_no, remark, row_fingerprint,
-            process_status, process_type, process_time, process_by, value_level, create_by, create_time, update_by, update_time
+            process_status, process_type, process_time, process_by, value_level, create_by, create_by_name, create_time, update_by, update_by_name, update_time
         )
         select
             m.id, m.tenant_id, 'INPATIENT', m.fetch_batch_id,
@@ -544,7 +546,7 @@
             doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date,
             use_date, charge_date_display, charge_at,
             quantity, unit_price, total_amount, charge_operator, payment_type, receipt_no, remark, row_fingerprint,
-            process_status, process_type, process_time, process_by, value_level, create_by, create_time, update_by, update_time
+            process_status, process_type, process_time, process_by, value_level, create_by, create_by_name, create_time, update_by, update_by_name, update_time
         )
         select
             m.id, m.tenant_id, 'OUTPATIENT', m.fetch_batch_id,
@@ -583,7 +585,7 @@
             doctor_id, doctor_name, charge_item_id, item_name, spec_model, batch_no, expire_date,
             use_date, charge_date_display, charge_at,
             quantity, unit_price, total_amount, charge_operator, payment_type, receipt_no, remark, row_fingerprint,
-            process_status, process_type, process_time, process_by, value_level, create_by, create_time
+            process_status, process_type, process_time, process_by, value_level, create_by, create_by_name, create_time
         ) values
         <foreach collection="list" item="e" separator=",">
             (#{e.id}, #{e.tenantId}, #{e.visitKind}, #{e.fetchBatchId},

@@ -3,7 +3,7 @@
 <mapper namespace="com.spd.foundation.mapper.SpdFoundationDataSnapshotMapper">
 
     <insert id="insert">
-        INSERT INTO spd_foundation_data_snapshot (id, tenant_id, entity_type, entity_id, before_json, after_json, create_by, create_time, is_deleted)
+        INSERT INTO spd_foundation_data_snapshot (id, tenant_id, entity_type, entity_id, before_json, after_json, create_by, create_by_name, create_time, is_deleted)
         VALUES (#{id}, #{tenantId}, #{entityType}, #{entityId}, #{beforeJson}, #{afterJson}, #{createBy}, now(), 0)
     </insert>
 

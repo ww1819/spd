@@ -23,9 +23,11 @@
 		<result property="isPlatform"     column="is_platform"    />
 		<result property="defaultOpenToCustomer" column="default_open_to_customer" />
 		<result property="createBy"       column="create_by"      />
+        <result property="createByName"    column="create_by_name"    />
 		<result property="createTime"     column="create_time"    />
 		<result property="updateTime"     column="update_time"    />
 		<result property="updateBy"       column="update_by"      />
+        <result property="updateByName"    column="update_by_name"    />
 		<result property="remark"         column="remark"         />
 	</resultMap>
 
@@ -223,6 +225,7 @@
 			<if test="defaultOpenToCustomer != null">default_open_to_customer = #{defaultOpenToCustomer},</if>
 			<if test="remark != null and remark != ''">remark = #{remark},</if>
 			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
 			update_time = sysdate()
 		</set>
 		where menu_id = #{menuId}
@@ -248,6 +251,7 @@
 		<if test="defaultOpenToCustomer != null">default_open_to_customer,</if>
 		<if test="remark != null and remark != ''">remark,</if>
 		<if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
 		create_time
 	)values(
 		<if test="menuId != null and menuId != 0">#{menuId},</if>
@@ -268,6 +272,7 @@
 		<if test="defaultOpenToCustomer != null">#{defaultOpenToCustomer},</if>
 		<if test="remark != null and remark != ''">#{remark},</if>
 		<if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
 		sysdate()
 		)
 	</insert>

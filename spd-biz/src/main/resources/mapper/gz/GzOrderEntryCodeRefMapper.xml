@@ -6,7 +6,7 @@
         insert into gz_order_entry_code_ref (
             id, tenant_id, src_acceptance_id, src_acceptance_no, src_order_entry_id, src_barcode_line_id, src_in_hospital_code,
             tgt_bill_kind, tgt_main_id, tgt_bill_no, tgt_entry_id, ref_purpose, material_id, material_name, warehouse_id,
-            create_by, create_time, is_deleted
+            create_by, create_by_name, create_time, is_deleted
         ) values
         <foreach collection="list" item="item" separator=",">
             (

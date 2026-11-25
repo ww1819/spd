@@ -25,8 +25,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="delFlag"    column="del_flag"    />
         <result property="auditDate"    column="audit_date"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <result property="remark"    column="remark"    />
         <result property="delPerson"    column="del_person"    />
@@ -41,12 +43,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="isMonthInit"    column="is_month_init"    />
         <result property="receiptConfirmStatus"    column="receipt_confirm_status"    />
         <result property="auditBy"    column="audit_by"    />
+        <result property="auditByName"    column="audit_by_name"    />
         <result property="createrName"    column="createrNickName"    />
         <result property="auditPersonName"    column="auditUserName"    />
         <result property="updateByUserName"    column="updateByUserName"    />
         <result property="updateByNickName"    column="updateByNickName"    />
         <result property="tenantId"    column="tenant_id"    />
         <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime"    column="delete_time"    />
         <result property="settlementType"    column="settlement_type"    />
         <result property="docRefStatus"    column="doc_ref_status"    />
@@ -1329,8 +1333,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag,</if>
             <if test="auditDate != null">audit_date,</if>
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="remark != null">remark,</if>
             <if test="delPerson != null">del_person,</if>
@@ -1345,6 +1351,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isMonthInit != null">is_month_init,</if>
             <if test="receiptConfirmStatus != null">receipt_confirm_status,</if>
             <if test="auditBy != null">audit_by,</if>
+            <if test="auditByName != null">audit_by_name,</if>
             tenant_id,
             <if test="settlementType != null and settlementType != ''">settlement_type,</if>
             <if test="dApplyId != null and dApplyId != ''">d_apply_id,</if>
@@ -1373,8 +1380,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">#{delFlag},</if>
             <if test="auditDate != null">#{auditDate},</if>
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="remark != null">#{remark},</if>
             <if test="delPerson != null">#{delPerson},</if>
@@ -1389,6 +1398,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isMonthInit != null">#{isMonthInit},</if>
             <if test="receiptConfirmStatus != null">#{receiptConfirmStatus},</if>
             <if test="auditBy != null">#{auditBy},</if>
+            <if test="auditByName != null">#{auditByName},</if>
             #{scopedTenantId},
             <if test="settlementType != null and settlementType != ''">#{settlementType},</if>
             <if test="dApplyId != null and dApplyId != ''">#{dApplyId},</if>
@@ -1422,8 +1432,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="auditDate != null">audit_date = #{auditDate},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createByName != null">create_by_name = #{createByName},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="delPerson != null">del_person = #{delPerson},</if>
@@ -1438,8 +1450,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="isMonthInit != null">is_month_init = #{isMonthInit},</if>
             <if test="receiptConfirmStatus != null">receipt_confirm_status = #{receiptConfirmStatus},</if>
             <if test="auditBy != null">audit_by = #{auditBy},</if>
+            <if test="auditByName != null">audit_by_name = #{auditByName},</if>
             <if test="tenantId != null">tenant_id = #{scopedTenantId},</if>
             <if test="deleteBy != null">delete_by = #{deleteBy},</if>
+            <if test="deleteByName != null">delete_by_name = #{deleteByName},</if>
             <if test="deleteTime != null">delete_time = #{deleteTime},</if>
             <if test="settlementType != null and settlementType != ''">settlement_type = #{settlementType},</if>
             <if test="dApplyId != null">d_apply_id = #{dApplyId},</if>
@@ -1464,6 +1478,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="deleteBy != null">delete_by = #{deleteBy},</if>
+            <if test="deleteByName != null">delete_by_name = #{deleteByName},</if>
             <if test="deleteTime != null">delete_time = #{deleteTime},</if>
         </trim>
         where id = #{id} and tenant_id = #{scopedTenantId}
@@ -1479,16 +1494,18 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </select>
 
     <update id="deleteStkIoBillEntryByParenIds">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update stk_io_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = #{deleteTime} where tenant_id = #{scopedTenantId} and paren_id in
+        update stk_io_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = #{deleteTime} where tenant_id = #{scopedTenantId} and paren_id in
         <foreach item="parenId" collection="parenIds" open="(" separator="," close=")">
             #{parenId}
         </foreach>
     </update>
 
     <update id="deleteStkIoBillEntryByParenId">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        update stk_io_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_time = #{deleteTime} where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
+        update stk_io_bill_entry set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = #{deleteTime} where paren_id = #{parenId} and tenant_id = #{scopedTenantId}
     </update>
 
     <select id="selectActiveStkIoBillEntryIdsByParenId" resultType="Long">
@@ -1508,8 +1525,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                suppler_id, settlement_type, wh_apply_entry_id, dep_pur_apply_entry_id, delivery_line_sign, delivery_line_qty_cap, fixed_package_barcode,
                warehouse_id_str, supplier_id_str, department_id_str,
                his_pharmacy_stock_id, his_storage_stock_id, his_stock_query_id,
-               tenant_id, create_by, create_time, update_by, update_time,
-               delete_by, delete_time
+               tenant_id, create_by, create_by_name, create_time, update_by, update_by_name, update_time,
+               delete_by, delete_by_name, delete_time
         from stk_io_bill_entry
         where paren_id = #{parenId}
           and tenant_id = #{scopedTenantId}
@@ -1559,8 +1576,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="tenantId != null">tenant_id = #{tenantId},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="deleteBy != null">delete_by = #{deleteBy},</if>
+            <if test="deleteByName != null">delete_by_name = #{deleteByName},</if>
             <if test="deleteTime != null">delete_time = #{deleteTime},</if>
         </trim>
         where id = #{id}

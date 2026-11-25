@@ -10,7 +10,7 @@
             factory_id, factory_name, supplier_id, supplier_name, batch_no, batch_number, begin_time, end_time,
             unit_price, qty_in_package, package_index, package_total, in_hospital_code, fixed_package_barcode,
             stk_inventory_id, stk_dep_inventory_id, hc_barcode_master_id, audit_by, audit_time, remark,
-            del_flag, create_by, create_time
+            del_flag, create_by, create_by_name, create_time
         ) values (
             #{id}, #{tenantId}, #{ioDirection}, #{stkIoBillId}, #{stkIoBillNo}, #{stkIoBillType}, #{stkIoBillEntryId},
             #{warehouseId}, #{warehouseCode}, #{warehouseName}, #{departmentId}, #{departmentCode}, #{departmentName},
@@ -43,7 +43,7 @@
             factory_id, factory_name, supplier_id, supplier_name, warehouse_id, warehouse_name,
             department_id, department_name, batch_no, batch_number, begin_time, end_time,
             master_barcode, secondary_barcode, fixed_package_qty, current_holder_type,
-            current_warehouse_id, current_department_id, status, del_flag, create_by, create_time
+            current_warehouse_id, current_department_id, status, del_flag, create_by, create_by_name, create_time
         ) values (
             #{id}, #{tenantId}, #{barcodeValue}, #{valueLevel}, #{businessTypeCode}, #{businessTypeName},
             #{sourceTable}, #{sourceRowId}, #{billDomain}, #{billId}, #{billNo}, #{billType}, #{billEntryId},
@@ -60,7 +60,7 @@
             id, tenant_id, hc_barcode_master_id, barcode_value, value_level, seq_no, event_code, event_name, event_time,
             bill_domain, bill_id, bill_no, bill_entry_id, from_warehouse_id, to_warehouse_id, from_department_id, to_department_id,
             qty, material_name, material_speci, material_model, operator_id, operator_name, remark,
-            del_flag, create_by, create_time
+            del_flag, create_by, create_by_name, create_time
         ) values (
             #{id}, #{tenantId}, #{hcBarcodeMasterId}, #{barcodeValue}, #{valueLevel}, #{seqNo}, #{eventCode}, #{eventName}, #{eventTime},
             #{billDomain}, #{billId}, #{billNo}, #{billEntryId}, #{fromWarehouseId}, #{toWarehouseId}, #{fromDepartmentId}, #{toDepartmentId},
@@ -75,7 +75,7 @@
             material_id, material_code, material_name, material_speci, material_model, batch_no, batch_number, batch_id,
             qty, unit_price, amt, begin_time, end_time, supplier_id, supplier_name, factory_id, factory_name,
             gz_depot_inventory_id, in_hospital_code, master_barcode, secondary_barcode, lx, flow_time, origin_business_type,
-            del_flag, create_by, create_time
+            del_flag, create_by, create_by_name, create_time
         ) values (
             #{id}, #{tenantId}, #{billId}, #{billNo}, #{entryId}, #{refBillId}, #{refEntryId}, #{warehouseId}, #{warehouseName}, #{departmentId}, #{departmentName},
             #{materialId}, #{materialCode}, #{materialName}, #{materialSpeci}, #{materialModel}, #{batchNo}, #{batchNumber}, #{batchId},
@@ -91,7 +91,7 @@
             material_id, material_code, material_name, material_speci, material_model, batch_no, batch_number, batch_id,
             qty, unit_price, amt, begin_time, end_time, supplier_id, supplier_name, factory_id, factory_name,
             gz_dep_inventory_id, in_hospital_code, master_barcode, secondary_barcode, lx, flow_time, origin_business_type,
-            del_flag, create_by, create_time
+            del_flag, create_by, create_by_name, create_time
         ) values (
             #{id}, #{tenantId}, #{billId}, #{billNo}, #{entryId}, #{departmentId}, #{departmentName}, #{warehouseId}, #{warehouseName},
             #{materialId}, #{materialCode}, #{materialName}, #{materialSpeci}, #{materialModel}, #{batchNo}, #{batchNumber}, #{batchId},

@@ -13,10 +13,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="delFlag"    column="del_flag"    />
         <result property="tenantId"    column="tenant_id"    />
         <result property="deleteBy"    column="delete_by"    />
+        <result property="deleteByName"    column="delete_by_name"    />
         <result property="deleteTime"    column="delete_time"    />
         <result property="createBy"    column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"    column="create_time"    />
         <result property="updateBy"    column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"    column="update_time"    />
         <result property="factoryReferredCode"    column="factory_referred_code"    />
         <result property="factoryStatus"    column="factory_status"    />
@@ -26,8 +29,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <sql id="selectFdFactoryVo">
         select factory_id, factory_code, factory_name, factory_address, factory_contact, del_flag,
-        tenant_id, delete_by, delete_time,
-        create_by, create_time, update_by, update_time, factory_referred_code, factory_status, his_id, remark from fd_factory
+        tenant_id, delete_by, delete_by_name, delete_time,
+        create_by, create_by_name, create_time, update_by, update_by_name, update_time, factory_referred_code, factory_status, his_id, remark from fd_factory
     </sql>
 
     <select id="selectFdFactoryList" parameterType="FdFactory" resultMap="FdFactoryResult">
@@ -103,8 +106,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">del_flag,</if>
             tenant_id,
             <if test="createBy != null">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
             <if test="createTime != null">create_time,</if>
             <if test="updateBy != null">update_by,</if>
+            <if test="updateByName != null">update_by_name,</if>
             <if test="updateTime != null">update_time,</if>
             <if test="factoryReferredCode != null">factory_referred_code,</if>
             <if test="factoryStatus != null">factory_status,</if>
@@ -119,8 +124,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="delFlag != null">#{delFlag},</if>
             #{insertTenantId},
             <if test="createBy != null">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
             <if test="createTime != null">#{createTime},</if>
             <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateByName != null">#{updateByName},</if>
             <if test="updateTime != null">#{updateTime},</if>
             <if test="factoryReferredCode != null">#{factoryReferredCode},</if>
             <if test="factoryStatus != null">#{factoryStatus},</if>
@@ -140,10 +147,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="factoryContact != null">factory_contact = #{factoryContact},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
             <if test="deleteBy != null">delete_by = #{deleteBy},</if>
+            <if test="deleteByName != null">delete_by_name = #{deleteByName},</if>
             <if test="deleteTime != null">delete_time = #{deleteTime},</if>
             <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createByName != null">create_by_name = #{createByName},</if>
             <if test="createTime != null">create_time = #{createTime},</if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
             <if test="factoryReferredCode != null">factory_referred_code = #{factoryReferredCode},</if>
             <if test="factoryStatus != null">factory_status = #{factoryStatus},</if>
@@ -153,15 +163,17 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <update id="deleteFdFactoryByFactoryId">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
-        update fd_factory set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where factory_id = #{factoryId} and tenant_id = #{scopedTenantId}
+        update fd_factory set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now(), update_time = now() where factory_id = #{factoryId} and tenant_id = #{scopedTenantId}
     </update>
 
     <update id="deleteFdFactoryByFactoryIds">
+        <bind name="_deleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="tenantCtxCustomerId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         <bind name="scopedTenantId" value="tenantCtxCustomerId != null ? tenantCtxCustomerId : @com.spd.common.utils.TenantContext@getTenantId()" />
-        update fd_factory set del_flag = 1, delete_by = #{deleteBy}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and factory_id in
+        update fd_factory set del_flag = 1, delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto}, delete_time = now(), update_time = now() where tenant_id = #{scopedTenantId} and factory_id in
         <foreach item="factoryId" collection="factoryIds" open="(" separator="," close=")">
             #{factoryId}
         </foreach>

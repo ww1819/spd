@@ -27,8 +27,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="loginIp"      column="login_ip"     />
         <result property="loginDate"    column="login_date"   />
         <result property="createBy"     column="create_by"    />
+        <result property="createByName"    column="create_by_name"    />
         <result property="createTime"   column="create_time"  />
         <result property="updateBy"     column="update_by"    />
+        <result property="updateByName"    column="update_by_name"    />
         <result property="updateTime"   column="update_time"  />
         <result property="remark"       column="remark"       />
         <result property="messageReminderKeys" column="message_reminder_keys" />
@@ -281,6 +283,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="password != null and password != ''">password,</if>
  			<if test="status != null and status != ''">status,</if>
  			<if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="createByName != null">create_by_name,</if>
  			<if test="remark != null and remark != ''">remark,</if>
  			create_time
  		)values(
@@ -297,6 +300,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="password != null and password != ''">#{password},</if>
  			<if test="status != null and status != ''">#{status},</if>
  			<if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="createByName != null">#{createByName},</if>
  			<if test="remark != null and remark != ''">#{remark},</if>
  			sysdate()
  		)
@@ -320,6 +324,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
  			<if test="loginIp != null and loginIp != ''">login_ip = #{loginIp},</if>
  			<if test="loginDate != null">login_date = #{loginDate},</if>
  			<if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="updateByName != null">update_by_name = #{updateByName},</if>
  			<if test="remark != null">remark = #{remark},</if>
  			<if test="messageReminderKeys != null">message_reminder_keys = #{messageReminderKeys},</if>
  			<if test="homePageKeys != null">home_page_keys = #{homePageKeys},</if>

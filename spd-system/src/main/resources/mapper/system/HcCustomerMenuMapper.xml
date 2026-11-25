@@ -22,9 +22,10 @@
   </select>
 
   <update id="deleteByTenantId">
+        <bind name="_auditDeleteByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="auditDeleteBy" value="@com.spd.common.utils.SecurityUtils@getUserIdStr()" />
         <bind name="auditDeleteByName" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
-        update hc_customer_menu set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{auditDeleteByName}, delete_time = now()
+        update hc_customer_menu set is_deleted = 1, delete_by = #{auditDeleteBy}, delete_by_name = #{_auditDeleteByNameAuto}, delete_time = now()
         where tenant_id = #{tenantId}
     </update>
 
@@ -40,12 +41,12 @@
   </update>
 
   <insert id="insert" parameterType="com.spd.system.domain.hc.HcCustomerMenu">
-    INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time, is_deleted)
+    INSERT INTO hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_by_name, create_time, is_deleted)
     VALUES (#{tenantId}, #{menuId}, ifnull(#{status},'0'), ifnull(#{isEnabled},'1'), #{createBy}, now(), 0)
   </insert>
 
   <insert id="batchInsert">
-    insert into hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_time, is_deleted)
+    insert into hc_customer_menu (tenant_id, menu_id, status, is_enabled, create_by, create_by_name, create_time, is_deleted)
     values
     <foreach item="item" collection="list" separator=",">
       (#{item.tenantId}, #{item.menuId}, ifnull(#{item.status},'0'), ifnull(#{item.isEnabled},'1'), #{item.createBy}, now(), 0)
