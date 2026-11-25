@@ -169,7 +169,18 @@ public class MyBatisConfig implements ResourceLoaderAware
         sessionFactory.setMapperLocations(mapperResources);
         if (StringUtils.isNotEmpty(configLocation))
         {
-            sessionFactory.setConfigLocation(new DefaultResourceLoader().getResource(Objects.requireNonNull(configLocation)));
+            // 与 resolveMapperLocations 一致：用 Spring ResourceLoader（Tomcat 启动阶段
+            // new DefaultResourceLoader() 可能看不到 spd-admin 的 classpath 资源）
+            ResourceLoader loader = resourceLoader != null ? resourceLoader : new DefaultResourceLoader();
+            Resource configResource = loader.getResource(Objects.requireNonNull(configLocation));
+            if (!configResource.exists())
+            {
+                log.warn("MyBatis configLocation 不可用: {}，跳过全局配置（使用默认 settings）", configLocation);
+            }
+            else
+            {
+                sessionFactory.setConfigLocation(configResource);
+            }
         }
         return sessionFactory.getObject();
     }
