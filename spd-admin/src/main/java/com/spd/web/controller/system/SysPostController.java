@@ -85,7 +85,7 @@ public class SysPostController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('system:post:query')")
     @GetMapping(value = "/roleMenuTreeselect/{postId}")
-    public AjaxResult roleMenuTreeselect(@PathVariable Long postId)
+    public AjaxResult roleMenuTreeselect(@PathVariable("postId") Long postId)
     {
         SysPost post = postService.selectPostById(postId);
         AjaxResult ajax = AjaxResult.success();
@@ -108,7 +108,7 @@ public class SysPostController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('system:post:sync') or @ss.hasPermi('system:post:query') or @ss.hasPermi('system:post:edit')")
     @GetMapping("/{postId}/userIds")
-    public AjaxResult userIdsByPost(@PathVariable Long postId)
+    public AjaxResult userIdsByPost(@PathVariable("postId") Long postId)
     {
         return success(postService.selectUserIdsByPostId(postId));
     }
@@ -118,7 +118,7 @@ public class SysPostController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('system:post:sync') or @ss.hasPermi('system:post:edit')")
     @PostMapping("/sync/menu/{postId}")
-    public AjaxResult syncMenuToUsers(@PathVariable Long postId,
+    public AjaxResult syncMenuToUsers(@PathVariable("postId") Long postId,
         @RequestParam(value = "syncMode", required = false, defaultValue = "supplement") String syncMode)
     {
         ISysPostService.SyncStatus running = new ISysPostService.SyncStatus();
@@ -162,7 +162,7 @@ public class SysPostController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('system:post:sync') or @ss.hasPermi('system:post:query')")
     @GetMapping("/sync/menu/status/{postId}")
-    public AjaxResult getMenuSyncStatus(@PathVariable Long postId)
+    public AjaxResult getMenuSyncStatus(@PathVariable("postId") Long postId)
     {
         ISysPostService.SyncStatus status = MENU_SYNC_STATUS_MAP.get(postId);
         if (status == null)
@@ -179,7 +179,7 @@ public class SysPostController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('system:post:sync') or @ss.hasPermi('system:post:edit')")
     @PostMapping("/sync/department/{postId}")
-    public AjaxResult syncDepartmentToUsers(@PathVariable Long postId,
+    public AjaxResult syncDepartmentToUsers(@PathVariable("postId") Long postId,
         @RequestParam(value = "syncMode", required = false, defaultValue = "supplement") String syncMode)
     {
         ISysPostService.SyncStatus running = new ISysPostService.SyncStatus();
@@ -219,7 +219,7 @@ public class SysPostController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('system:post:sync') or @ss.hasPermi('system:post:query')")
     @GetMapping("/sync/department/status/{postId}")
-    public AjaxResult getDepartmentSyncStatus(@PathVariable Long postId)
+    public AjaxResult getDepartmentSyncStatus(@PathVariable("postId") Long postId)
     {
         ISysPostService.SyncStatus status = DEPARTMENT_SYNC_STATUS_MAP.get(postId);
         if (status == null)
@@ -236,7 +236,7 @@ public class SysPostController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('system:post:sync') or @ss.hasPermi('system:post:edit')")
     @PostMapping("/sync/warehouse/{postId}")
-    public AjaxResult syncWarehouseToUsers(@PathVariable Long postId,
+    public AjaxResult syncWarehouseToUsers(@PathVariable("postId") Long postId,
         @RequestParam(value = "syncMode", required = false, defaultValue = "supplement") String syncMode)
     {
         ISysPostService.SyncStatus running = new ISysPostService.SyncStatus();
@@ -276,7 +276,7 @@ public class SysPostController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('system:post:sync') or @ss.hasPermi('system:post:query')")
     @GetMapping("/sync/warehouse/status/{postId}")
-    public AjaxResult getWarehouseSyncStatus(@PathVariable Long postId)
+    public AjaxResult getWarehouseSyncStatus(@PathVariable("postId") Long postId)
     {
         ISysPostService.SyncStatus status = WAREHOUSE_SYNC_STATUS_MAP.get(postId);
         if (status == null)
@@ -293,7 +293,7 @@ public class SysPostController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('system:post:sync') or @ss.hasPermi('system:post:edit')")
     @PostMapping("/sync/messageReminder/{postId}")
-    public AjaxResult syncMessageReminderToUsers(@PathVariable Long postId,
+    public AjaxResult syncMessageReminderToUsers(@PathVariable("postId") Long postId,
         @RequestParam(value = "syncMode", required = false, defaultValue = "supplement") String syncMode)
     {
         ISysPostService.SyncStatus running = new ISysPostService.SyncStatus();
@@ -333,7 +333,7 @@ public class SysPostController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('system:post:sync') or @ss.hasPermi('system:post:query')")
     @GetMapping("/sync/messageReminder/status/{postId}")
-    public AjaxResult getMessageReminderSyncStatus(@PathVariable Long postId)
+    public AjaxResult getMessageReminderSyncStatus(@PathVariable("postId") Long postId)
     {
         ISysPostService.SyncStatus status = MESSAGE_REMINDER_SYNC_STATUS_MAP.get(postId);
         if (status == null)
@@ -350,7 +350,7 @@ public class SysPostController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('system:post:sync') or @ss.hasPermi('system:post:edit')")
     @PostMapping("/sync/homePage/{postId}")
-    public AjaxResult syncHomePageToUsers(@PathVariable Long postId,
+    public AjaxResult syncHomePageToUsers(@PathVariable("postId") Long postId,
         @RequestParam(value = "syncMode", required = false, defaultValue = "supplement") String syncMode)
     {
         ISysPostService.SyncStatus running = new ISysPostService.SyncStatus();
@@ -390,7 +390,7 @@ public class SysPostController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('system:post:sync') or @ss.hasPermi('system:post:query')")
     @GetMapping("/sync/homePage/status/{postId}")
-    public AjaxResult getHomePageSyncStatus(@PathVariable Long postId)
+    public AjaxResult getHomePageSyncStatus(@PathVariable("postId") Long postId)
     {
         ISysPostService.SyncStatus status = HOME_PAGE_SYNC_STATUS_MAP.get(postId);
         if (status == null)
@@ -407,7 +407,7 @@ public class SysPostController extends BaseController
 
     @PreAuthorize("@ss.hasPermi('system:post:query')")
     @GetMapping(value = "/{postId}")
-    public AjaxResult getInfo(@PathVariable Long postId)
+    public AjaxResult getInfo(@PathVariable("postId") Long postId)
     {
         SysPost post = postService.selectPostById(postId);
         if (post != null)
@@ -469,7 +469,7 @@ public class SysPostController extends BaseController
     @PreAuthorize("@ss.hasPermi('system:post:remove')")
     @Log(title = "岗位管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{postIds}")
-    public AjaxResult remove(@PathVariable Long[] postIds)
+    public AjaxResult remove(@PathVariable("postIds") Long[] postIds)
     {
         return toAjax(postService.deletePostByIds(postIds));
     }
@@ -494,3 +494,4 @@ public class SysPostController extends BaseController
         return success(posts);
     }
 }
+

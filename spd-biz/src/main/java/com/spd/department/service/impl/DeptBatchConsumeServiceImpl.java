@@ -29,6 +29,8 @@ import com.spd.gz.domain.GzDepInventory;
 import com.spd.gz.mapper.GzDepInventoryMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import com.spd.common.utils.MasterDetailValidateUtil;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
@@ -79,6 +81,9 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
 
     @Autowired
     private HisMirrorConsumeLinkMapper hisMirrorConsumeLinkMapper;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     /** 非机构管理员：仅能访问已授权科室的批量消耗单 */
     private void assertDepartmentInUserScope(Long departmentId) {
@@ -191,12 +196,10 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
     }
 
     /**
-     * 新增科室批量消耗
-     *
-     * @param deptBatchConsume 科室批量消耗
-     * @return 结果
+     * 新增科室批量消耗。
+     * 单号分配与整单提交必须在同一把锁内完成并提交事务，否则明细插入耗时期间
+     * 其他请求 selectMax 仍读到旧号，会生成重复 KSXH 单号（如 KSXH2026112600134×7）。
      */
-    @Transactional
     @Override
     public int insertDeptBatchConsume(DeptBatchConsume deptBatchConsume)
     {
@@ -206,33 +209,42 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         assertDepartmentInUserScope(deptBatchConsume.getDepartmentId());
         MasterDetailValidateUtil.assertHasMaterialLine(
             deptBatchConsume.getDeptBatchConsumeEntryList(), DeptBatchConsumeEntry::getMaterialId, "消耗");
-        deptBatchConsume.setCreateTime(DateUtils.getNowDate());
-        deptBatchConsume.setConsumeBillNo(getNumber());
-        deptBatchConsume.setConsumeBillStatus(1); // 待审核状态
-        deptBatchConsume.setDelFlag(0);
         if (StringUtils.isEmpty(deptBatchConsume.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             deptBatchConsume.setTenantId(SecurityUtils.getCustomerId());
         }
         normalizeInspectTeamDept(deptBatchConsume);
-        int rows = deptBatchConsumeMapper.insertDeptBatchConsume(deptBatchConsume);
-        int filteredCount = insertDeptBatchConsumeEntry(deptBatchConsume);
-        deptBatchConsume.setDedupFilteredCount(filteredCount);
-        return rows;
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        synchronized (KSXH_BILL_NO_LOCK) {
+            Integer rows = tx.execute(status -> {
+                deptBatchConsume.setCreateTime(DateUtils.getNowDate());
+                deptBatchConsume.setConsumeBillNo(nextConsumeBillNoUnlocked());
+                deptBatchConsume.setConsumeBillStatus(1); // 待审核状态
+                deptBatchConsume.setDelFlag(0);
+                int affected = deptBatchConsumeMapper.insertDeptBatchConsume(deptBatchConsume);
+                int filteredCount = insertDeptBatchConsumeEntry(deptBatchConsume);
+                deptBatchConsume.setDedupFilteredCount(filteredCount);
+                return affected;
+            });
+            return rows != null ? rows : 0;
+        }
     }
 
     /**
-     * 生成消耗单号
-     * @return 消耗单号
+     * 生成消耗单号（仅允许在 KSXH_BILL_NO_LOCK 内调用）
      */
     private static final Object KSXH_BILL_NO_LOCK = new Object();
 
     public String getNumber() {
         synchronized (KSXH_BILL_NO_LOCK) {
-            String str = "KSXH"; // 消耗单前缀
-            String date = FillRuleUtil.getDateNum();
-            String maxNum = deptBatchConsumeMapper.selectMaxBillNo(date);
-            return FillRuleUtil.getNumber(str, maxNum, date);
+            return nextConsumeBillNoUnlocked();
         }
+    }
+
+    private String nextConsumeBillNoUnlocked() {
+        String str = "KSXH";
+        String date = FillRuleUtil.getDateNum();
+        String maxNum = deptBatchConsumeMapper.selectMaxBillNo(date);
+        return FillRuleUtil.getNumber(str, maxNum, date);
     }
 
     /**

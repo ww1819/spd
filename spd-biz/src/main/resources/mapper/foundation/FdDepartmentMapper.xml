@@ -238,56 +238,68 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 <!--        </foreach>-->
 <!--    </delete>-->
 
-    <!-- 科室是否已有业务数据（存在任一则不可删除） -->
+    <!-- 科室是否已有业务数据（存在任一则不可删除；EXISTS，禁止 UNION+LIMIT 写法） -->
     <select id="countDepartmentBusinessUsage" resultType="int">
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
-        SELECT COUNT(1) FROM (
-            SELECT 1 FROM bas_apply
-            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
-            LIMIT 1
-            UNION ALL
-            SELECT 1 FROM dep_purchase_apply
-            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
-            LIMIT 1
-            UNION ALL
-            SELECT 1 FROM dep_purchase_apply_agg
-            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
-            LIMIT 1
-            UNION ALL
-            SELECT 1 FROM stk_io_bill
-            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
-            LIMIT 1
-            UNION ALL
-            SELECT 1 FROM t_hc_ks_xh
-            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
-            LIMIT 1
-            UNION ALL
-            SELECT 1 FROM gz_shipment
-            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
-            LIMIT 1
-            UNION ALL
-            SELECT 1 FROM gz_order
-            WHERE IFNULL(del_flag, 0) != 1
-              AND tenant_id = #{scopedTenantId}
-              AND (department_id = #{departmentId} OR apply_department_id = #{departmentId})
-            LIMIT 1
-            UNION ALL
-            SELECT 1 FROM gz_refund_goods
-            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
-            LIMIT 1
-            UNION ALL
-            SELECT 1 FROM gz_refund_stock
-            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
-            LIMIT 1
-            UNION ALL
-            SELECT 1 FROM stk_io_stocktaking
-            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND warehouse_id IS NULL AND tenant_id = #{scopedTenantId}
-            LIMIT 1
-            UNION ALL
-            SELECT 1 FROM stk_dep_inventory
-            WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
-            LIMIT 1
-        ) biz
+        SELECT CASE WHEN
+            EXISTS (
+                SELECT 1 FROM bas_apply
+                WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+                LIMIT 1
+            )
+            OR EXISTS (
+                SELECT 1 FROM dep_purchase_apply
+                WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+                LIMIT 1
+            )
+            OR EXISTS (
+                SELECT 1 FROM dep_purchase_apply_agg
+                WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+                LIMIT 1
+            )
+            OR EXISTS (
+                SELECT 1 FROM stk_io_bill
+                WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+                LIMIT 1
+            )
+            OR EXISTS (
+                SELECT 1 FROM t_hc_ks_xh
+                WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+                LIMIT 1
+            )
+            OR EXISTS (
+                SELECT 1 FROM gz_shipment
+                WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+                LIMIT 1
+            )
+            OR EXISTS (
+                SELECT 1 FROM gz_order
+                WHERE IFNULL(del_flag, 0) != 1
+                  AND tenant_id = #{scopedTenantId}
+                  AND (department_id = #{departmentId} OR apply_department_id = #{departmentId})
+                LIMIT 1
+            )
+            OR EXISTS (
+                SELECT 1 FROM gz_refund_goods
+                WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+                LIMIT 1
+            )
+            OR EXISTS (
+                SELECT 1 FROM gz_refund_stock
+                WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+                LIMIT 1
+            )
+            OR EXISTS (
+                SELECT 1 FROM stk_io_stocktaking
+                WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND warehouse_id IS NULL AND tenant_id = #{scopedTenantId}
+                LIMIT 1
+            )
+            OR EXISTS (
+                SELECT 1 FROM stk_dep_inventory
+                WHERE IFNULL(del_flag, 0) != 1 AND department_id = #{departmentId} AND tenant_id = #{scopedTenantId}
+                LIMIT 1
+            )
+        THEN 1 ELSE 0 END
     </select>
 
     <select id="selectFdDepartmentByTenantAndHisId" resultMap="FdDepartmentResult">

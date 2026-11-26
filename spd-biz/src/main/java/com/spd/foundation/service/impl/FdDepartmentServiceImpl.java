@@ -300,7 +300,7 @@ public class FdDepartmentServiceImpl implements IFdDepartmentService
             throw new ServiceException("存在下级科室，请先调整下级科室的上级或删除子科室后再删除");
         }
         if (fdDepartment.getId() != null && fdDepartmentMapper.countDepartmentBusinessUsage(fdDepartment.getId()) > 0) {
-            throw new ServiceException("该科室已发生业务数据（申领、申购、出入库/退库、批量消耗、高值单据、科室库存等），不允许删除");
+            throw new ServiceException("该科室存在业务不能删除");
         }
         String deleteBy = SecurityUtils.getUserIdStr();
         Date now = DateUtils.getNowDate();

@@ -102,7 +102,7 @@ public class SysUserController extends BaseController
      */
     @PreAuthorize("@ss.hasPermi('system:user:query')")
     @GetMapping("/roleMenuTreeselect/{userId}")
-    public AjaxResult roleMenuTreeselect(@PathVariable Long userId)
+    public AjaxResult roleMenuTreeselect(@PathVariable("userId") Long userId)
     {
         userService.checkUserDataScope(userId);
         SysUser u = userService.selectUserById(userId);
@@ -561,7 +561,7 @@ public class SysUserController extends BaseController
     @PreAuthorize("@ss.hasPermi('system:user:remove')")
     @Log(title = "用户管理", businessType = BusinessType.DELETE)
     @DeleteMapping("/{userIds}")
-    public AjaxResult remove(@PathVariable Long[] userIds)
+    public AjaxResult remove(@PathVariable("userIds") Long[] userIds)
     {
         if (ArrayUtils.contains(userIds, getUserId()))
         {
@@ -703,7 +703,7 @@ public class SysUserController extends BaseController
     @PreAuthorize("@ss.hasPermi('system:user:edit')")
     @Log(title = "用户管理", businessType = BusinessType.GRANT)
     @PutMapping("/authRole")
-    public AjaxResult insertAuthRole(Long userId, Long[] roleIds)
+    public AjaxResult insertAuthRole(@RequestParam("userId") Long userId, @RequestParam("roleIds") Long[] roleIds)
     {
         userService.checkUserDataScope(userId);
         userService.insertUserAuth(userId, roleIds);

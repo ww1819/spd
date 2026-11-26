@@ -207,6 +207,8 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <encoding>${project.build.sourceEncoding}</encoding>
+                    <!-- 保留方法形参名，避免 @PathVariable/@RequestParam 未写 value 时绑参失败 -->
+                    <parameters>true</parameters>
                 </configuration>
             </plugin>
         </plugins>

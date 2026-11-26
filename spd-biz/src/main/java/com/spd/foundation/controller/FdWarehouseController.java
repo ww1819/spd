@@ -109,6 +109,25 @@ public class FdWarehouseController extends BaseController
     }
 
     /**
+     * Warehouse字段变更记录（须放在 /{id} 之前，避免被通用详情路由抢匹配）
+     */
+    @PreAuthorize("@ss.hasPermi('foundation:warehouse:list')")
+    @GetMapping("/changeLog/{warehouseId}")
+    public AjaxResult changeLog(@PathVariable("warehouseId") Long warehouseId)
+    {
+        if (warehouseId == null)
+        {
+            return error("id 无效");
+        }
+        if (fdWarehouseService.selectFdWarehouseById(String.valueOf(warehouseId)) == null)
+        {
+            return error("记录不存在");
+        }
+        List<FdWarehouseChangeLog> logs = fdWarehouseService.selectWarehouseChangeLog(warehouseId);
+        return success(logs);
+    }
+
+    /**
      * 获取仓库详细信息
      */
     @PreAuthorize("@ss.hasPermi('foundation:warehouse:query')")
@@ -175,25 +194,6 @@ public class FdWarehouseController extends BaseController
         query.setIsSettlementWarehouse(1);
         List<FdWarehouse> list = fdWarehouseService.selectFdWarehouseList(query);
         return success(list != null ? list : new ArrayList<>());
-    }
-
-    /**
-     * Warehouse字段变更记录
-     */
-    @PreAuthorize("@ss.hasPermi('foundation:warehouse:list')")
-    @GetMapping("/changeLog/{warehouseId}")
-    public AjaxResult changeLog(@PathVariable("warehouseId") Long warehouseId)
-    {
-        if (warehouseId == null)
-        {
-            return error("id 无效");
-        }
-        if (fdWarehouseService.selectFdWarehouseById(String.valueOf(warehouseId)) == null)
-        {
-            return error("记录不存在");
-        }
-        List<FdWarehouseChangeLog> logs = fdWarehouseService.selectWarehouseChangeLog(warehouseId);
-        return success(logs);
     }
 
 }
