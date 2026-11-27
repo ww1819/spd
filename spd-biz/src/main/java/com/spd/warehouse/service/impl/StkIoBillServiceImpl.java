@@ -4331,6 +4331,10 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         thBill.setWarehouseId(rkBill.getWarehouseId());
         thBill.setDepartmentId(rkBill.getDepartmentId());
         thBill.setSupplerId(rkBill.getSupplerId());
+        // 前端引用后有明细会只读展示供应商名，依赖嵌套 supplier.name
+        if (rkBill.getSupplier() != null) {
+            thBill.setSupplier(rkBill.getSupplier());
+        }
         thBill.setBillType(301);
         thBill.setRefBillNo(rkBill.getBillNo());
         List<StkIoBillEntry> entryList = new ArrayList<>();
@@ -4390,6 +4394,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         thBill.setStkIoBillEntryList(entryList);
         thBill.setDocRefList(docRefList);
         syncBillHeaderSupplerFromUniformEntries(thBill);
+        fillBillSupplierSnapshot(thBill);
+        syncBillTotalAmountFromEntries(thBill);
         return thBill;
     }
 
@@ -4571,6 +4577,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         thBill.setStkIoBillEntryList(entryList);
         thBill.setDocRefList(docRefList);
         syncBillHeaderSupplerFromUniformEntries(thBill);
+        fillBillSupplierSnapshot(thBill);
+        syncBillTotalAmountFromEntries(thBill);
         return thBill;
     }
 
@@ -5726,7 +5734,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     }
 
     /**
-     * 出库/退库保存前：若各明细解析出的供应商 id 一致，则写回主表 supplerId。
+     * 出库/退库/退货草稿：若各明细解析出的供应商 id 一致，则写回主表 supplerId。
+     * 退货引用入库后前端只读展示依赖主表 id + supplier 嵌套名。
      */
     /** 主表总金额：按明细 amt 汇总（程序生成出库单时前端未提交 totalAmount） */
     private void syncBillTotalAmountFromEntries(StkIoBill bill) {
@@ -5757,7 +5766,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
             return;
         }
         Integer bt = bill.getBillType();
-        if (bt == null || (bt.intValue() != 201 && bt.intValue() != 401)) {
+        // 201出库 / 301退货 / 401退库：引用生成草稿时需写回主表供应商
+        if (bt == null || (bt.intValue() != 201 && bt.intValue() != 301 && bt.intValue() != 401)) {
             return;
         }
         List<StkIoBillEntry> list = bill.getStkIoBillEntryList();
@@ -5781,6 +5791,20 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         }
         if (uniform != null) {
             bill.setSupplerId(uniform);
+        }
+    }
+
+    /** 主表有 supplerId 但无嵌套 supplier 时补快照，供前端只读展示 */
+    private void fillBillSupplierSnapshot(StkIoBill bill) {
+        if (bill == null || bill.getSupplerId() == null) {
+            return;
+        }
+        if (bill.getSupplier() != null && StringUtils.isNotEmpty(bill.getSupplier().getName())) {
+            return;
+        }
+        FdSupplier supplier = fdSupplierMapper.selectFdSupplierById(bill.getSupplerId());
+        if (supplier != null) {
+            bill.setSupplier(supplier);
         }
     }
 
