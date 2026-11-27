@@ -9,8 +9,8 @@ import java.util.Map;
 import com.spd.common.core.page.TotalInfo;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
-import com.spd.foundation.domain.FdMaterial;
-import com.spd.foundation.mapper.FdMaterialMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.warehouse.mapper.StkInventoryMapper;
@@ -27,10 +27,10 @@ import com.spd.warehouse.service.IStkInventoryService;
 @Service
 public class StkInventoryServiceImpl implements IStkInventoryService
 {
+    private static final Logger log = LoggerFactory.getLogger(StkInventoryServiceImpl.class);
+
     @Autowired
     private StkInventoryMapper stkInventoryMapper;
-    @Autowired
-    private FdMaterialMapper fdMaterialMapper;
 
     /**
      * 查询库存明细
@@ -70,13 +70,22 @@ public class StkInventoryServiceImpl implements IStkInventoryService
         if (stkInventory != null && StringUtils.isEmpty(stkInventory.getTenantId())) {
             stkInventory.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
         }
+        long t0 = System.currentTimeMillis();
+        // material / warehouse / supplier 已由 Mapper 关联查出，勿再按行 selectFdMaterialById（N+1 易超时）
         List<StkInventory> list = stkInventoryMapper.selectStkInventoryList(stkInventory);
-        if (list != null && list.size() > 0) {
-            for (StkInventory inventory : list) {
-                Long materialId = inventory.getMaterialId();
-                FdMaterial material = this.fdMaterialMapper.selectFdMaterialById(materialId);
-                inventory.setMaterial(material);
-            }
+        long cost = System.currentTimeMillis() - t0;
+        int size = list == null ? 0 : list.size();
+        if (cost >= 3000L)
+        {
+            log.error("仓库库存列表慢查询 costMs={} rows={} warehouseId={} materialId={}",
+                cost, size,
+                stkInventory == null ? null : stkInventory.getWarehouseId(),
+                stkInventory == null ? null : stkInventory.getMaterialId());
+        }
+        else if (cost >= 1000L)
+        {
+            log.warn("仓库库存列表偏慢 costMs={} rows={} warehouseId={}",
+                cost, size, stkInventory == null ? null : stkInventory.getWarehouseId());
         }
         return list;
     }
@@ -86,7 +95,20 @@ public class StkInventoryServiceImpl implements IStkInventoryService
         if (stkInventory != null && StringUtils.isEmpty(stkInventory.getTenantId())) {
             stkInventory.setTenantId(SecurityUtils.requiredScopedTenantIdForSql());
         }
-        return this.stkInventoryMapper.selectStkInventoryListTotal(stkInventory);
+        long t0 = System.currentTimeMillis();
+        TotalInfo total = this.stkInventoryMapper.selectStkInventoryListTotal(stkInventory);
+        long cost = System.currentTimeMillis() - t0;
+        if (cost >= 3000L)
+        {
+            log.error("仓库库存合计慢查询 costMs={} warehouseId={}",
+                cost, stkInventory == null ? null : stkInventory.getWarehouseId());
+        }
+        else if (cost >= 1000L)
+        {
+            log.warn("仓库库存合计偏慢 costMs={} warehouseId={}",
+                cost, stkInventory == null ? null : stkInventory.getWarehouseId());
+        }
+        return total;
     }
 
     /**

@@ -169,10 +169,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         left join fd_supplier ms on m.supplier_id = ms.id
         left join fd_warehouse_category wc on m.storeroom_id = wc.warehouse_category_id
         left join fd_finance_category fc on m.finance_category_id = fc.finance_category_id
-        left join stk_io_bill rk on rk.bill_no = stk.receipt_order_no
-            and rk.bill_type = 101
-            and (rk.del_flag = 0 or rk.del_flag is null)
-            and rk.tenant_id = stk.tenant_id
+        <!-- 入库单按单号取最新一条，避免同 bill_no 多行导致库存列表笛卡尔放大 -->
+        left join (
+            select tenant_id, bill_no, max(id) as id
+            from stk_io_bill
+            where bill_type = 101 and (del_flag = 0 or del_flag is null)
+            group by tenant_id, bill_no
+        ) rk_pick on rk_pick.bill_no = stk.receipt_order_no and rk_pick.tenant_id = stk.tenant_id
+        left join stk_io_bill rk on rk.id = rk_pick.id
         left join sys_user cu on rk.create_by = cu.user_id
         left join sys_user au on rk.audit_by = au.user_id
     </sql>
@@ -224,10 +228,13 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                  left join fd_supplier s on stk.supplier_id = s.id
                  left join fd_material m on stk.material_id = m.id
                  left join fd_factory f on f.factory_id = COALESCE(stk.factory_id, m.factory_id)
-                 left join stk_io_bill rk on rk.bill_no = stk.receipt_order_no
-                     and rk.bill_type = 101
-                     and (rk.del_flag = 0 or rk.del_flag is null)
-                     and rk.tenant_id = stk.tenant_id
+                 left join (
+                     select tenant_id, bill_no, max(id) as id
+                     from stk_io_bill
+                     where bill_type = 101 and (del_flag = 0 or del_flag is null)
+                     group by tenant_id, bill_no
+                 ) rk_pick on rk_pick.bill_no = stk.receipt_order_no and rk_pick.tenant_id = stk.tenant_id
+                 left join stk_io_bill rk on rk.id = rk_pick.id
                  left join sys_user cu on rk.create_by = cu.user_id
     </sql>
 

@@ -1,5 +1,6 @@
 package com.spd.warehouse.controller;
 
+import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.spd.common.annotation.Log;
 import com.spd.common.annotation.RepeatSubmit;
@@ -8,6 +9,7 @@ import com.spd.common.core.domain.AjaxResult;
 import com.spd.common.core.page.TableDataInfo;
 import com.spd.common.core.page.TotalInfo;
 import com.spd.common.enums.BusinessType;
+import com.spd.common.exception.ServiceException;
 import com.spd.common.utils.poi.ExcelUtil;
 import com.spd.department.domain.DepPurchaseApply;
 import com.spd.department.domain.WhWarehouseApply;
@@ -17,6 +19,8 @@ import com.spd.warehouse.domain.StkIoBill;
 import com.spd.warehouse.domain.vo.MaterialWarehouseStockAgg;
 import com.spd.warehouse.mapper.StkInventoryMapper;
 import com.spd.warehouse.service.IStkIoBillService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -40,6 +44,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/warehouse/outWarehouse")
 public class StkIoBillOutController extends BaseController {
+
+    private static final Logger log = LoggerFactory.getLogger(StkIoBillOutController.class);
 
     @Qualifier("stkIoBillServiceImpl")
     @Autowired
@@ -228,8 +234,103 @@ public class StkIoBillOutController extends BaseController {
     @PutMapping("/auditOutWarehouse")
     public AjaxResult auditOutWarehouse(@RequestBody JSONObject json)
     {
+        long t0 = System.currentTimeMillis();
         int result = stkIoBillService.auditStkIoBill(json.getString("id"), getUserIdStr());
+        long cost = System.currentTimeMillis() - t0;
+        if (cost >= 5000L)
+        {
+            log.error("出库审核慢链路 costMs={} billId={}", cost, json.getString("id"));
+        }
+        else if (cost >= 3000L)
+        {
+            log.warn("出库审核偏慢 costMs={} billId={}", cost, json.getString("id"));
+        }
         return toAjax(result);
+    }
+
+    /**
+     * 批量审核出库：服务端串行处理，避免前端 Promise.all 并发打满连接池导致超时。
+     * body: { ids: ["1","2",...] }
+     */
+    @Log(title = "出库批量审核", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@ss.hasPermi('outWarehouse:apply:audit')")
+    @PutMapping("/auditOutWarehouse/batch")
+    public AjaxResult auditOutWarehouseBatch(@RequestBody JSONObject json)
+    {
+        JSONArray arr = json == null ? null : json.getJSONArray("ids");
+        if (arr == null || arr.isEmpty())
+        {
+            return AjaxResult.error("请选择要审核的出库单");
+        }
+        String auditBy = getUserIdStr();
+        int ok = 0;
+        List<Map<String, String>> errors = new ArrayList<>();
+        long t0 = System.currentTimeMillis();
+        for (int i = 0; i < arr.size(); i++)
+        {
+            String id = arr.getString(i);
+            if (!StringUtils.hasText(id))
+            {
+                continue;
+            }
+            long oneT0 = System.currentTimeMillis();
+            try
+            {
+                stkIoBillService.auditStkIoBill(id.trim(), auditBy);
+                ok++;
+                long oneCost = System.currentTimeMillis() - oneT0;
+                if (oneCost >= 3000L)
+                {
+                    log.warn("批量出库审核单笔偏慢 costMs={} billId={} index={}/{}",
+                        oneCost, id, i + 1, arr.size());
+                }
+            }
+            catch (ServiceException e)
+            {
+                Map<String, String> err = new HashMap<>();
+                err.put("id", id);
+                err.put("msg", e.getMessage() == null ? "审核失败" : e.getMessage());
+                errors.add(err);
+                log.warn("批量出库审核业务失败 billId={} msg={}", id, e.getMessage());
+            }
+            catch (Exception e)
+            {
+                Map<String, String> err = new HashMap<>();
+                err.put("id", id);
+                err.put("msg", e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
+                errors.add(err);
+                log.error("批量出库审核异常 billId={}", id, e);
+            }
+        }
+        long cost = System.currentTimeMillis() - t0;
+        Map<String, Object> data = new HashMap<>();
+        data.put("okCount", ok);
+        data.put("failCount", errors.size());
+        data.put("errors", errors);
+        data.put("costMs", cost);
+        if (cost >= 30000L || (arr.size() >= 10 && cost >= 15000L))
+        {
+            log.error("批量出库审核慢/可能超时 costMs={} total={} ok={} fail={}",
+                cost, arr.size(), ok, errors.size());
+        }
+        else
+        {
+            log.info("批量出库审核完成 costMs={} total={} ok={} fail={}",
+                cost, arr.size(), ok, errors.size());
+        }
+        if (ok == 0 && !errors.isEmpty())
+        {
+            String firstMsg = errors.get(0).get("msg");
+            return AjaxResult.error("批量审核全部失败：" + firstMsg, data);
+        }
+        if (!errors.isEmpty())
+        {
+            return AjaxResult.success(
+                String.format("批量审核完成：成功 %d，失败 %d。首条失败：%s",
+                    ok, errors.size(), errors.get(0).get("msg")),
+                data);
+        }
+        return AjaxResult.success(String.format("批量审核成功，共 %d 单", ok), data);
     }
 
     /**
