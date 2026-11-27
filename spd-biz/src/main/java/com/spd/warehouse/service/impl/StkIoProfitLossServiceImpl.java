@@ -4,7 +4,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +56,7 @@ import com.spd.warehouse.mapper.StkIoProfitLossMapper;
 import com.spd.warehouse.mapper.StkIoStocktakingMapper;
 import com.spd.warehouse.service.IStkIoProfitLossService;
 import com.spd.common.core.page.TotalInfo;
+import com.spd.foundation.utils.MaterialSnapshotAssembler;
 import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import com.spd.warehouse.vo.StkProfitLossEntryVo;
 
@@ -345,10 +349,17 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         Long warehouseId = bill.getWarehouseId();
         String username = SecurityUtils.getUserIdStr();
         Date now = new Date();
+        Set<Long> materialIds = new HashSet<>();
+        for (StkIoProfitLossEntry e : entryList) {
+            if (e != null && e.getMaterialId() != null) {
+                materialIds.add(e.getMaterialId());
+            }
+        }
+        Map<Long, FdMaterial> materialCache = MaterialSnapshotAssembler.loadMap(fdMaterialMapper, materialIds);
 
         for (StkIoProfitLossEntry entry : entryList) {
             if (SCOPE_DEP.equals(bill.getBizScope())) {
-                auditDepartmentProfitLossLine(bill, entry, now, username);
+                auditDepartmentProfitLossLine(bill, entry, now, username, materialCache);
                 continue;
             }
             BigDecimal bookQty = entry.getBookQty();
@@ -417,7 +428,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                 flow.setDelFlag(0);
                 flow.setCreateTime(now);
                 flow.setCreateBy(username);
-                InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterProfitLoss(flow, bill, entry, warehouseId, flow.getSupplierId(), null, fdMaterialMapper);
+                InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterProfitLoss(flow, bill, entry, warehouseId, flow.getSupplierId(), null, fdMaterialMapper, materialCache);
                 hcCkFlowMapper.insertHcCkFlow(flow);
             } else {
                 // 盘盈：写入 stk_batch + stk_inventory，流水 lx=PY
@@ -436,11 +447,11 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                 }
                 StkBatch stkBatch = stkBatchMapper.selectByBatchNo(batchNo);
                 if (stkBatch == null) {
-                    stkBatch = buildStkBatchForProfit(bill, entry);
+                    stkBatch = buildStkBatchForProfit(bill, entry, materialCache);
                     stkBatchMapper.insertStkBatch(stkBatch);
                 }
                 BigDecimal addQty = profitQty;
-                StkInventory newInv = buildStkInventoryForProfit(bill, entry, stkBatch, addQty, now, username);
+                StkInventory newInv = buildStkInventoryForProfit(bill, entry, stkBatch, addQty, now, username, materialCache);
                 stkInventoryMapper.insertStkInventory(newInv);
 
                 HcCkFlow flow = new HcCkFlow();
@@ -469,7 +480,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
                 flow.setDelFlag(0);
                 flow.setCreateTime(now);
                 flow.setCreateBy(username);
-                InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterProfitLoss(flow, bill, entry, warehouseId, flow.getSupplierId(), null, fdMaterialMapper);
+                InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterProfitLoss(flow, bill, entry, warehouseId, flow.getSupplierId(), null, fdMaterialMapper, materialCache);
                 hcCkFlowMapper.insertHcCkFlow(flow);
 
                 stkIoProfitLossMapper.updateStkIoProfitLossEntryPostingResult(entry.getId(), batchNo, stkBatch.getId(), newInv.getId(), null);
@@ -532,7 +543,8 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
     /**
      * 科室盈亏：盘亏只扣 stk_dep_inventory；盘盈写 stk_batch + stk_dep_inventory 并回写 result_dep_inventory_id。
      */
-    private void auditDepartmentProfitLossLine(StkIoProfitLoss bill, StkIoProfitLossEntry entry, Date now, String username) {
+    private void auditDepartmentProfitLossLine(StkIoProfitLoss bill, StkIoProfitLossEntry entry, Date now, String username,
+        Map<Long, FdMaterial> materialCache) {
         if (bill.getDepartmentId() == null) {
             throw new ServiceException("科室盈亏单缺少科室信息");
         }
@@ -606,12 +618,12 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
             ksFlow.setDelFlag(0);
             ksFlow.setCreateTime(now);
             ksFlow.setCreateBy(username);
-            InventoryMaterialSnapshotHelper.enrichHcKsFlowAfterProfitLoss(ksFlow, bill, entry, flowWh, fdMaterialMapper);
+            InventoryMaterialSnapshotHelper.enrichHcKsFlowAfterProfitLoss(ksFlow, bill, entry, flowWh, fdMaterialMapper, materialCache);
             hcKsFlowMapper.insertHcKsFlow(ksFlow);
             return;
         }
 
-        Long returnWhId = resolveReturnWarehouseForDeptSurplus(entry);
+        Long returnWhId = resolveReturnWarehouseForDeptSurplus(entry, materialCache);
         StkInventory invProbe = null;
         if (entry.getKcNo() != null) {
             invProbe = stkInventoryMapper.selectStkInventoryById(entry.getKcNo());
@@ -627,11 +639,11 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         }
         StkBatch stkBatch = stkBatchMapper.selectByBatchNo(batchNo);
         if (stkBatch == null) {
-            stkBatch = buildStkBatchForDepartmentProfit(bill, entry, returnWhId);
+            stkBatch = buildStkBatchForDepartmentProfit(bill, entry, returnWhId, materialCache);
             stkBatchMapper.insertStkBatch(stkBatch);
         }
         BigDecimal addQty = profitQty;
-        StkDepInventory newDep = buildStkDepInventoryForProfit(bill, entry, stkBatch, addQty, returnWhId, now, username);
+        StkDepInventory newDep = buildStkDepInventoryForProfit(bill, entry, stkBatch, addQty, returnWhId, now, username, materialCache);
         stkDepInventoryMapper.insertStkDepInventory(newDep);
 
         HcKsFlow ksFlow = new HcKsFlow();
@@ -661,7 +673,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         ksFlow.setDelFlag(0);
         ksFlow.setCreateTime(now);
         ksFlow.setCreateBy(username);
-        InventoryMaterialSnapshotHelper.enrichHcKsFlowAfterProfitLoss(ksFlow, bill, entry, returnWhId, fdMaterialMapper);
+        InventoryMaterialSnapshotHelper.enrichHcKsFlowAfterProfitLoss(ksFlow, bill, entry, returnWhId, fdMaterialMapper, materialCache);
         hcKsFlowMapper.insertHcKsFlow(ksFlow);
 
         stkIoProfitLossMapper.updateStkIoProfitLossEntryPostingResult(entry.getId(), batchNo, stkBatch.getId(), null, newDep.getId());
@@ -685,7 +697,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
             plEntry.getStocktakingEntryId(), resultStkInventoryId, kcStr, depStr, username);
     }
 
-    private Long resolveReturnWarehouseForDeptSurplus(StkIoProfitLossEntry entry) {
+    private Long resolveReturnWarehouseForDeptSurplus(StkIoProfitLossEntry entry, Map<Long, FdMaterial> materialCache) {
         if (entry == null) {
             return null;
         }
@@ -695,7 +707,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         if (entry.getMaterialId() == null) {
             throw new ServiceException("盘盈明细缺少耗材，无法确定可退库仓库");
         }
-        FdMaterial material = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+        FdMaterial material = MaterialSnapshotAssembler.resolve(fdMaterialMapper, entry.getMaterialId(), null, materialCache);
         if (material == null) {
             throw new ServiceException("耗材档案不存在，无法确定可退库仓库");
         }
@@ -706,7 +718,8 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         return defaultWarehouseId;
     }
 
-    private StkBatch buildStkBatchForDepartmentProfit(StkIoProfitLoss bill, StkIoProfitLossEntry entry, Long returnWarehouseId) {
+    private StkBatch buildStkBatchForDepartmentProfit(StkIoProfitLoss bill, StkIoProfitLossEntry entry, Long returnWarehouseId,
+        Map<Long, FdMaterial> materialCache) {
         StkBatch b = new StkBatch();
         b.setBatchNo(entry.getBatchNo());
         b.setMaterialId(entry.getMaterialId());
@@ -763,52 +776,14 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
             }
         }
         if (entry.getMaterialId() != null) {
-            FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-            if (m != null) {
-                b.setMaterialCode(m.getCode());
-                b.setMaterialName(m.getName());
-                b.setSpeci(m.getSpeci());
-                b.setModel(m.getModel());
-                b.setRegisterNo(m.getRegisterNo());
-                b.setPermitNo(m.getPermitNo());
-                b.setUnitId(m.getUnitId());
-                if (m.getUnitId() != null) {
-                    FdUnit u = fdUnitMapper.selectFdUnitByUnitId(m.getUnitId());
-                    if (u != null) {
-                        b.setUnitName(u.getUnitName());
-                    }
-                }
-                if (m.getFactoryId() != null) {
-                    FdFactory f = fdFactoryMapper.selectFdFactoryByFactoryId(m.getFactoryId());
-                    if (f != null) {
-                        b.setFactoryId(f.getFactoryId());
-                        b.setFactoryCode(f.getFactoryCode());
-                        b.setFactoryName(f.getFactoryName());
-                    }
-                }
-                if (m.getStoreroomId() != null) {
-                    FdWarehouseCategory wc = fdWarehouseCategoryMapper.selectFdWarehouseCategoryByWarehouseCategoryId(m.getStoreroomId());
-                    if (wc != null) {
-                        b.setStoreroomId(wc.getWarehouseCategoryId());
-                        b.setStoreroomCode(wc.getWarehouseCategoryCode());
-                        b.setStoreroomName(wc.getWarehouseCategoryName());
-                    }
-                }
-                if (m.getFinanceCategoryId() != null) {
-                    FdFinanceCategory fc = fdFinanceCategoryMapper.selectFdFinanceCategoryByFinanceCategoryId(m.getFinanceCategoryId());
-                    if (fc != null) {
-                        b.setFinanceCategoryId(fc.getFinanceCategoryId());
-                        b.setFinanceCategoryCode(fc.getFinanceCategoryCode());
-                        b.setFinanceCategoryName(fc.getFinanceCategoryName());
-                    }
-                }
-            }
+            FdMaterial m = MaterialSnapshotAssembler.resolve(fdMaterialMapper, entry.getMaterialId(), bill.getTenantId(), materialCache);
+            MaterialSnapshotAssembler.applyMaterialDimsToStkBatch(b, m);
         }
         return b;
     }
 
     private StkDepInventory buildStkDepInventoryForProfit(StkIoProfitLoss bill, StkIoProfitLossEntry entry, StkBatch stkBatch,
-        BigDecimal qty, Long returnWhId, Date now, String username) {
+        BigDecimal qty, Long returnWhId, Date now, String username, Map<Long, FdMaterial> materialCache) {
         StkDepInventory inv = new StkDepInventory();
         inv.setMaterialId(entry.getMaterialId());
         inv.setDepartmentId(bill.getDepartmentId());
@@ -828,11 +803,12 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         inv.setMaterialDate(now);
         inv.setWarehouseDate(now);
         Long depSup = parseSupplierIdLong(entry.getSupplerId());
-        if (depSup == null && entry.getMaterialId() != null) {
-            FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-            if (m != null && m.getSupplierId() != null) {
-                depSup = m.getSupplierId();
-            }
+        FdMaterial archive = null;
+        if (entry.getMaterialId() != null) {
+            archive = MaterialSnapshotAssembler.resolve(fdMaterialMapper, entry.getMaterialId(), bill.getTenantId(), materialCache);
+        }
+        if (depSup == null && archive != null && archive.getSupplierId() != null) {
+            depSup = archive.getSupplierId();
         }
         if (depSup != null) {
             inv.setSupplierId(String.valueOf(depSup));
@@ -840,11 +816,8 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         if (stkBatch != null && stkBatch.getFactoryId() != null) {
             inv.setFactoryId(stkBatch.getFactoryId());
         }
-        else if (entry.getMaterialId() != null) {
-            FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-            if (m != null) {
-                inv.setFactoryId(m.getFactoryId());
-            }
+        else if (archive != null) {
+            inv.setFactoryId(archive.getFactoryId());
         }
         inv.setBeginDate(entry.getBeginTime());
         inv.setEndDate(entry.getEndTime());
@@ -860,7 +833,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         inv.setTenantId(bill.getTenantId());
         inv.setCreateTime(now);
         inv.setCreateBy(username);
-        InventoryMaterialSnapshotHelper.fillDepRowFromProfitLoss(inv, entry, fdMaterialMapper, bill.getTenantId());
+        InventoryMaterialSnapshotHelper.fillDepRowFromProfitLoss(inv, entry, fdMaterialMapper, bill.getTenantId(), materialCache);
         return inv;
     }
 
@@ -887,7 +860,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         }
     }
 
-    private StkBatch buildStkBatchForProfit(StkIoProfitLoss bill, StkIoProfitLossEntry entry) {
+    private StkBatch buildStkBatchForProfit(StkIoProfitLoss bill, StkIoProfitLossEntry entry, Map<Long, FdMaterial> materialCache) {
         StkBatch b = new StkBatch();
         b.setBatchNo(entry.getBatchNo());
         b.setMaterialId(entry.getMaterialId());
@@ -930,54 +903,12 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
             }
         }
         if (entry.getMaterialId() != null) {
-            FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-            if (m != null) {
-                b.setMaterialCode(m.getCode());
-                b.setMaterialName(m.getName());
-                b.setSpeci(m.getSpeci());
-                b.setModel(m.getModel());
-                b.setRegisterNo(m.getRegisterNo());
-                b.setPermitNo(m.getPermitNo());
-                b.setUnitId(m.getUnitId());
-                if (m.getUnitId() != null) {
-                    FdUnit u = fdUnitMapper.selectFdUnitByUnitId(m.getUnitId());
-                    if (u != null) {
-                        b.setUnitName(u.getUnitName());
-                    }
-                }
-                if (m.getFactoryId() != null) {
-                    FdFactory f = fdFactoryMapper.selectFdFactoryByFactoryId(m.getFactoryId());
-                    if (f != null) {
-                        b.setFactoryId(f.getFactoryId());
-                        b.setFactoryCode(f.getFactoryCode());
-                        b.setFactoryName(f.getFactoryName());
-                    }
-                }
-                if (m.getStoreroomId() != null) {
-                    FdWarehouseCategory wc = fdWarehouseCategoryMapper.selectFdWarehouseCategoryByWarehouseCategoryId(m.getStoreroomId());
-                    if (wc != null) {
-                        b.setStoreroomId(wc.getWarehouseCategoryId());
-                        b.setStoreroomCode(wc.getWarehouseCategoryCode());
-                        b.setStoreroomName(wc.getWarehouseCategoryName());
-                    }
-                }
-                if (m.getFinanceCategoryId() != null) {
-                    FdFinanceCategory fc = fdFinanceCategoryMapper.selectFdFinanceCategoryByFinanceCategoryId(m.getFinanceCategoryId());
-                    if (fc != null) {
-                        b.setFinanceCategoryId(fc.getFinanceCategoryId());
-                        b.setFinanceCategoryCode(fc.getFinanceCategoryCode());
-                        b.setFinanceCategoryName(fc.getFinanceCategoryName());
-                    }
-                }
-            }
+            FdMaterial m = MaterialSnapshotAssembler.resolve(fdMaterialMapper, entry.getMaterialId(), bill.getTenantId(), materialCache);
+            MaterialSnapshotAssembler.applyMaterialDimsToStkBatch(b, m);
         }
         if (bill.getWarehouseId() != null) {
-            b.setWarehouseId(bill.getWarehouseId());
             FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(bill.getWarehouseId()));
-            if (wh != null) {
-                b.setWarehouseCode(wh.getCode());
-                b.setWarehouseName(wh.getName());
-            }
+            MaterialSnapshotAssembler.applyWarehouseToStkBatch(b, bill.getWarehouseId(), wh);
         }
         return b;
     }
@@ -990,7 +921,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
      * 盘盈审核：生成仓库库存行（数量=盘盈数量），与 stk_batch 关联。
      */
     private StkInventory buildStkInventoryForProfit(StkIoProfitLoss bill, StkIoProfitLossEntry entry, StkBatch stkBatch,
-        BigDecimal qty, Date now, String username) {
+        BigDecimal qty, Date now, String username, Map<Long, FdMaterial> materialCache) {
         StkInventory inv = new StkInventory();
         inv.setBatchNo(entry.getBatchNo());
         inv.setBatchId(stkBatch != null ? stkBatch.getId() : null);
@@ -1009,21 +940,19 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         inv.setMaterialDate(now);
         inv.setWarehouseDate(now);
         Long whSup = parseSupplierIdLong(entry.getSupplerId());
-        if (whSup == null && entry.getMaterialId() != null) {
-            FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-            if (m != null && m.getSupplierId() != null) {
-                whSup = m.getSupplierId();
-            }
+        FdMaterial archive = null;
+        if (entry.getMaterialId() != null) {
+            archive = MaterialSnapshotAssembler.resolve(fdMaterialMapper, entry.getMaterialId(), bill.getTenantId(), materialCache);
+        }
+        if (whSup == null && archive != null && archive.getSupplierId() != null) {
+            whSup = archive.getSupplierId();
         }
         inv.setSupplierId(whSup);
         if (stkBatch != null && stkBatch.getFactoryId() != null) {
             inv.setFactoryId(stkBatch.getFactoryId());
         }
-        else if (entry.getMaterialId() != null) {
-            FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-            if (m != null) {
-                inv.setFactoryId(m.getFactoryId());
-            }
+        else if (archive != null) {
+            inv.setFactoryId(archive.getFactoryId());
         }
         inv.setBeginTime(entry.getBeginTime());
         inv.setEndTime(entry.getEndTime());
@@ -1034,7 +963,7 @@ public class StkIoProfitLossServiceImpl implements IStkIoProfitLossService {
         inv.setCreateBy(username);
         inv.setDelFlag(0);
         inv.setTenantId(bill.getTenantId());
-        InventoryMaterialSnapshotHelper.fillWarehouseRowFromProfitLoss(inv, entry, fdMaterialMapper, bill.getTenantId());
+        InventoryMaterialSnapshotHelper.fillWarehouseRowFromProfitLoss(inv, entry, fdMaterialMapper, bill.getTenantId(), materialCache);
         return inv;
     }
 

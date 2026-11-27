@@ -1,5 +1,7 @@
 package com.spd.warehouse.utils;
 
+import java.util.Map;
+
 import com.spd.common.utils.StringUtils;
 import com.spd.department.domain.BasApply;
 import com.spd.department.domain.BasApplyEntry;
@@ -9,6 +11,7 @@ import com.spd.department.domain.HcKsFlow;
 import com.spd.department.domain.StkDepInventory;
 import com.spd.foundation.domain.FdMaterial;
 import com.spd.foundation.mapper.FdMaterialMapper;
+import com.spd.foundation.utils.MaterialSnapshotAssembler;
 import com.spd.warehouse.domain.HcCkFlow;
 import com.spd.warehouse.domain.StkInitialImport;
 import com.spd.warehouse.domain.StkInitialImportEntry;
@@ -29,6 +32,11 @@ public final class InventoryMaterialSnapshotHelper {
     }
 
     public static void fillWarehouseRow(StkInventory inv, StkIoBillEntry entry, FdMaterialMapper fdMaterialMapper, String tenantId) {
+        fillWarehouseRow(inv, entry, fdMaterialMapper, tenantId, null);
+    }
+
+    public static void fillWarehouseRow(StkInventory inv, StkIoBillEntry entry, FdMaterialMapper fdMaterialMapper, String tenantId,
+        Map<Long, FdMaterial> materialCache) {
         if (inv == null) {
             return;
         }
@@ -47,16 +55,10 @@ public final class InventoryMaterialSnapshotHelper {
             }
         }
         Long mid = inv.getMaterialId();
-        if (mid == null || fdMaterialMapper == null) {
+        if (mid == null) {
             return;
         }
-        FdMaterial m = null;
-        if (StringUtils.isNotEmpty(tenantId)) {
-            m = fdMaterialMapper.selectFdMaterialByIdAndTenant(mid, tenantId);
-        }
-        if (m == null) {
-            m = fdMaterialMapper.selectFdMaterialById(mid);
-        }
+        FdMaterial m = MaterialSnapshotAssembler.resolve(fdMaterialMapper, mid, tenantId, materialCache);
         if (m == null) {
             return;
         }
@@ -81,6 +83,11 @@ public final class InventoryMaterialSnapshotHelper {
      * 科室库存：优先出库明细快照，其次仓库库存行快照，再回落耗材档案。
      */
     public static void fillDepRow(StkDepInventory dep, StkIoBillEntry entry, StkInventory whInv, FdMaterialMapper fdMaterialMapper, String tenantId) {
+        fillDepRow(dep, entry, whInv, fdMaterialMapper, tenantId, null);
+    }
+
+    public static void fillDepRow(StkDepInventory dep, StkIoBillEntry entry, StkInventory whInv, FdMaterialMapper fdMaterialMapper, String tenantId,
+        Map<Long, FdMaterial> materialCache) {
         if (dep == null) {
             return;
         }
@@ -113,16 +120,10 @@ public final class InventoryMaterialSnapshotHelper {
             }
         }
         Long mid = dep.getMaterialId();
-        if (mid == null || fdMaterialMapper == null) {
+        if (mid == null) {
             return;
         }
-        FdMaterial m = null;
-        if (StringUtils.isNotEmpty(tenantId)) {
-            m = fdMaterialMapper.selectFdMaterialByIdAndTenant(mid, tenantId);
-        }
-        if (m == null) {
-            m = fdMaterialMapper.selectFdMaterialById(mid);
-        }
+        FdMaterial m = MaterialSnapshotAssembler.resolve(fdMaterialMapper, mid, tenantId, materialCache);
         if (m == null) {
             return;
         }
@@ -148,6 +149,11 @@ public final class InventoryMaterialSnapshotHelper {
      */
     public static void fillDepRowFromStocktaking(StkDepInventory dep, StkIoStocktakingEntry entry, FdMaterial materialHint,
         FdMaterialMapper fdMaterialMapper, String tenantId) {
+        fillDepRowFromStocktaking(dep, entry, materialHint, fdMaterialMapper, tenantId, null);
+    }
+
+    public static void fillDepRowFromStocktaking(StkDepInventory dep, StkIoStocktakingEntry entry, FdMaterial materialHint,
+        FdMaterialMapper fdMaterialMapper, String tenantId, Map<Long, FdMaterial> materialCache) {
         if (dep == null) {
             return;
         }
@@ -155,13 +161,18 @@ public final class InventoryMaterialSnapshotHelper {
         if (nested == null && entry != null) {
             nested = entry.getMaterial();
         }
-        applyMaterialSnapshotsToDep(dep, nested, null, null, null, fdMaterialMapper, tenantId);
+        applyMaterialSnapshotsToDep(dep, nested, null, null, null, fdMaterialMapper, tenantId, materialCache);
     }
 
     /**
      * 盈亏单审核写科室库存：优先盈亏明细名称/规格快照与嵌套耗材，再档案。
      */
     public static void fillDepRowFromProfitLoss(StkDepInventory dep, StkIoProfitLossEntry entry, FdMaterialMapper fdMaterialMapper, String tenantId) {
+        fillDepRowFromProfitLoss(dep, entry, fdMaterialMapper, tenantId, null);
+    }
+
+    public static void fillDepRowFromProfitLoss(StkDepInventory dep, StkIoProfitLossEntry entry, FdMaterialMapper fdMaterialMapper, String tenantId,
+        Map<Long, FdMaterial> materialCache) {
         if (dep == null) {
             return;
         }
@@ -173,13 +184,18 @@ public final class InventoryMaterialSnapshotHelper {
             speciHint = entry.getMaterialSpeciSnap();
             nested = entry.getMaterial();
         }
-        applyMaterialSnapshotsToDep(dep, nested, nameHint, speciHint, null, fdMaterialMapper, tenantId);
+        applyMaterialSnapshotsToDep(dep, nested, nameHint, speciHint, null, fdMaterialMapper, tenantId, materialCache);
     }
 
     /**
      * 盈亏单审核写仓库库存：优先盈亏明细名称/规格快照与嵌套耗材，再档案。
      */
     public static void fillWarehouseRowFromProfitLoss(StkInventory inv, StkIoProfitLossEntry entry, FdMaterialMapper fdMaterialMapper, String tenantId) {
+        fillWarehouseRowFromProfitLoss(inv, entry, fdMaterialMapper, tenantId, null);
+    }
+
+    public static void fillWarehouseRowFromProfitLoss(StkInventory inv, StkIoProfitLossEntry entry, FdMaterialMapper fdMaterialMapper, String tenantId,
+        Map<Long, FdMaterial> materialCache) {
         if (inv == null) {
             return;
         }
@@ -191,16 +207,21 @@ public final class InventoryMaterialSnapshotHelper {
             speciHint = entry.getMaterialSpeciSnap();
             nested = entry.getMaterial();
         }
-        applyMaterialSnapshotsToWarehouse(inv, nested, nameHint, speciHint, null, fdMaterialMapper, tenantId);
+        applyMaterialSnapshotsToWarehouse(inv, nested, nameHint, speciHint, null, fdMaterialMapper, tenantId, materialCache);
     }
 
     /** 仓库盘点审核写仓库库存：优先明细嵌套耗材，再档案。 */
     public static void fillWarehouseRowFromStocktaking(StkInventory inv, StkIoStocktakingEntry entry, FdMaterialMapper fdMaterialMapper, String tenantId) {
+        fillWarehouseRowFromStocktaking(inv, entry, fdMaterialMapper, tenantId, null);
+    }
+
+    public static void fillWarehouseRowFromStocktaking(StkInventory inv, StkIoStocktakingEntry entry, FdMaterialMapper fdMaterialMapper, String tenantId,
+        Map<Long, FdMaterial> materialCache) {
         if (inv == null) {
             return;
         }
         FdMaterial nested = entry != null ? entry.getMaterial() : null;
-        applyMaterialSnapshotsToWarehouse(inv, nested, null, null, null, fdMaterialMapper, tenantId);
+        applyMaterialSnapshotsToWarehouse(inv, nested, null, null, null, fdMaterialMapper, tenantId, materialCache);
     }
 
     /** 科室盘点审核生成/更新科室库存时写入单据与条码等冗余字段 */
@@ -235,7 +256,7 @@ public final class InventoryMaterialSnapshotHelper {
     }
 
     private static void applyMaterialSnapshotsToDep(StkDepInventory dep, FdMaterial nested, String nameHint, String speciHint,
-        Long factoryIdHint, FdMaterialMapper fdMaterialMapper, String tenantId) {
+        Long factoryIdHint, FdMaterialMapper fdMaterialMapper, String tenantId, Map<Long, FdMaterial> materialCache) {
         if (dep == null) {
             return;
         }
@@ -263,10 +284,10 @@ public final class InventoryMaterialSnapshotHelper {
             dep.setSnapMaterialFactoryId(factoryIdHint);
         }
         Long mid = dep.getMaterialId();
-        if (mid == null || fdMaterialMapper == null) {
+        if (mid == null) {
             return;
         }
-        FdMaterial m = loadFdMaterial(mid, fdMaterialMapper, tenantId);
+        FdMaterial m = MaterialSnapshotAssembler.resolve(fdMaterialMapper, mid, tenantId, materialCache);
         if (m == null) {
             return;
         }
@@ -288,7 +309,7 @@ public final class InventoryMaterialSnapshotHelper {
     }
 
     private static void applyMaterialSnapshotsToWarehouse(StkInventory inv, FdMaterial nested, String nameHint, String speciHint,
-        Long factoryIdHint, FdMaterialMapper fdMaterialMapper, String tenantId) {
+        Long factoryIdHint, FdMaterialMapper fdMaterialMapper, String tenantId, Map<Long, FdMaterial> materialCache) {
         if (inv == null) {
             return;
         }
@@ -316,10 +337,10 @@ public final class InventoryMaterialSnapshotHelper {
             inv.setSnapMaterialFactoryId(factoryIdHint);
         }
         Long mid = inv.getMaterialId();
-        if (mid == null || fdMaterialMapper == null) {
+        if (mid == null) {
             return;
         }
-        FdMaterial m = loadFdMaterial(mid, fdMaterialMapper, tenantId);
+        FdMaterial m = MaterialSnapshotAssembler.resolve(fdMaterialMapper, mid, tenantId, materialCache);
         if (m == null) {
             return;
         }
@@ -342,20 +363,6 @@ public final class InventoryMaterialSnapshotHelper {
 
     private static String longStr(Long v) {
         return v == null ? null : String.valueOf(v);
-    }
-
-    private static FdMaterial loadFdMaterial(Long materialId, FdMaterialMapper fdMaterialMapper, String tenantId) {
-        if (materialId == null || fdMaterialMapper == null) {
-            return null;
-        }
-        FdMaterial m = null;
-        if (StringUtils.isNotEmpty(tenantId)) {
-            m = fdMaterialMapper.selectFdMaterialByIdAndTenant(materialId, tenantId);
-        }
-        if (m == null) {
-            m = fdMaterialMapper.selectFdMaterialById(materialId);
-        }
-        return m;
     }
 
     /** 仓库流水：仓库/供应商/科室 varchar + 科室 bigint（按科室统计） */
@@ -382,7 +389,7 @@ public final class InventoryMaterialSnapshotHelper {
     }
 
     private static void fillHcCkFlowMaterialCodeName(HcCkFlow f, Long materialId, FdMaterial nestedMaterial,
-        String nameHint, String codeHint, FdMaterialMapper fdMaterialMapper, String tenantId) {
+        String nameHint, String codeHint, FdMaterialMapper fdMaterialMapper, String tenantId, Map<Long, FdMaterial> materialCache) {
         if (f == null) {
             return;
         }
@@ -397,7 +404,7 @@ public final class InventoryMaterialSnapshotHelper {
                 name = nestedMaterial.getName();
             }
         }
-        FdMaterial doc = loadFdMaterial(mid, fdMaterialMapper, tenantId);
+        FdMaterial doc = MaterialSnapshotAssembler.resolve(fdMaterialMapper, mid, tenantId, materialCache);
         if (doc != null) {
             if (StringUtils.isEmpty(code)) {
                 code = doc.getCode();
@@ -413,6 +420,11 @@ public final class InventoryMaterialSnapshotHelper {
     /** 出入库审核等：低值仓库流水快照（与高值 gz_wh_flow 维度对齐） */
     public static void enrichHcCkFlowAfterStkIo(HcCkFlow f, StkIoBill bill, StkIoBillEntry entry,
         Long warehouseId, Long supplierId, Long departmentId, FdMaterialMapper fdMaterialMapper) {
+        enrichHcCkFlowAfterStkIo(f, bill, entry, warehouseId, supplierId, departmentId, fdMaterialMapper, null);
+    }
+
+    public static void enrichHcCkFlowAfterStkIo(HcCkFlow f, StkIoBill bill, StkIoBillEntry entry,
+        Long warehouseId, Long supplierId, Long departmentId, FdMaterialMapper fdMaterialMapper, Map<Long, FdMaterial> materialCache) {
         if (f == null) {
             return;
         }
@@ -422,7 +434,7 @@ public final class InventoryMaterialSnapshotHelper {
         }
         applyHcCkFlowNumericStrMirrors(f);
         fillHcCkFlowMaterialCodeName(f, f.getMaterialId(), entry != null ? entry.getMaterial() : null,
-            entry != null ? entry.getMaterialName() : null, null, fdMaterialMapper, bill != null ? bill.getTenantId() : null);
+            entry != null ? entry.getMaterialName() : null, null, fdMaterialMapper, bill != null ? bill.getTenantId() : null, materialCache);
     }
 
     public static void applyHcKsFlowDeptWhSnapshots(HcKsFlow f, Long warehouseId, Long departmentId) {
@@ -446,7 +458,7 @@ public final class InventoryMaterialSnapshotHelper {
     }
 
     private static void fillHcKsFlowMaterialCodeName(HcKsFlow f, Long materialId, FdMaterial nestedMaterial,
-        String nameHint, FdMaterialMapper fdMaterialMapper, String tenantId) {
+        String nameHint, FdMaterialMapper fdMaterialMapper, String tenantId, Map<Long, FdMaterial> materialCache) {
         if (f == null) {
             return;
         }
@@ -459,7 +471,7 @@ public final class InventoryMaterialSnapshotHelper {
                 name = nestedMaterial.getName();
             }
         }
-        FdMaterial doc = loadFdMaterial(mid, fdMaterialMapper, tenantId);
+        FdMaterial doc = MaterialSnapshotAssembler.resolve(fdMaterialMapper, mid, tenantId, materialCache);
         if (doc != null) {
             if (StringUtils.isEmpty(code)) {
                 code = doc.getCode();
@@ -474,6 +486,11 @@ public final class InventoryMaterialSnapshotHelper {
 
     public static void enrichHcKsFlowAfterStkIo(HcKsFlow f, StkIoBill bill, StkIoBillEntry entry,
         Long warehouseId, Long departmentId, FdMaterialMapper fdMaterialMapper) {
+        enrichHcKsFlowAfterStkIo(f, bill, entry, warehouseId, departmentId, fdMaterialMapper, null);
+    }
+
+    public static void enrichHcKsFlowAfterStkIo(HcKsFlow f, StkIoBill bill, StkIoBillEntry entry,
+        Long warehouseId, Long departmentId, FdMaterialMapper fdMaterialMapper, Map<Long, FdMaterial> materialCache) {
         if (f == null) {
             return;
         }
@@ -483,11 +500,16 @@ public final class InventoryMaterialSnapshotHelper {
         }
         applyHcKsFlowNumericStrMirrors(f);
         fillHcKsFlowMaterialCodeName(f, f.getMaterialId(), entry != null ? entry.getMaterial() : null,
-            entry != null ? entry.getMaterialName() : null, fdMaterialMapper, bill != null ? bill.getTenantId() : null);
+            entry != null ? entry.getMaterialName() : null, fdMaterialMapper, bill != null ? bill.getTenantId() : null, materialCache);
     }
 
     public static void enrichHcCkFlowAfterInitial(HcCkFlow f, StkInitialImport main, StkInitialImportEntry entry,
         FdMaterialMapper fdMaterialMapper) {
+        enrichHcCkFlowAfterInitial(f, main, entry, fdMaterialMapper, null);
+    }
+
+    public static void enrichHcCkFlowAfterInitial(HcCkFlow f, StkInitialImport main, StkInitialImportEntry entry,
+        FdMaterialMapper fdMaterialMapper, Map<Long, FdMaterial> materialCache) {
         if (f == null) {
             return;
         }
@@ -499,11 +521,16 @@ public final class InventoryMaterialSnapshotHelper {
         applyHcCkFlowNumericStrMirrors(f);
         String codeHint = entry != null ? entry.getMaterialCode() : null;
         fillHcCkFlowMaterialCodeName(f, entry != null ? entry.getMaterialId() : f.getMaterialId(), null, null, codeHint,
-            fdMaterialMapper, main != null ? main.getTenantId() : null);
+            fdMaterialMapper, main != null ? main.getTenantId() : null, materialCache);
     }
 
     public static void enrichHcCkFlowAfterProfitLoss(HcCkFlow f, StkIoProfitLoss bill, StkIoProfitLossEntry entry,
         Long warehouseId, Long supplierId, Long departmentId, FdMaterialMapper fdMaterialMapper) {
+        enrichHcCkFlowAfterProfitLoss(f, bill, entry, warehouseId, supplierId, departmentId, fdMaterialMapper, null);
+    }
+
+    public static void enrichHcCkFlowAfterProfitLoss(HcCkFlow f, StkIoProfitLoss bill, StkIoProfitLossEntry entry,
+        Long warehouseId, Long supplierId, Long departmentId, FdMaterialMapper fdMaterialMapper, Map<Long, FdMaterial> materialCache) {
         if (f == null) {
             return;
         }
@@ -514,11 +541,17 @@ public final class InventoryMaterialSnapshotHelper {
         applyHcCkFlowNumericStrMirrors(f);
         String nameHint = entry != null ? entry.getMaterialNameSnap() : null;
         fillHcCkFlowMaterialCodeName(f, entry != null ? entry.getMaterialId() : f.getMaterialId(),
-            entry != null ? entry.getMaterial() : null, nameHint, null, fdMaterialMapper, bill != null ? bill.getTenantId() : null);
+            entry != null ? entry.getMaterial() : null, nameHint, null, fdMaterialMapper, bill != null ? bill.getTenantId() : null,
+            materialCache);
     }
 
     public static void enrichHcKsFlowAfterProfitLoss(HcKsFlow f, StkIoProfitLoss bill, StkIoProfitLossEntry entry,
         Long warehouseId, FdMaterialMapper fdMaterialMapper) {
+        enrichHcKsFlowAfterProfitLoss(f, bill, entry, warehouseId, fdMaterialMapper, null);
+    }
+
+    public static void enrichHcKsFlowAfterProfitLoss(HcKsFlow f, StkIoProfitLoss bill, StkIoProfitLossEntry entry,
+        Long warehouseId, FdMaterialMapper fdMaterialMapper, Map<Long, FdMaterial> materialCache) {
         if (f == null) {
             return;
         }
@@ -529,12 +562,17 @@ public final class InventoryMaterialSnapshotHelper {
         applyHcKsFlowNumericStrMirrors(f);
         fillHcKsFlowMaterialCodeName(f, entry != null ? entry.getMaterialId() : f.getMaterialId(),
             entry != null ? entry.getMaterial() : null, entry != null ? entry.getMaterialNameSnap() : null, fdMaterialMapper,
-            bill != null ? bill.getTenantId() : null);
+            bill != null ? bill.getTenantId() : null, materialCache);
     }
 
     /** 仓库盘点审核直接改仓库库存时写入 t_hc_ck_flow 的快照与单号 */
     public static void enrichHcCkFlowAfterWhStocktaking(HcCkFlow f, StkIoStocktaking bill, StkIoStocktakingEntry entry,
         Long warehouseId, FdMaterialMapper fdMaterialMapper) {
+        enrichHcCkFlowAfterWhStocktaking(f, bill, entry, warehouseId, fdMaterialMapper, null);
+    }
+
+    public static void enrichHcCkFlowAfterWhStocktaking(HcCkFlow f, StkIoStocktaking bill, StkIoStocktakingEntry entry,
+        Long warehouseId, FdMaterialMapper fdMaterialMapper, Map<Long, FdMaterial> materialCache) {
         if (f == null) {
             return;
         }
@@ -546,12 +584,17 @@ public final class InventoryMaterialSnapshotHelper {
         applyHcCkFlowNumericStrMirrors(f);
         fillHcCkFlowMaterialCodeName(f, entry != null ? entry.getMaterialId() : f.getMaterialId(),
             entry != null ? entry.getMaterial() : null, null, null, fdMaterialMapper,
-            bill != null ? bill.getTenantId() : null);
+            bill != null ? bill.getTenantId() : null, materialCache);
     }
 
     /** 科室盘点审核直接改科室库存时写入 t_hc_ks_flow 的快照与单号 */
     public static void enrichHcKsFlowAfterDeptStocktaking(HcKsFlow f, StkIoStocktaking bill, StkIoStocktakingEntry entry,
         Long warehouseId, FdMaterialMapper fdMaterialMapper) {
+        enrichHcKsFlowAfterDeptStocktaking(f, bill, entry, warehouseId, fdMaterialMapper, null);
+    }
+
+    public static void enrichHcKsFlowAfterDeptStocktaking(HcKsFlow f, StkIoStocktaking bill, StkIoStocktakingEntry entry,
+        Long warehouseId, FdMaterialMapper fdMaterialMapper, Map<Long, FdMaterial> materialCache) {
         if (f == null) {
             return;
         }
@@ -565,11 +608,16 @@ public final class InventoryMaterialSnapshotHelper {
         applyHcKsFlowNumericStrMirrors(f);
         fillHcKsFlowMaterialCodeName(f, entry != null ? entry.getMaterialId() : f.getMaterialId(),
             entry != null ? entry.getMaterial() : null, null, fdMaterialMapper,
-            bill != null ? bill.getTenantId() : null);
+            bill != null ? bill.getTenantId() : null, materialCache);
     }
 
     public static void enrichHcCkFlowBasApplyTransfer(HcCkFlow f, BasApply basApply, BasApplyEntry entry,
         Long warehouseId, Long supplierId, Long departmentId, FdMaterialMapper fdMaterialMapper) {
+        enrichHcCkFlowBasApplyTransfer(f, basApply, entry, warehouseId, supplierId, departmentId, fdMaterialMapper, null);
+    }
+
+    public static void enrichHcCkFlowBasApplyTransfer(HcCkFlow f, BasApply basApply, BasApplyEntry entry,
+        Long warehouseId, Long supplierId, Long departmentId, FdMaterialMapper fdMaterialMapper, Map<Long, FdMaterial> materialCache) {
         if (f == null) {
             return;
         }
@@ -580,11 +628,16 @@ public final class InventoryMaterialSnapshotHelper {
         applyHcCkFlowNumericStrMirrors(f);
         fillHcCkFlowMaterialCodeName(f, entry != null ? entry.getMaterialId() : f.getMaterialId(),
             entry != null ? entry.getMaterial() : null, null, null, fdMaterialMapper,
-            basApply != null ? basApply.getTenantId() : null);
+            basApply != null ? basApply.getTenantId() : null, materialCache);
     }
 
     public static void enrichHcKsFlowBasApply(HcKsFlow f, BasApply basApply, BasApplyEntry entry,
         FdMaterialMapper fdMaterialMapper) {
+        enrichHcKsFlowBasApply(f, basApply, entry, fdMaterialMapper, null);
+    }
+
+    public static void enrichHcKsFlowBasApply(HcKsFlow f, BasApply basApply, BasApplyEntry entry,
+        FdMaterialMapper fdMaterialMapper, Map<Long, FdMaterial> materialCache) {
         if (f == null) {
             return;
         }
@@ -594,11 +647,17 @@ public final class InventoryMaterialSnapshotHelper {
         }
         applyHcKsFlowNumericStrMirrors(f);
         fillHcKsFlowMaterialCodeName(f, entry != null ? entry.getMaterialId() : f.getMaterialId(),
-            entry != null ? entry.getMaterial() : null, null, fdMaterialMapper, basApply != null ? basApply.getTenantId() : null);
+            entry != null ? entry.getMaterial() : null, null, fdMaterialMapper, basApply != null ? basApply.getTenantId() : null,
+            materialCache);
     }
 
     public static void enrichHcKsFlowDeptBatchConsume(HcKsFlow f, DeptBatchConsume bill, DeptBatchConsumeEntry entry,
         FdMaterialMapper fdMaterialMapper) {
+        enrichHcKsFlowDeptBatchConsume(f, bill, entry, fdMaterialMapper, null);
+    }
+
+    public static void enrichHcKsFlowDeptBatchConsume(HcKsFlow f, DeptBatchConsume bill, DeptBatchConsumeEntry entry,
+        FdMaterialMapper fdMaterialMapper, Map<Long, FdMaterial> materialCache) {
         if (f == null) {
             return;
         }
@@ -609,6 +668,6 @@ public final class InventoryMaterialSnapshotHelper {
         applyHcKsFlowNumericStrMirrors(f);
         fillHcKsFlowMaterialCodeName(f, entry != null ? entry.getMaterialId() : f.getMaterialId(),
             entry != null ? entry.getMaterial() : null, entry != null ? entry.getMaterialName() : null, fdMaterialMapper,
-            bill != null ? bill.getTenantId() : null);
+            bill != null ? bill.getTenantId() : null, materialCache);
     }
 }

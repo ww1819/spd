@@ -107,6 +107,7 @@ import com.spd.warehouse.domain.StkDeliveryLineCap;
 import com.spd.warehouse.domain.StkIoBillEntry;
 import com.spd.warehouse.domain.vo.InboundEntryRefChannelQtyVo;
 import com.spd.warehouse.domain.vo.StkOutBillExportFlatRow;
+import com.spd.foundation.utils.MaterialSnapshotAssembler;
 import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import com.spd.warehouse.mapper.HcDocBillRefMapper;
 import com.spd.warehouse.mapper.StkDeliveryLineCapMapper;
@@ -1333,9 +1334,23 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     private void updateInventory(StkIoBill stkIoBill,List<StkIoBillEntry> stkIoBillEntryList){
 
         Integer billType = stkIoBill.getBillType();
+        Map<Long, FdWarehouse> warehouseCache = new HashMap<>();
+        Map<Long, FdSupplier> supplierCache = new HashMap<>();
+        Set<Long> materialIds = new HashSet<>();
+        if (stkIoBillEntryList != null) {
+            for (StkIoBillEntry e : stkIoBillEntryList) {
+                if (e != null && e.getMaterialId() != null) {
+                    materialIds.add(e.getMaterialId());
+                }
+            }
+        }
+        Map<Long, FdMaterial> materialCache = MaterialSnapshotAssembler.loadMap(fdMaterialMapper, materialIds);
         FdWarehouse headerWarehouse = null;
         if (stkIoBill.getWarehouseId() != null) {
             headerWarehouse = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(stkIoBill.getWarehouseId()));
+            if (headerWarehouse != null) {
+                warehouseCache.put(stkIoBill.getWarehouseId(), headerWarehouse);
+            }
         }
         StkInventory stkInventory = null;
         for (int i = 0; i < stkIoBillEntryList.size(); i++) {
@@ -1359,7 +1374,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     if (StringUtils.isNotEmpty(entry.getBatchNo())) {
                         stkBatch = stkBatchMapper.selectByBatchNo(entry.getBatchNo());
                         if (stkBatch == null) {
-                            stkBatch = buildStkBatchForInbound(entry, stkIoBill, lineSupplerId);
+                            stkBatch = buildStkBatchForInbound(entry, stkIoBill, lineSupplerId, materialCache, supplierCache, warehouseCache);
                             stkBatchMapper.insertStkBatch(stkBatch);
                         }
                     }
@@ -1397,7 +1412,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     if (StringUtils.isNotEmpty(stkIoBill.getSettlementType())) {
                         stkInventory.setSettlementType(stkIoBill.getSettlementType());
                     }
-                    InventoryMaterialSnapshotHelper.fillWarehouseRow(stkInventory, entry, fdMaterialMapper, stkIoBill.getTenantId());
+                    InventoryMaterialSnapshotHelper.fillWarehouseRow(stkInventory, entry, fdMaterialMapper, stkIoBill.getTenantId(), materialCache);
                     stkInventoryMapper.insertStkInventory(stkInventory);
                     // 插仓库流水（lx=RK），反写仓库库存id到流水和入库单明细
                     HcCkFlow rkFlow = new HcCkFlow();
@@ -1426,7 +1441,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     rkFlow.setCreateBy(SecurityUtils.getUserIdStr());
             rkFlow.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     if (StringUtils.isEmpty(rkFlow.getTenantId())) rkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
-                    InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(rkFlow, stkIoBill, entry, stkIoBill.getWarehouseId(), lineSupplerId, stkIoBill.getDepartmentId(), fdMaterialMapper);
+                    InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(rkFlow, stkIoBill, entry, stkIoBill.getWarehouseId(), lineSupplerId, stkIoBill.getDepartmentId(), fdMaterialMapper, materialCache);
                     hcCkFlowMapper.insertHcCkFlow(rkFlow);
                     if (entry.getId() != null) {
                         stkIoBillMapper.updateStkIoBillEntryInboundWhRef(entry.getId(), stkInventory.getId());
@@ -1503,7 +1518,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     ckFlow.setCreateBy(SecurityUtils.getUserIdStr());
             ckFlow.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     if (StringUtils.isEmpty(ckFlow.getTenantId())) ckFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
-                    InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(ckFlow, stkIoBill, entry, stkIoBill.getWarehouseId(), ckSup, stkIoBill.getDepartmentId(), fdMaterialMapper);
+                    InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(ckFlow, stkIoBill, entry, stkIoBill.getWarehouseId(), ckSup, stkIoBill.getDepartmentId(), fdMaterialMapper, materialCache);
                     hcCkFlowMapper.insertHcCkFlow(ckFlow);
                     // 出库审核即插入科室库存（未确认），记录单据主表id、明细id、单据号、单据类型，便于收货确认时精确定位
                     StkDepInventory stkDepInventory = new StkDepInventory();
@@ -1542,7 +1557,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     if (StringUtils.isNotEmpty(stkIoBill.getSettlementType())) {
                         stkDepInventory.setSettlementType(stkIoBill.getSettlementType());
                     }
-                    InventoryMaterialSnapshotHelper.fillDepRow(stkDepInventory, entry, inventory, fdMaterialMapper, stkIoBill.getTenantId());
+                    InventoryMaterialSnapshotHelper.fillDepRow(stkDepInventory, entry, inventory, fdMaterialMapper, stkIoBill.getTenantId(), materialCache);
                     // 科室库存 kc_no = 来源仓库库存 id（与出库仓库流水 CK 的 kc_no 一致）
                     if (inventory.getId() != null) {
                         stkDepInventory.setKcNo(inventory.getId());
@@ -1610,7 +1625,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     thFlow.setCreateBy(SecurityUtils.getUserIdStr());
             thFlow.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     if (StringUtils.isEmpty(thFlow.getTenantId())) thFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
-                    InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(thFlow, stkIoBill, entry, inventory.getWarehouseId(), thSup, stkIoBill.getDepartmentId(), fdMaterialMapper);
+                    InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(thFlow, stkIoBill, entry, inventory.getWarehouseId(), thSup, stkIoBill.getDepartmentId(), fdMaterialMapper, materialCache);
                     hcCkFlowMapper.insertHcCkFlow(thFlow);
                     hcBarcodeLifecycleService.onLowValueReturn301(stkIoBill, entry, inventory, headerWarehouse);
                 }else if(billType == 401){//退库（仅允许对已收货确认的科室库存退库；优先按明细 kc_no=科室库存 id 锁定行）
@@ -1785,7 +1800,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     tkFlow.setCreateBy(SecurityUtils.getUserIdStr());
             tkFlow.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     if (StringUtils.isEmpty(tkFlow.getTenantId())) tkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
-                    InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(tkFlow, stkIoBill, entry, returnWarehouseId401, tkSup401, stkDepInventory.getDepartmentId(), fdMaterialMapper);
+                    InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(tkFlow, stkIoBill, entry, returnWarehouseId401, tkSup401, stkDepInventory.getDepartmentId(), fdMaterialMapper, materialCache);
                     hcCkFlowMapper.insertHcCkFlow(tkFlow);
 
                     // 插科室流水（lx=TK，kc_no=科室库存id）
@@ -1820,7 +1835,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     ksTkFlow.setCreateBy(SecurityUtils.getUserIdStr());
             ksTkFlow.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     if (StringUtils.isEmpty(ksTkFlow.getTenantId())) ksTkFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
-                    InventoryMaterialSnapshotHelper.enrichHcKsFlowAfterStkIo(ksTkFlow, stkIoBill, entry, returnWarehouseId401, stkDepInventory.getDepartmentId(), fdMaterialMapper);
+                    InventoryMaterialSnapshotHelper.enrichHcKsFlowAfterStkIo(ksTkFlow, stkIoBill, entry, returnWarehouseId401, stkDepInventory.getDepartmentId(), fdMaterialMapper, materialCache);
                     hcKsFlowMapper.insertHcKsFlow(ksTkFlow);
                     FdWarehouse wh401 = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(returnWarehouseId401));
                     hcBarcodeLifecycleService.onLowValueTk401(stkIoBill, entry, inventory, stkDepInventory, wh401);
@@ -1897,7 +1912,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                     zcFlow.setCreateBy(SecurityUtils.getUserIdStr());
             zcFlow.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                     if (StringUtils.isEmpty(zcFlow.getTenantId())) zcFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
-                    InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(zcFlow, stkIoBill, entry, outWarehouseId, zcSup, null, fdMaterialMapper);
+                    InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(zcFlow, stkIoBill, entry, outWarehouseId, zcSup, null, fdMaterialMapper, materialCache);
                     hcCkFlowMapper.insertHcCkFlow(zcFlow);
 
                     // 2) 转入仓库：增加库存，插流水 ZR（供应商与转出库存行一致）
@@ -1908,7 +1923,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         if (StringUtils.isNotEmpty(batchNo)) {
                             stkBatch = stkBatchMapper.selectByBatchNo(batchNo);
                             if (stkBatch == null) {
-                                stkBatch = buildStkBatchForInbound(entry, stkIoBill, transferSup);
+                                stkBatch = buildStkBatchForInbound(entry, stkIoBill, transferSup, materialCache, supplierCache, warehouseCache);
                                 stkBatchMapper.insertStkBatch(stkBatch);
                             }
                         }
@@ -1968,7 +1983,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         zrFlow.setCreateBy(SecurityUtils.getUserIdStr());
             zrFlow.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                         if (StringUtils.isEmpty(zrFlow.getTenantId())) zrFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
-                        InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(zrFlow, stkIoBill, entry, inWarehouseId, transferSup, null, fdMaterialMapper);
+                        InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(zrFlow, stkIoBill, entry, inWarehouseId, transferSup, null, fdMaterialMapper, materialCache);
                         hcCkFlowMapper.insertHcCkFlow(zrFlow);
                     } else {
                         String updateByZr = SecurityUtils.getUserIdStr();
@@ -2011,7 +2026,7 @@ public class StkIoBillServiceImpl implements IStkIoBillService
                         zrFlow.setCreateBy(SecurityUtils.getUserIdStr());
             zrFlow.setCreateByName(com.spd.common.utils.SecurityUtils.getUsernameSafe());
                         if (StringUtils.isEmpty(zrFlow.getTenantId())) zrFlow.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
-                        InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(zrFlow, stkIoBill, entry, inWarehouseId, inInventory.getSupplierId(), null, fdMaterialMapper);
+                        InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterStkIo(zrFlow, stkIoBill, entry, inWarehouseId, inInventory.getSupplierId(), null, fdMaterialMapper, materialCache);
                         hcCkFlowMapper.insertHcCkFlow(zrFlow);
                     }
                 }
@@ -2022,7 +2037,8 @@ public class StkIoBillServiceImpl implements IStkIoBillService
     /**
      * 入库审核时组装批次记录（采购入库）
      */
-    private StkBatch buildStkBatchForInbound(StkIoBillEntry entry, StkIoBill stkIoBill, Long supplerId) {
+    private StkBatch buildStkBatchForInbound(StkIoBillEntry entry, StkIoBill stkIoBill, Long supplerId,
+        Map<Long, FdMaterial> materialCache, Map<Long, FdSupplier> supplierCache, Map<Long, FdWarehouse> warehouseCache) {
         StkBatch b = new StkBatch();
         b.setBatchNo(entry.getBatchNo());
         b.setMaterialId(entry.getMaterialId());
@@ -2070,62 +2086,30 @@ public class StkIoBillServiceImpl implements IStkIoBillService
         b.setDelFlag(0);
 
         if (entry.getMaterialId() != null) {
-            FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
-            if (m != null) {
-                b.setMaterialCode(m.getCode());
-                b.setMaterialName(m.getName());
-                b.setSpeci(m.getSpeci());
-                b.setModel(m.getModel());
-                b.setRegisterNo(m.getRegisterNo());
-                b.setPermitNo(m.getPermitNo());
-                b.setUnitId(m.getUnitId());
-                if (m.getUnitId() != null) {
-                    FdUnit u = fdUnitMapper.selectFdUnitByUnitId(m.getUnitId());
-                    if (u != null) {
-                        b.setUnitName(u.getUnitName());
-                    }
-                }
-                if (m.getFactoryId() != null) {
-                    FdFactory f = fdFactoryMapper.selectFdFactoryByFactoryId(m.getFactoryId());
-                    if (f != null) {
-                        b.setFactoryId(f.getFactoryId());
-                        b.setFactoryCode(f.getFactoryCode());
-                        b.setFactoryName(f.getFactoryName());
-                    }
-                }
-                if (m.getStoreroomId() != null) {
-                    FdWarehouseCategory wc = fdWarehouseCategoryMapper.selectFdWarehouseCategoryByWarehouseCategoryId(m.getStoreroomId());
-                    if (wc != null) {
-                        b.setStoreroomId(wc.getWarehouseCategoryId());
-                        b.setStoreroomCode(wc.getWarehouseCategoryCode());
-                        b.setStoreroomName(wc.getWarehouseCategoryName());
-                    }
-                }
-                if (m.getFinanceCategoryId() != null) {
-                    FdFinanceCategory fc = fdFinanceCategoryMapper.selectFdFinanceCategoryByFinanceCategoryId(m.getFinanceCategoryId());
-                    if (fc != null) {
-                        b.setFinanceCategoryId(fc.getFinanceCategoryId());
-                        b.setFinanceCategoryCode(fc.getFinanceCategoryCode());
-                        b.setFinanceCategoryName(fc.getFinanceCategoryName());
-                    }
-                }
-            }
+            FdMaterial m = MaterialSnapshotAssembler.resolve(fdMaterialMapper, entry.getMaterialId(),
+                stkIoBill != null ? stkIoBill.getTenantId() : null, materialCache);
+            MaterialSnapshotAssembler.applyMaterialDimsToStkBatch(b, m);
         }
         if (supplerId != null) {
-            FdSupplier sup = fdSupplierMapper.selectFdSupplierById(supplerId);
-            if (sup != null) {
-                b.setSupplierId(sup.getId());
-                b.setSupplierCode(sup.getCode());
-                b.setSupplierName(sup.getName());
+            FdSupplier sup = supplierCache != null ? supplierCache.get(supplerId) : null;
+            if (sup == null) {
+                sup = fdSupplierMapper.selectFdSupplierById(supplerId);
+                if (sup != null && supplierCache != null) {
+                    supplierCache.put(supplerId, sup);
+                }
             }
+            MaterialSnapshotAssembler.applySupplierToStkBatch(b, sup);
         }
         if (stkIoBill.getWarehouseId() != null) {
-            b.setWarehouseId(stkIoBill.getWarehouseId());
-            FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(stkIoBill.getWarehouseId()));
-            if (wh != null) {
-                b.setWarehouseCode(wh.getCode());
-                b.setWarehouseName(wh.getName());
+            Long whId = stkIoBill.getWarehouseId();
+            FdWarehouse wh = warehouseCache != null ? warehouseCache.get(whId) : null;
+            if (wh == null) {
+                wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(whId));
+                if (wh != null && warehouseCache != null) {
+                    warehouseCache.put(whId, wh);
+                }
             }
+            MaterialSnapshotAssembler.applyWarehouseToStkBatch(b, whId, wh);
         }
         b.setTenantId(StringUtils.isNotEmpty(stkIoBill.getTenantId()) ? stkIoBill.getTenantId() : SecurityUtils.getCustomerId());
         return b;

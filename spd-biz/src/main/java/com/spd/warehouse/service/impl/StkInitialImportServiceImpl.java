@@ -25,6 +25,7 @@ import com.spd.warehouse.domain.*;
 import com.spd.warehouse.domain.dto.InitialImportExcelRow;
 import com.spd.warehouse.mapper.*;
 import com.spd.warehouse.service.IStkInitialImportService;
+import com.spd.foundation.utils.MaterialSnapshotAssembler;
 import com.spd.warehouse.utils.InventoryMaterialSnapshotHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -365,6 +366,18 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         }
         String username = SecurityUtils.getUserIdStr();
         Date auditTime = new Date();
+        Set<Long> materialIds = new HashSet<>();
+        for (StkInitialImportEntry e : entries) {
+            if (e != null && e.getMaterialId() != null) {
+                materialIds.add(e.getMaterialId());
+            }
+        }
+        Map<Long, FdMaterial> materialCache = MaterialSnapshotAssembler.loadMap(fdMaterialMapper, materialIds);
+        Map<Long, FdSupplier> supplierCache = new HashMap<>();
+        FdWarehouse headerWh = null;
+        if (main.getWarehouseId() != null) {
+            headerWh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(main.getWarehouseId()));
+        }
 
         for (StkInitialImportEntry entry : entries) {
             if (entry.getQty() == null || entry.getQty().compareTo(BigDecimal.ZERO) <= 0) {
@@ -377,7 +390,7 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
             }
             StkBatch stkBatch = stkBatchMapper.selectByBatchNo(batchNo);
             if (stkBatch == null) {
-                stkBatch = buildStkBatchForInitial(main, entry);
+                stkBatch = buildStkBatchForInitial(main, entry, materialCache, supplierCache, headerWh);
                 stkBatchMapper.insertStkBatch(stkBatch);
             }
 
@@ -430,7 +443,7 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
             flow.setDelFlag(0);
             flow.setCreateTime(auditTime);
             flow.setCreateBy(username);
-            InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterInitial(flow, main, entry, fdMaterialMapper);
+            InventoryMaterialSnapshotHelper.enrichHcCkFlowAfterInitial(flow, main, entry, fdMaterialMapper, materialCache);
             hcCkFlowMapper.insertHcCkFlow(flow);
         }
 
@@ -466,7 +479,7 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         }
     }
 
-    private StkBatch buildStkBatchForInitial(StkInitialImport main, StkInitialImportEntry entry) {
+    private StkBatch buildStkBatchForInitial(StkInitialImport main, StkInitialImportEntry entry, java.util.Map<Long, FdMaterial> materialCache, java.util.Map<Long, FdSupplier> supplierCache, FdWarehouse headerWh) {
         StkBatch b = new StkBatch();
         b.setBatchNo(entry.getBatchNo());
         b.setMaterialId(entry.getMaterialId());
@@ -496,58 +509,27 @@ public class StkInitialImportServiceImpl implements IStkInitialImportService {
         b.setSupplierId(entry.getSupplierId());
         b.setFactoryId(entry.getFactoryId());
 
-        FdMaterial m = fdMaterialMapper.selectFdMaterialById(entry.getMaterialId());
+        FdMaterial m = MaterialSnapshotAssembler.resolve(fdMaterialMapper, entry.getMaterialId(),
+            main != null ? main.getTenantId() : null, materialCache);
         if (m != null) {
-            b.setMaterialCode(m.getCode());
-            b.setMaterialName(m.getName());
-            b.setSpeci(m.getSpeci());
-            b.setModel(m.getModel());
-            b.setRegisterNo(m.getRegisterNo());
-            b.setPermitNo(m.getPermitNo());
-            b.setUnitId(m.getUnitId());
-            if (m.getUnitId() != null) {
-                FdUnit u = fdUnitMapper.selectFdUnitByUnitId(m.getUnitId());
-                if (u != null) b.setUnitName(u.getUnitName());
-            }
-            if (m.getFactoryId() != null) {
-                FdFactory f = fdFactoryMapper.selectFdFactoryByFactoryId(m.getFactoryId());
-                if (f != null) {
-                    b.setFactoryId(b.getFactoryId() != null ? b.getFactoryId() : f.getFactoryId());
-                    b.setFactoryCode(f.getFactoryCode());
-                    b.setFactoryName(f.getFactoryName());
-                }
-            }
-            if (m.getStoreroomId() != null) {
-                FdWarehouseCategory wc = fdWarehouseCategoryMapper.selectFdWarehouseCategoryByWarehouseCategoryId(m.getStoreroomId());
-                if (wc != null) {
-                    b.setStoreroomId(wc.getWarehouseCategoryId());
-                    b.setStoreroomCode(wc.getWarehouseCategoryCode());
-                    b.setStoreroomName(wc.getWarehouseCategoryName());
-                }
-            }
-            if (m.getFinanceCategoryId() != null) {
-                FdFinanceCategory fc = fdFinanceCategoryMapper.selectFdFinanceCategoryByFinanceCategoryId(m.getFinanceCategoryId());
-                if (fc != null) {
-                    b.setFinanceCategoryId(fc.getFinanceCategoryId());
-                    b.setFinanceCategoryCode(fc.getFinanceCategoryCode());
-                    b.setFinanceCategoryName(fc.getFinanceCategoryName());
-                }
+            Long keepFactoryId = b.getFactoryId();
+            MaterialSnapshotAssembler.applyMaterialDimsToStkBatch(b, m);
+            if (keepFactoryId != null) {
+                b.setFactoryId(keepFactoryId);
             }
         }
         if (entry.getSupplierId() != null) {
-            FdSupplier sup = fdSupplierMapper.selectFdSupplierById(entry.getSupplierId());
-            if (sup != null) {
-                b.setSupplierId(sup.getId());
-                b.setSupplierCode(sup.getCode());
-                b.setSupplierName(sup.getName());
+            FdSupplier sup = supplierCache != null ? supplierCache.get(entry.getSupplierId()) : null;
+            if (sup == null) {
+                sup = fdSupplierMapper.selectFdSupplierById(entry.getSupplierId());
+                if (sup != null && supplierCache != null) {
+                    supplierCache.put(entry.getSupplierId(), sup);
+                }
             }
+            MaterialSnapshotAssembler.applySupplierToStkBatch(b, sup);
         }
         if (main.getWarehouseId() != null) {
-            FdWarehouse wh = fdWarehouseMapper.selectFdWarehouseById(String.valueOf(main.getWarehouseId()));
-            if (wh != null) {
-                b.setWarehouseCode(wh.getCode());
-                b.setWarehouseName(wh.getName());
-            }
+            MaterialSnapshotAssembler.applyWarehouseToStkBatch(b, main.getWarehouseId(), headerWh);
         }
         b.setTenantId(StringUtils.isNotEmpty(main.getTenantId()) ? main.getTenantId() : SecurityUtils.getCustomerId());
         return b;
