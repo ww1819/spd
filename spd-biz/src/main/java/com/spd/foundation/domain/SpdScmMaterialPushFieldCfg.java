@@ -18,6 +18,8 @@ public class SpdScmMaterialPushFieldCfg
     private Integer sortNo;
     private String delFlag;
     private String createBy;
+    /** 创建者登录名快照（可读冗余） */
+    private String createByName;
     private Date createTime;
     private String updateBy;
     private Date updateTime;
@@ -110,6 +112,16 @@ public class SpdScmMaterialPushFieldCfg
     public void setCreateBy(String createBy)
     {
         this.createBy = createBy;
+    }
+
+    public String getCreateByName()
+    {
+        return createByName;
+    }
+
+    public void setCreateByName(String createByName)
+    {
+        this.createByName = createByName;
     }
 
     public Date getCreateTime()

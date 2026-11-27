@@ -37,8 +37,12 @@ public class SpdScmMaterialArchive
     private String lastApplyLogId;
     private String delFlag;
     private String createBy;
+    /** 创建者登录名快照（可读冗余） */
+    private String createByName;
     private Date createTime;
     private String updateBy;
+    /** 更新者登录名快照（可读冗余） */
+    private String updateByName;
     private Date updateTime;
     private String remark;
 
@@ -322,6 +326,16 @@ public class SpdScmMaterialArchive
         this.createBy = createBy;
     }
 
+    public String getCreateByName()
+    {
+        return createByName;
+    }
+
+    public void setCreateByName(String createByName)
+    {
+        this.createByName = createByName;
+    }
+
     public Date getCreateTime()
     {
         return createTime;
@@ -340,6 +354,16 @@ public class SpdScmMaterialArchive
     public void setUpdateBy(String updateBy)
     {
         this.updateBy = updateBy;
+    }
+
+    public String getUpdateByName()
+    {
+        return updateByName;
+    }
+
+    public void setUpdateByName(String updateByName)
+    {
+        this.updateByName = updateByName;
     }
 
     public Date getUpdateTime()

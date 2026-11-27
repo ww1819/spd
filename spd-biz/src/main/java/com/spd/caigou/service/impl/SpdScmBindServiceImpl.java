@@ -63,6 +63,7 @@ public class SpdScmBindServiceImpl implements ISpdScmBindService
             row.setScmHospitalCode(scmHospitalCode.trim());
             row.setRemark(remark);
             row.setCreateBy(user);
+            row.setCreateByName(SecurityUtils.getUsernameSafe());
             spdScmTenantBindMapper.insert(row);
         }
         else
@@ -147,6 +148,7 @@ public class SpdScmBindServiceImpl implements ISpdScmBindService
         row.setScmSupplierCode(scmSupplierCode.trim());
         row.setRemark(remark);
         row.setCreateBy(user);
+        row.setCreateByName(SecurityUtils.getUsernameSafe());
         spdScmSupplierBindMapper.insert(row);
     }
 

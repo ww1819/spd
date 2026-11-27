@@ -42,7 +42,11 @@ public class SuppSettlementBillEntry {
     private Long supplierId;
     private String supplierName;
     private Integer delFlag;
+    /** 创建者登录名快照（可读冗余） */
+    private String createByName;
     private String deleteBy;
+    /** 删除者登录名快照（可读冗余） */
+    private String deleteByName;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date deleteTime;
     private Integer sortOrder;
@@ -103,8 +107,12 @@ public class SuppSettlementBillEntry {
     public void setSupplierName(String supplierName) { this.supplierName = supplierName; }
     public Integer getDelFlag() { return delFlag; }
     public void setDelFlag(Integer delFlag) { this.delFlag = delFlag; }
+    public String getCreateByName() { return createByName; }
+    public void setCreateByName(String createByName) { this.createByName = createByName; }
     public String getDeleteBy() { return deleteBy; }
     public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
+    public String getDeleteByName() { return deleteByName; }
+    public void setDeleteByName(String deleteByName) { this.deleteByName = deleteByName; }
     public Date getDeleteTime() { return deleteTime; }
     public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
     public Integer getSortOrder() { return sortOrder; }

@@ -17,6 +17,8 @@ public class SuppSettlementInvoice {
     private Date createTime;
     /** 删除者 */
     private String deleteBy;
+    /** 删除者登录名快照（可读冗余） */
+    private String deleteByName;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date deleteTime;
 
@@ -38,6 +40,8 @@ public class SuppSettlementInvoice {
     public void setCreateTime(Date createTime) { this.createTime = createTime; }
     public String getDeleteBy() { return deleteBy; }
     public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
+    public String getDeleteByName() { return deleteByName; }
+    public void setDeleteByName(String deleteByName) { this.deleteByName = deleteByName; }
     public Date getDeleteTime() { return deleteTime; }
     public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
     public FinInvoice getInvoice() { return invoice; }

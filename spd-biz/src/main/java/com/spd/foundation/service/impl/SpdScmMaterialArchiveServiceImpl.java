@@ -411,6 +411,7 @@ public class SpdScmMaterialArchiveServiceImpl implements ISpdScmMaterialArchiveS
             mirror.setTenantId(tid);
             mirror.setScmArchiveId(scmArchiveId);
             mirror.setCreateBy(oper);
+            mirror.setCreateByName(SecurityUtils.getUsernameSafe());
             mirror.setApplyStatus("0");
         }
         boolean timeChanged = existing == null
@@ -439,6 +440,7 @@ public class SpdScmMaterialArchiveServiceImpl implements ISpdScmMaterialArchiveS
         mirror.setScmUpdateTime(scmUpdateTime);
         mirror.setLastSyncBatchId(batchId);
         mirror.setUpdateBy(oper);
+        mirror.setUpdateByName(SecurityUtils.getUsernameSafe());
         if (timeChanged)
         {
             mirror.setApplyStatus("0");
@@ -569,6 +571,7 @@ public class SpdScmMaterialArchiveServiceImpl implements ISpdScmMaterialArchiveS
         upd.setApplyStatus(status);
         upd.setLastApplyLogId(logId);
         upd.setUpdateBy(currentUser());
+        upd.setUpdateByName(SecurityUtils.getUsernameSafe());
         archiveMapper.update(upd);
 
         Map<String, Object> out = new LinkedHashMap<>();
@@ -852,6 +855,7 @@ public class SpdScmMaterialArchiveServiceImpl implements ISpdScmMaterialArchiveS
                 }
                 row.setSortNo(in.getSortNo() != null ? in.getSortNo() : 0);
                 row.setCreateBy(oper);
+                row.setCreateByName(SecurityUtils.getUsernameSafe());
                 fieldCfgMapper.insert(row);
             }
             else
@@ -903,6 +907,7 @@ public class SpdScmMaterialArchiveServiceImpl implements ISpdScmMaterialArchiveS
             row.setApplyEnabled(seed[3]);
             row.setSortNo(sort);
             row.setCreateBy(oper);
+            row.setCreateByName(SecurityUtils.getUsernameSafe());
             fieldCfgMapper.insert(row);
             sort += 10;
         }
