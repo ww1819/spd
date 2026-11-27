@@ -347,8 +347,14 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <trim prefix="SET" suffixOverrides=",">
             <if test="applyBillNo != null">apply_bill_no = #{applyBillNo},</if>
             <if test="applyBillDate != null">apply_bill_date = #{applyBillDate},</if>
-            <if test="params != null and params.clearDeptApplyHeaderWarehouse != null and params.clearDeptApplyHeaderWarehouse == true">warehouse_id = null,</if>
-            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <choose>
+                <when test="params != null and params.clearDeptApplyHeaderWarehouse != null and params.clearDeptApplyHeaderWarehouse == true">
+                    warehouse_id = null,
+                </when>
+                <when test="warehouseId != null">
+                    warehouse_id = #{warehouseId},
+                </when>
+            </choose>
             <if test="departmentId != null">department_id = #{departmentId},</if>
             <if test="userId != null">user_id = #{userId},</if>
             <if test="applyBillStatus != null">apply_bill_status = #{applyBillStatus},</if>

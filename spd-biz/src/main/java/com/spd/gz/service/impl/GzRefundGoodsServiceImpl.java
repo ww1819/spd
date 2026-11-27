@@ -603,6 +603,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
             }
             row.setUpdateTime(now);
             row.setUpdateBy(updateBy);
+            row.setUpdateByName(SecurityUtils.getUsernameSafe());
             gzDepotInventoryMapper.updateGzDepotInventory(row);
             remaining = remaining.subtract(take);
         }
@@ -628,6 +629,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                 ? gzRefundGoods.getTenantId()
                 : SecurityUtils.requiredScopedTenantIdForSql();
             String userId = SecurityUtils.getUserIdStr();
+            String userName = SecurityUtils.getUsernameSafe();
             Date now = DateUtils.getNowDate();
             Set<String> dedupRefKeys = new HashSet<>();
             for (GzRefundGoodsEntry gzRefundGoodsEntry : gzRefundGoodsEntryList)
@@ -653,8 +655,10 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                 gzRefundGoodsEntry.setDepartmentId(gzRefundGoods.getDepartmentId());
                 gzRefundGoodsEntry.setBillNo(gzRefundGoods.getGoodsNo());
                 gzRefundGoodsEntry.setCreateBy(userId);
+                gzRefundGoodsEntry.setCreateByName(userName);
                 gzRefundGoodsEntry.setCreateTime(now);
                 gzRefundGoodsEntry.setUpdateBy(userId);
+                gzRefundGoodsEntry.setUpdateByName(userName);
                 gzRefundGoodsEntry.setUpdateTime(now);
                 list.add(gzRefundGoodsEntry);
                 if (StringUtils.isNotEmpty(refKey)) {
@@ -683,6 +687,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
         Long parenId = gzRefundGoods.getId();
         int filteredCount = 0;
         String userId = SecurityUtils.getUserIdStr();
+        String userName = SecurityUtils.getUsernameSafe();
         Date now = DateUtils.getNowDate();
 
         List<Long> existingIds = warehouseStockRefund
@@ -727,6 +732,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                 entry.setDepartmentId(gzRefundGoods.getDepartmentId());
                 entry.setBillNo(gzRefundGoods.getGoodsNo());
                 entry.setUpdateBy(userId);
+                entry.setUpdateByName(userName);
                 entry.setUpdateTime(now);
 
                 if (entry.getId() != null) {
@@ -745,6 +751,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
                     }
                 } else {
                     entry.setCreateBy(userId);
+                    entry.setCreateByName(userName);
                     entry.setCreateTime(now);
                     newList.add(entry);
                     log.info("GZ_REFUND_ENTRY_CHANGE INSERT billId={}, entry={}", parenId, JSON.toJSONString(entry));
@@ -770,6 +777,7 @@ public class GzRefundGoodsServiceImpl implements IGzRefundGoodsService
             toDelete.setParenId(parenId);
             toDelete.setDelFlag(1);
             toDelete.setUpdateBy(userId);
+            toDelete.setUpdateByName(userName);
             if (warehouseStockRefund) {
                 gzRefundGoodsMapper.updateGzRefundStockEntryById(toDelete);
             } else {

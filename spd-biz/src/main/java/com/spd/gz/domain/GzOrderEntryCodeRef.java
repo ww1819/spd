@@ -26,6 +26,8 @@ public class GzOrderEntryCodeRef implements Serializable
     private String materialName;
     private Long warehouseId;
     private String createBy;
+    /** 创建者登录名快照（可读冗余） */
+    private String createByName;
     private Date createTime;
 
     /** 软删除 0正常 1已删 */
@@ -63,6 +65,8 @@ public class GzOrderEntryCodeRef implements Serializable
     public void setWarehouseId(Long warehouseId) { this.warehouseId = warehouseId; }
     public String getCreateBy() { return createBy; }
     public void setCreateBy(String createBy) { this.createBy = createBy; }
+    public String getCreateByName() { return createByName; }
+    public void setCreateByName(String createByName) { this.createByName = createByName; }
     public Date getCreateTime() { return createTime; }
     public void setCreateTime(Date createTime) { this.createTime = createTime; }
 

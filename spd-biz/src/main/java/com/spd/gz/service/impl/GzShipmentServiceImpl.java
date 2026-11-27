@@ -749,9 +749,12 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                     gzDepInventory.setTenantId(tenantId);
                     gzDepInventory.setDelFlag(0);
                     String userId = SecurityUtils.getUserIdStr();
+                    String userName = SecurityUtils.getUsernameSafe();
                     Date now = DateUtils.getNowDate();
                     gzDepInventory.setCreateBy(userId);
+                    gzDepInventory.setCreateByName(userName);
                     gzDepInventory.setUpdateBy(userId);
+                    gzDepInventory.setUpdateByName(userName);
                     gzDepInventory.setCreateTime(now);
                     gzDepInventory.setUpdateTime(now);
                     gzDepInventory.setMasterBarcode(StringUtils.isNotEmpty(shipmentEntry.getMasterBarcode())
@@ -802,6 +805,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                 ? gzShipment.getTenantId()
                 : SecurityUtils.requiredScopedTenantIdForSql();
             String userId = SecurityUtils.getUserIdStr();
+            String userName = SecurityUtils.getUsernameSafe();
             Date now = DateUtils.getNowDate();
             Set<String> dedupRefKeys = new HashSet<>();
             for (GzShipmentEntry gzShipmentEntry : gzShipmentEntryList)
@@ -838,8 +842,10 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                 gzShipmentEntry.setDepartmentId(gzShipment.getDepartmentId());
                 gzShipmentEntry.setBillNo(gzShipment.getShipmentNo());
                 gzShipmentEntry.setCreateBy(userId);
+                gzShipmentEntry.setCreateByName(userName);
                 gzShipmentEntry.setCreateTime(now);
                 gzShipmentEntry.setUpdateBy(userId);
+                gzShipmentEntry.setUpdateByName(userName);
                 gzShipmentEntry.setUpdateTime(now);
                 list.add(gzShipmentEntry);
                 if (StringUtils.isNotEmpty(refKey)) {
@@ -863,6 +869,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
         Long parenId = gzShipment.getId();
         int filteredCount = 0;
         String userId = SecurityUtils.getUserIdStr();
+        String userName = SecurityUtils.getUsernameSafe();
         Date now = DateUtils.getNowDate();
 
         List<Long> existingIds = gzShipmentMapper.selectActiveShipmentEntryIdsByParenId(parenId);
@@ -898,6 +905,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                 entry.setDepartmentId(gzShipment.getDepartmentId());
                 entry.setBillNo(gzShipment.getShipmentNo());
                 entry.setUpdateBy(userId);
+                entry.setUpdateByName(userName);
                 entry.setUpdateTime(now);
                 if (entry.getSupplierId() == null && StringUtils.isNotEmpty(entry.getBatchNo())) {
                     GzDepotInventory source = gzDepotInventoryMapper.selectGzDepotInventoryOne(entry.getBatchNo());
@@ -920,6 +928,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
                     }
                 } else {
                     entry.setCreateBy(userId);
+                    entry.setCreateByName(userName);
                     entry.setCreateTime(now);
                     newList.add(entry);
                     log.info("GZ_SHIPMENT_ENTRY_CHANGE INSERT billId={}, entry={}", parenId, JSON.toJSONString(entry));
@@ -940,6 +949,7 @@ public class GzShipmentServiceImpl implements IGzShipmentService
             toDelete.setParenId(parenId);
             toDelete.setDelFlag(1);
             toDelete.setUpdateBy(userId);
+            toDelete.setUpdateByName(userName);
             gzShipmentMapper.updateGzShipmentEntryById(toDelete);
             GzShipmentEntry old = oldEntryMap.get(removedId);
             log.info("GZ_SHIPMENT_ENTRY_CHANGE DELETE billId={}, entryId={}, before={}",

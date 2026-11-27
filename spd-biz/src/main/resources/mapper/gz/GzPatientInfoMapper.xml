@@ -189,6 +189,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto},
             delete_time = now(),
             update_by = #{deleteBy},
+            update_by_name = #{_deleteByNameAuto},
             update_time = now()
         where id = #{id} and tenant_id = #{scopedTenantId}
     </delete>
@@ -201,6 +202,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             delete_by = #{deleteBy}, delete_by_name = #{_deleteByNameAuto},
             delete_time = now(),
             update_by = #{deleteBy},
+            update_by_name = #{_deleteByNameAuto},
             update_time = now()
         where tenant_id = #{scopedTenantId} and id in
         <foreach item="id" collection="array" open="(" separator="," close=")">

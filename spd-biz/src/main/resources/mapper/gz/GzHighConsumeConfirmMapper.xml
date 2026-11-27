@@ -1144,6 +1144,7 @@
     </insert>
 
     <update id="updateLinkConfirmStatus">
+        <bind name="_updateByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         update his_mirror_consume_link
         set confirm_status = 1,
             confirm_id = #{confirmId},
@@ -1151,6 +1152,7 @@
             instant_io_audit_by = null,
             instant_io_audit_time = null,
             update_by = #{updateBy},
+            update_by_name = #{_updateByNameAuto},
             update_time = now()
         where tenant_id = #{tenantId}
           and ifnull(del_flag, 0) = 0
@@ -1162,11 +1164,13 @@
     </update>
 
     <update id="updateLinkInstantIoAudited">
+        <bind name="_updateByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         update his_mirror_consume_link
         set instant_io_audit_status = 1,
             instant_io_audit_by = #{auditBy},
             instant_io_audit_time = now(),
             update_by = #{auditBy},
+            update_by_name = #{_updateByNameAuto},
             update_time = now()
         where tenant_id = #{tenantId}
           and ifnull(del_flag, 0) = 0
@@ -1179,9 +1183,11 @@
     </update>
 
     <update id="updateLinkInstantIoReversed">
+        <bind name="_updateByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         update his_mirror_consume_link
         set instant_io_audit_status = 2,
             update_by = #{auditBy},
+            update_by_name = #{_updateByNameAuto},
             update_time = now()
         where tenant_id = #{tenantId}
           and ifnull(del_flag, 0) = 0
@@ -1206,9 +1212,11 @@
     </update>
 
     <update id="updateConfirmWarehouse">
+        <bind name="_updateByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         update gz_high_consume_confirm
         set warehouse_id = #{warehouseId},
             update_by = #{updateBy},
+            update_by_name = #{_updateByNameAuto},
             update_time = now()
         where tenant_id = #{tenantId}
           and id = #{confirmId}

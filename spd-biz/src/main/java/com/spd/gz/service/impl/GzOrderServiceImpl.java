@@ -486,8 +486,10 @@ public class GzOrderServiceImpl implements IGzOrderService
                     inhospitalRow.setDelFlag(0);
                     inhospitalRow.setCreateDate(now);
                     inhospitalRow.setCreateBy(userId);
+                    inhospitalRow.setCreateByName(SecurityUtils.getUsernameSafe());
                     inhospitalRow.setCreateTime(now);
                     inhospitalRow.setUpdateBy(userId);
+                    inhospitalRow.setUpdateByName(SecurityUtils.getUsernameSafe());
                     inhospitalRow.setUpdateTime(now);
                     inhospitalRow.setTenantId(StringUtils.isNotEmpty(gzOrder.getTenantId()) ? gzOrder.getTenantId() : SecurityUtils.getCustomerId());
                     hcBarcodeLifecycleService.fillGzOrderInhospitalcodeSnapshots(gzOrder, orderEntry, inhospitalRow);
@@ -589,6 +591,7 @@ public class GzOrderServiceImpl implements IGzOrderService
         {
             List<GzOrderEntry> list = new ArrayList<GzOrderEntry>();
             String userId = SecurityUtils.getUserIdStr();
+            String userName = SecurityUtils.getUsernameSafe();
             Date now = DateUtils.getNowDate();
             for (GzOrderEntry gzOrderEntry : gzOrderEntryList)
             {
@@ -599,8 +602,10 @@ public class GzOrderServiceImpl implements IGzOrderService
                 gzOrderEntry.setWarehouseId(gzOrder.getWarehouseId());
                 gzOrderEntry.setBillNo(gzOrder.getOrderNo());
                 gzOrderEntry.setCreateBy(userId);
+                gzOrderEntry.setCreateByName(userName);
                 gzOrderEntry.setCreateTime(now);
                 gzOrderEntry.setUpdateBy(userId);
+                gzOrderEntry.setUpdateByName(userName);
                 gzOrderEntry.setUpdateTime(now);
                 alignGzOrderEntryStrSnapshots(gzOrder, gzOrderEntry);
                 list.add(gzOrderEntry);
@@ -640,6 +645,7 @@ public class GzOrderServiceImpl implements IGzOrderService
         List<GzOrderEntry> gzOrderEntryList = gzOrder.getGzOrderEntryList();
         Long parenId = gzOrder.getId();
         String userId = SecurityUtils.getUserIdStr();
+        String userName = SecurityUtils.getUsernameSafe();
         Date now = DateUtils.getNowDate();
 
         List<Long> existingIds = gzOrderMapper.selectActiveOrderEntryIdsByParenId(parenId);
@@ -667,6 +673,7 @@ public class GzOrderServiceImpl implements IGzOrderService
                 entry.setWarehouseId(gzOrder.getWarehouseId());
                 entry.setBillNo(gzOrder.getOrderNo());
                 entry.setUpdateBy(userId);
+                entry.setUpdateByName(userName);
                 entry.setUpdateTime(now);
                 alignGzOrderEntryStrSnapshots(gzOrder, entry);
 
@@ -681,6 +688,7 @@ public class GzOrderServiceImpl implements IGzOrderService
                     }
                 } else {
                     entry.setCreateBy(userId);
+                    entry.setCreateByName(userName);
                     entry.setCreateTime(now);
                     alignGzOrderEntryStrSnapshots(gzOrder, entry);
                     newList.add(entry);
@@ -700,6 +708,7 @@ public class GzOrderServiceImpl implements IGzOrderService
             toDelete.setParenId(parenId);
             toDelete.setDelFlag(1);
             toDelete.setUpdateBy(userId);
+            toDelete.setUpdateByName(userName);
             gzOrderMapper.updateGzOrderEntryById(toDelete);
             GzOrderEntry old = oldEntryMap.get(removedId);
             log.info("GZ_ORDER_ENTRY_CHANGE DELETE billId={}, entryId={}, before={}",

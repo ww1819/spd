@@ -102,6 +102,10 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         return SecurityUtils.getUserIdStr();
     }
 
+    private String uname() {
+        return SecurityUtils.getUsernameSafe();
+    }
+
     private boolean genIn(FdWarehouse w) {
         return w != null && w.getLvAuditGenInhospitalIn() != null && w.getLvAuditGenInhospitalIn() == 1;
     }
@@ -219,6 +223,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         flow.setRemark(null);
         flow.setDelFlag(0);
         flow.setCreateBy(uid());
+        flow.setCreateByName(uname());
         flow.setCreateTime(new Date());
         hcBarcodeTraceMapper.insertHcBarcodeFlow(flow);
     }
@@ -286,6 +291,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         flow.setOperatorName(uid());
         flow.setDelFlag(0);
         flow.setCreateBy(uid());
+        flow.setCreateByName(uname());
         flow.setCreateTime(new Date());
         hcBarcodeTraceMapper.insertHcBarcodeFlow(flow);
         syncMasterAfterAppendFlow(master, eventCode, fromWh, toWh, fromDept, toDept);
@@ -386,6 +392,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         master.setStatus("ACTIVE");
         master.setDelFlag(0);
         master.setCreateBy(uid());
+        master.setCreateByName(uname());
         master.setCreateTime(new Date());
         return master;
     }
@@ -435,6 +442,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         row.setAuditTime(auditTime);
         row.setDelFlag(0);
         row.setCreateBy(uid());
+        row.setCreateByName(uname());
         row.setCreateTime(new Date());
         return row;
     }
@@ -705,6 +713,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             master.setStatus("ACTIVE");
             master.setDelFlag(0);
             master.setCreateBy(uid());
+            master.setCreateByName(uname());
             master.setCreateTime(new Date());
             insertMasterAndFlow(master, "GZ_PREP_IN", "高值备货验收入库", "GZ_ORDER",
                 String.valueOf(order.getId()), order.getOrderNo(),
@@ -745,6 +754,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             wf.setOriginBusinessType("高值备货验收入库");
             wf.setDelFlag(0);
             wf.setCreateBy(uid());
+            wf.setCreateByName(uname());
             wf.setCreateTime(new Date());
             hcBarcodeTraceMapper.insertGzWhFlow(wf);
 
@@ -752,6 +762,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             up.setId(inhospitalRow.getId());
             up.setHcBarcodeMasterId(masterId);
             up.setUpdateBy(uid());
+            up.setUpdateByName(SecurityUtils.getUsernameSafe());
             gzOrderMapper.updateGzOrderEntryInhospitalcodeListSnapshots(up);
         } catch (Exception e) {
             log.warn("onGzPrepAcceptUnit failed orderId={}", order.getId(), e);
@@ -805,6 +816,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             df.setOriginBusinessType("高值出库入科室");
             df.setDelFlag(0);
             df.setCreateBy(uid());
+            df.setCreateByName(uname());
             df.setCreateTime(new Date());
             hcBarcodeTraceMapper.insertGzDepFlow(df);
         } catch (Exception e) {
@@ -845,6 +857,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             wf.setOriginBusinessType("高值备货出库扣减");
             wf.setDelFlag(0);
             wf.setCreateBy(uid());
+            wf.setCreateByName(uname());
             wf.setCreateTime(new Date());
             hcBarcodeTraceMapper.insertGzWhFlow(wf);
         } catch (Exception e) {
@@ -894,6 +907,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             wf.setOriginBusinessType("高值备货退库");
             wf.setDelFlag(0);
             wf.setCreateBy(uid());
+            wf.setCreateByName(uname());
             wf.setCreateTime(new Date());
             hcBarcodeTraceMapper.insertGzWhFlow(wf);
 
@@ -925,6 +939,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             df.setOriginBusinessType("高值备货退库出科室");
             df.setDelFlag(0);
             df.setCreateBy(uid());
+            df.setCreateByName(uname());
             df.setCreateTime(new Date());
             hcBarcodeTraceMapper.insertGzDepFlow(df);
         } catch (Exception e) {
@@ -966,6 +981,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
             wf.setOriginBusinessType("高值备货退货");
             wf.setDelFlag(0);
             wf.setCreateBy(uid());
+            wf.setCreateByName(uname());
             wf.setCreateTime(new Date());
             hcBarcodeTraceMapper.insertGzWhFlow(wf);
         } catch (Exception e) {
@@ -1068,6 +1084,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         flow.setOperatorName(uid());
         flow.setDelFlag(0);
         flow.setCreateBy(uid());
+        flow.setCreateByName(uname());
         flow.setCreateTime(new Date());
         hcBarcodeTraceMapper.insertHcBarcodeFlow(flow);
         patchMasterAfterDeptConsume(master, signedQty, bill.getDepartmentId(), tenantId);
@@ -1216,6 +1233,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         df.setOriginBusinessType(refund ? "HIS高值扫码退费返还" : "HIS高值扫码核销");
         df.setDelFlag(0);
         df.setCreateBy(uid());
+        df.setCreateByName(uname());
         df.setCreateTime(now);
         hcBarcodeTraceMapper.insertGzDepFlow(df);
     }
@@ -1254,6 +1272,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         flow.setOperatorName(uid());
         flow.setDelFlag(0);
         flow.setCreateBy(uid());
+        flow.setCreateByName(uname());
         flow.setCreateTime(new Date());
         hcBarcodeTraceMapper.insertHcBarcodeFlow(flow);
         patchMasterAfterDeptConsume(master, signedQty, trace.getExecDeptId(), tenantId);
@@ -1339,6 +1358,7 @@ public class HcBarcodeLifecycleServiceImpl implements IHcBarcodeLifecycleService
         df.setOriginBusinessType(signedQty.compareTo(BigDecimal.ZERO) > 0 ? "科室批量消耗(高值)" : "科室退消耗(高值)");
         df.setDelFlag(0);
         df.setCreateBy(uid());
+        df.setCreateByName(uname());
         df.setCreateTime(now);
         hcBarcodeTraceMapper.insertGzDepFlow(df);
     }

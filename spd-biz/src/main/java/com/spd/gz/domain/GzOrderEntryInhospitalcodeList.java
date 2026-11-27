@@ -22,8 +22,12 @@ public class GzOrderEntryInhospitalcodeList {
     private Integer delFlag;
     private Date createDate;
     private String createBy;
+    /** 创建者登录名快照（可读冗余） */
+    private String createByName;
     private Date createTime;
     private String updateBy;
+    /** 更新者登录名快照（可读冗余） */
+    private String updateByName;
     private Date updateTime;
     private String tenantId;
     /** 快照与归属 */
@@ -76,10 +80,14 @@ public class GzOrderEntryInhospitalcodeList {
     public void setCreateDate(Date createDate) { this.createDate = createDate; }
     public String getCreateBy() { return createBy; }
     public void setCreateBy(String createBy) { this.createBy = createBy; }
+    public String getCreateByName() { return createByName; }
+    public void setCreateByName(String createByName) { this.createByName = createByName; }
     public Date getCreateTime() { return createTime; }
     public void setCreateTime(Date createTime) { this.createTime = createTime; }
     public String getUpdateBy() { return updateBy; }
     public void setUpdateBy(String updateBy) { this.updateBy = updateBy; }
+    public String getUpdateByName() { return updateByName; }
+    public void setUpdateByName(String updateByName) { this.updateByName = updateByName; }
     public Date getUpdateTime() { return updateTime; }
     public void setUpdateTime(Date updateTime) { this.updateTime = updateTime; }
     public String getTenantId() { return tenantId; }

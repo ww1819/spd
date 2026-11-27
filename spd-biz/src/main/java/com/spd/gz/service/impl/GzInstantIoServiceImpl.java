@@ -387,8 +387,10 @@ public class GzInstantIoServiceImpl implements IGzInstantIoService
         bill.setBillDate(billTime);
         bill.setAuditDate(billTime);
         bill.setAuditBy(userId);
+        bill.setAuditByName(SecurityUtils.getUsernameSafe());
         bill.setUserId(SecurityUtils.getUserId());
         bill.setCreateBy(userId);
+        bill.setCreateByName(SecurityUtils.getUsernameSafe());
         bill.setRemark(remark + " 原单=" + StringUtils.defaultString(source.getBillNo()));
         if (StringUtils.isNotBlank(supplierId))
         {
@@ -459,8 +461,10 @@ public class GzInstantIoServiceImpl implements IGzInstantIoService
         bill.setBillDate(confirmTime);
         bill.setAuditDate(confirmTime);
         bill.setAuditBy(userId);
+        bill.setAuditByName(SecurityUtils.getUsernameSafe());
         bill.setUserId(SecurityUtils.getUserId());
         bill.setCreateBy(userId);
+        bill.setCreateByName(SecurityUtils.getUsernameSafe());
         bill.setRemark(remark);
         if (StringUtils.isNotBlank(supplierId))
         {

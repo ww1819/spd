@@ -144,6 +144,7 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         }
         Date now = DateUtils.getNowDate();
         String userId = SecurityUtils.getUserIdStr();
+        String userName = SecurityUtils.getUsernameSafe();
         if (gzTraceability.getOrderStatus() == null)
         {
             gzTraceability.setOrderStatus(2);
@@ -155,12 +156,14 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         if (StringUtils.isEmpty(gzTraceability.getAuditBy()) && Integer.valueOf(2).equals(gzTraceability.getOrderStatus()))
         {
             gzTraceability.setAuditBy(userId);
+            gzTraceability.setAuditByName(userName);
         }
         gzTraceability.setDelFlag("0");
         gzTraceability.setCreateTime(now);
         if (StringUtils.isEmpty(gzTraceability.getCreateBy()))
         {
             gzTraceability.setCreateBy(userId);
+            gzTraceability.setCreateByName(userName);
         }
         int rows = gzTraceabilityMapper.insertGzTraceability(gzTraceability);
         insertGzTraceabilityEntry(gzTraceability);
@@ -189,16 +192,19 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         }
         Date now = DateUtils.getNowDate();
         String userId = SecurityUtils.getUserIdStr();
+        String userName = SecurityUtils.getUsernameSafe();
         gzTraceability.setTraceSource(StringUtils.isNotEmpty(gzTraceability.getTraceSource())
             ? gzTraceability.getTraceSource() : GzTraceSourceConstants.HIS_MIRROR_HIGH);
         gzTraceability.setOrderStatus(2);
         gzTraceability.setAuditDate(now);
         gzTraceability.setAuditBy(userId);
+        gzTraceability.setAuditByName(userName);
         gzTraceability.setDelFlag("0");
         gzTraceability.setCreateTime(now);
         if (StringUtils.isEmpty(gzTraceability.getCreateBy()))
         {
             gzTraceability.setCreateBy(userId);
+            gzTraceability.setCreateByName(userName);
         }
         gzTraceabilityMapper.insertGzTraceability(gzTraceability);
         insertGzTraceabilityEntry(gzTraceability);
@@ -316,8 +322,10 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
         rev.setOrderStatus(2);
         rev.setAuditDate(now);
         rev.setAuditBy(userId);
+        rev.setAuditByName(SecurityUtils.getUsernameSafe());
         rev.setDelFlag("0");
         rev.setCreateBy(userId);
+        rev.setCreateByName(SecurityUtils.getUsernameSafe());
         rev.setCreateTime(now);
         String rm = StringUtils.isNotEmpty(remark) ? remark.trim() : "高值核销冲销";
         rev.setRemark(rm + "；冲销原单 " + StringUtils.defaultString(original.getTraceNo()));
@@ -557,6 +565,7 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
                 ? gzTraceability.getTenantId()
                 : SecurityUtils.requiredScopedTenantIdForSql();
             String userId = SecurityUtils.getUserIdStr();
+            String userName = SecurityUtils.getUsernameSafe();
             Date now = DateUtils.getNowDate();
             List<GzTraceabilityEntry> list = new ArrayList<GzTraceabilityEntry>();
             for (GzTraceabilityEntry entry : traceabilityEntryList)
@@ -570,8 +579,10 @@ public class GzTraceabilityServiceImpl implements IGzTraceabilityService
                 entry.setDelFlag("0");
                 entry.setCreateTime(now);
                 entry.setCreateBy(userId);
+                entry.setCreateByName(userName);
                 entry.setUpdateTime(now);
                 entry.setUpdateBy(userId);
+                entry.setUpdateByName(userName);
                 if (entry.getSupplierId() == null && entry.getInventoryId() != null) {
                     GzDepInventory depInventory = gzDepInventoryMapper.selectGzDepInventoryById(entry.getInventoryId());
                     if (depInventory != null) {

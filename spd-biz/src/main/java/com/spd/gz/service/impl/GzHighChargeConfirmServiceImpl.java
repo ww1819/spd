@@ -256,6 +256,7 @@ public class GzHighChargeConfirmServiceImpl implements IGzHighChargeConfirmServi
         confirm.setRemark("高值核销确认（待库房即入即出审核）");
         confirm.setDelFlag(0);
         confirm.setCreateBy(userId);
+        confirm.setCreateByName(SecurityUtils.getUsernameSafe());
         confirm.setCreateTime(confirmTime);
         gzHighConsumeConfirmMapper.insertConfirm(confirm);
 

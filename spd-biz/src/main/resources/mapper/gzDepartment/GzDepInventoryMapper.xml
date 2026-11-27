@@ -227,6 +227,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             create_by_name,
             create_time,
             update_by,
+            update_by_name,
             update_time,
             tenant_id,
          </trim>
@@ -249,6 +250,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             #{_createByNameAuto},
             #{createTime},
             #{updateBy},
+            <choose>
+                <when test="updateByName != null and updateByName != ''">#{updateByName},</when>
+                <otherwise>#{_createByNameAuto},</otherwise>
+            </choose>
             #{updateTime},
             #{scopedTenantId},
          </trim>

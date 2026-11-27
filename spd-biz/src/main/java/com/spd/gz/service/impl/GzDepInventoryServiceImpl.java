@@ -59,14 +59,17 @@ public class GzDepInventoryServiceImpl implements IGzDepInventoryService
             gzDepInventory.setDelFlag(0);
         }
         String userId = SecurityUtils.getUserIdStr();
+        String userName = SecurityUtils.getUsernameSafe();
         java.util.Date now = DateUtils.getNowDate();
         if (gzDepInventory.getCreateBy() == null || gzDepInventory.getCreateBy().isEmpty())
         {
             gzDepInventory.setCreateBy(userId);
+            gzDepInventory.setCreateByName(userName);
         }
         if (gzDepInventory.getUpdateBy() == null || gzDepInventory.getUpdateBy().isEmpty())
         {
             gzDepInventory.setUpdateBy(userId);
+            gzDepInventory.setUpdateByName(userName);
         }
         if (gzDepInventory.getCreateTime() == null)
         {

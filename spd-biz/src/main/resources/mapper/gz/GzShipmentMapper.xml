@@ -266,7 +266,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update gz_shipment_entry
         <trim prefix="SET" suffixOverrides=",">
             <if test="delFlag != null">del_flag = #{delFlag},</if>
-            <if test="delFlag != null and delFlag == 1">delete_by = #{updateBy}, delete_time = now(),</if>
+            <if test="delFlag != null and delFlag == 1">
+                delete_by = #{updateBy},
+                delete_by_name = #{updateByName},
+                delete_time = now(),
+            </if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateByName != null">update_by_name = #{updateByName},</if>
             update_time = now(),
@@ -314,7 +318,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="billNo != null">bill_no = #{billNo},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
-            <if test="delFlag != null and delFlag == 1">delete_by = #{updateBy}, delete_time = now(),</if>
+            <if test="delFlag != null and delFlag == 1">
+                delete_by = #{updateBy},
+                delete_by_name = #{updateByName},
+                delete_time = now(),
+            </if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateByName != null">update_by_name = #{updateByName},</if>
             update_time = now(),

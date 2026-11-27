@@ -76,6 +76,8 @@ public class HcBarcodeMaster {
     private String status;
     private Integer delFlag;
     private String createBy;
+    /** 创建者登录名快照（可读冗余） */
+    private String createByName;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Excel(name = "创建时间", width = 20, dateFormat = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
@@ -164,6 +166,8 @@ public class HcBarcodeMaster {
     public void setDelFlag(Integer delFlag) { this.delFlag = delFlag; }
     public String getCreateBy() { return createBy; }
     public void setCreateBy(String createBy) { this.createBy = createBy; }
+    public String getCreateByName() { return createByName; }
+    public void setCreateByName(String createByName) { this.createByName = createByName; }
     public Date getCreateTime() { return createTime; }
     public void setCreateTime(Date createTime) { this.createTime = createTime; }
     public String getUpdateBy() { return updateBy; }

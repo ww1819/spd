@@ -53,6 +53,8 @@ public class HcBarcodeFlow {
     private String remark;
     private Integer delFlag;
     private String createBy;
+    /** 创建者登录名快照（可读冗余） */
+    private String createByName;
     private Date createTime;
     private String updateBy;
     private Date updateTime;
@@ -113,6 +115,8 @@ public class HcBarcodeFlow {
     public void setDelFlag(Integer delFlag) { this.delFlag = delFlag; }
     public String getCreateBy() { return createBy; }
     public void setCreateBy(String createBy) { this.createBy = createBy; }
+    public String getCreateByName() { return createByName; }
+    public void setCreateByName(String createByName) { this.createByName = createByName; }
     public Date getCreateTime() { return createTime; }
     public void setCreateTime(Date createTime) { this.createTime = createTime; }
     public String getUpdateBy() { return updateBy; }

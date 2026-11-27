@@ -358,7 +358,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         update gz_order_entry
         <trim prefix="SET" suffixOverrides=",">
             <if test="delFlag != null">del_flag = #{delFlag},</if>
-            <if test="delFlag != null and delFlag == 1">delete_by = #{updateBy}, delete_time = now(),</if>
+            <if test="delFlag != null and delFlag == 1">
+                delete_by = #{updateBy},
+                delete_by_name = #{updateByName},
+                delete_time = now(),
+            </if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateByName != null">update_by_name = #{updateByName},</if>
             update_time = now(),
@@ -367,10 +371,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </update>
 
     <update id="updateGzOrderEntrySupplierIdByParenId">
+        <bind name="_updateByNameAuto" value="@com.spd.common.utils.SecurityUtils@getUsernameSafe()" />
         <bind name="scopedTenantId" value="@com.spd.common.utils.SecurityUtils@requiredScopedTenantIdForSql()" />
         update gz_order_entry
         set supplier_id = #{supplierId},
             update_by = #{updateBy},
+            update_by_name = #{_updateByNameAuto},
             update_time = now()
         where paren_id = #{parenId}
           and tenant_id = #{scopedTenantId}
@@ -418,7 +424,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="supplierIdStr != null">supplier_id_str = #{supplierIdStr},</if>
             <if test="departmentIdStr != null">department_id_str = #{departmentIdStr},</if>
             <if test="delFlag != null">del_flag = #{delFlag},</if>
-            <if test="delFlag != null and delFlag == 1">delete_by = #{updateBy}, delete_time = now(),</if>
+            <if test="delFlag != null and delFlag == 1">
+                delete_by = #{updateBy},
+                delete_by_name = #{updateByName},
+                delete_time = now(),
+            </if>
             <if test="updateBy != null">update_by = #{updateBy},</if>
             <if test="updateByName != null">update_by_name = #{updateByName},</if>
             update_time = now(),
@@ -461,8 +471,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                del_flag as delFlag,
                create_date as createDate,
                create_by as createBy,
+               create_by_name as createByName,
                create_time as createTime,
                update_by as updateBy,
+               update_by_name as updateByName,
                update_time as updateTime,
                tenant_id as tenantId
         from gz_order_entry_inhospitalcode_list

@@ -26,6 +26,8 @@ public class GzRefundGoodsEntryRef implements Serializable
     private Long materialId;
     private String materialName;
     private String createBy;
+    /** 创建者登录名快照（可读冗余） */
+    private String createByName;
     private Date createTime;
 
     /** 软删除 0正常 1已删 */
@@ -63,6 +65,8 @@ public class GzRefundGoodsEntryRef implements Serializable
     public void setMaterialName(String materialName) { this.materialName = materialName; }
     public String getCreateBy() { return createBy; }
     public void setCreateBy(String createBy) { this.createBy = createBy; }
+    public String getCreateByName() { return createByName; }
+    public void setCreateByName(String createByName) { this.createByName = createByName; }
     public Date getCreateTime() { return createTime; }
     public void setCreateTime(Date createTime) { this.createTime = createTime; }
 

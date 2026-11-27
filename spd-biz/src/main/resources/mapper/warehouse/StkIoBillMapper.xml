@@ -205,7 +205,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <result property="factoryName"  column="f_name"   />
         </association>
         <association property="fdWarehouseCategory" javaType="FdWarehouseCategory">
-            <id     property="warehouseCategoryId"    column="wid"     />
+            <!-- 勿用 wid：与主表仓库别名 wId 在 MySQL 下大小写不敏感会撞 Duplicate column -->
+            <id     property="warehouseCategoryId"    column="mat_wc_id"     />
             <result property="warehouseCategoryCode"  column="wc_code"   />
             <result property="warehouseCategoryName"  column="wc_name"   />
         </association>
@@ -215,7 +216,8 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <result property="financeCategoryName"  column="fc_name"   />
         </association>
         <association property="supplier" javaType="FdSupplier">
-            <id     property="id"    column="sid"     />
+            <!-- 勿用 sid：与主表供应商别名 sId 会撞 Duplicate column -->
+            <id     property="id"    column="mat_supplier_id"     />
             <result property="code"  column="supplier_code"   />
             <result property="name"  column="supplier_name"   />
         </association>
@@ -1296,9 +1298,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
                m.factory_id AS mat_factory_id, m.unit_id AS m_unit_id, m.finance_category_id, m.storeroom_id,
                u.unit_id AS u_unit_id, u.unit_code as u_code, u.unit_name as u_name,
                f.factory_id AS f_factory_id, f.factory_code as f_code, f.factory_name as f_name,
-               wc.warehouse_category_id as wid, wc.warehouse_category_code as wc_code, wc.warehouse_category_name as wc_name,
+               wc.warehouse_category_id as mat_wc_id, wc.warehouse_category_code as wc_code, wc.warehouse_category_name as wc_name,
                fc.finance_category_code as fc_code, fc.finance_category_name as fc_name,
-               s.id as sid, s.code as supplier_code, s.name as supplier_name
+               s.id as mat_supplier_id, s.code as supplier_code, s.name as supplier_name
         from stk_io_bill a
         left join fd_warehouse wh on a.warehouse_id = wh.id
         left join fd_department d on a.department_id = d.id
@@ -1359,7 +1361,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="whWarehouseApplyBillNo != null and whWarehouseApplyBillNo != ''">wh_warehouse_apply_bill_no,</if>
             <if test="depPurchaseApplyId != null">dep_purchase_apply_id,</if>
             <if test="depPurchaseApplyBillNo != null and depPurchaseApplyBillNo != ''">dep_purchase_apply_bill_no,</if>
-            <if test="recipientName != null and recipientName != ''">recipient_name,</if>
             <if test="deliveryRefWarehouseId != null and deliveryRefWarehouseId != ''">delivery_ref_warehouse_id,</if>
             <if test="deliveryRefWarehouseName != null and deliveryRefWarehouseName != ''">delivery_ref_warehouse_name,</if>
             <if test="deliveryRefSupplierId != null and deliveryRefSupplierId != ''">delivery_ref_supplier_id,</if>
@@ -1406,7 +1407,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="whWarehouseApplyBillNo != null and whWarehouseApplyBillNo != ''">#{whWarehouseApplyBillNo},</if>
             <if test="depPurchaseApplyId != null">#{depPurchaseApplyId},</if>
             <if test="depPurchaseApplyBillNo != null and depPurchaseApplyBillNo != ''">#{depPurchaseApplyBillNo},</if>
-            <if test="recipientName != null and recipientName != ''">#{recipientName},</if>
             <if test="deliveryRefWarehouseId != null and deliveryRefWarehouseId != ''">#{deliveryRefWarehouseId},</if>
             <if test="deliveryRefWarehouseName != null and deliveryRefWarehouseName != ''">#{deliveryRefWarehouseName},</if>
             <if test="deliveryRefSupplierId != null and deliveryRefSupplierId != ''">#{deliveryRefSupplierId},</if>
@@ -1440,7 +1440,6 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="remark != null">remark = #{remark},</if>
             <if test="delPerson != null">del_person = #{delPerson},</if>
             <if test="telephone != null">telephone = #{telephone},</if>
-            <if test="recipientName != null">recipient_name = #{recipientName},</if>
             <if test="totalAmount != null">total_amount = #{totalAmount},</if>
             <if test="invoiceNumber != null">invoice_number = #{invoiceNumber},</if>
             <if test="invoiceAmount != null">invoice_amount = #{invoiceAmount},</if>
@@ -2205,10 +2204,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             f.factory_name as f_name,
             fc.finance_category_code as fc_code,
             fc.finance_category_name as fc_name,
-            wc.warehouse_category_id as wid,
+            wc.warehouse_category_id as mat_wc_id,
             wc.warehouse_category_code as wc_code,
             wc.warehouse_category_name as wc_name,
-            s.id as sid,
+            s.id as mat_supplier_id,
             s.code as supplier_code,
             s.name as supplier_name,
             w.id as settlement_warehouse_id,

@@ -39,10 +39,16 @@ public class GzDepFlow {
     private String originBusinessType;
     private Integer delFlag;
     private String createBy;
+    /** 创建者登录名快照（可读冗余） */
+    private String createByName;
     private Date createTime;
     private String updateBy;
+    /** 更新者登录名快照（可读冗余） */
+    private String updateByName;
     private Date updateTime;
     private String deleteBy;
+    /** 删除者登录名快照（可读冗余） */
+    private String deleteByName;
     private Date deleteTime;
 
     public String getId() { return id; }
@@ -115,14 +121,20 @@ public class GzDepFlow {
     public void setDelFlag(Integer delFlag) { this.delFlag = delFlag; }
     public String getCreateBy() { return createBy; }
     public void setCreateBy(String createBy) { this.createBy = createBy; }
+    public String getCreateByName() { return createByName; }
+    public void setCreateByName(String createByName) { this.createByName = createByName; }
     public Date getCreateTime() { return createTime; }
     public void setCreateTime(Date createTime) { this.createTime = createTime; }
     public String getUpdateBy() { return updateBy; }
     public void setUpdateBy(String updateBy) { this.updateBy = updateBy; }
+    public String getUpdateByName() { return updateByName; }
+    public void setUpdateByName(String updateByName) { this.updateByName = updateByName; }
     public Date getUpdateTime() { return updateTime; }
     public void setUpdateTime(Date updateTime) { this.updateTime = updateTime; }
     public String getDeleteBy() { return deleteBy; }
     public void setDeleteBy(String deleteBy) { this.deleteBy = deleteBy; }
+    public String getDeleteByName() { return deleteByName; }
+    public void setDeleteByName(String deleteByName) { this.deleteByName = deleteByName; }
     public Date getDeleteTime() { return deleteTime; }
     public void setDeleteTime(Date deleteTime) { this.deleteTime = deleteTime; }
 }

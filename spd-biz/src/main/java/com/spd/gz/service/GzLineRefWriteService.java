@@ -103,6 +103,7 @@ public class GzLineRefWriteService
         }
         String tenantId = StringUtils.isNotEmpty(sh.getTenantId()) ? sh.getTenantId() : SecurityUtils.getCustomerId();
         String userId = SecurityUtils.getUserIdStr();
+        String userName = SecurityUtils.getUsernameSafe();
         Date now = new Date();
         String mainId = String.valueOf(sh.getId());
         String billNo = sh.getShipmentNo();
@@ -141,6 +142,7 @@ public class GzLineRefWriteService
             cr.setMaterialName(matName);
             cr.setWarehouseId(whId);
             cr.setCreateBy(userId);
+            cr.setCreateByName(userName);
             cr.setCreateTime(now);
             codeList.add(cr);
 
@@ -161,6 +163,7 @@ public class GzLineRefWriteService
             sr.setMaterialId(e.getMaterialId());
             sr.setMaterialName(matName);
             sr.setCreateBy(userId);
+            sr.setCreateByName(userName);
             sr.setCreateTime(now);
             shipList.add(sr);
         }
@@ -210,6 +213,7 @@ public class GzLineRefWriteService
         }
         String tenantId = StringUtils.isNotEmpty(bill.getTenantId()) ? bill.getTenantId() : SecurityUtils.getCustomerId();
         String userId = SecurityUtils.getUserIdStr();
+        String userName = SecurityUtils.getUsernameSafe();
         Date now = new Date();
         String mainId = String.valueOf(bill.getId());
         String billNo = bill.getGoodsNo();
@@ -247,6 +251,7 @@ public class GzLineRefWriteService
                 r.setMaterialId(e.getMaterialId());
                 r.setMaterialName(matName);
                 r.setCreateBy(userId);
+                r.setCreateByName(userName);
                 r.setCreateTime(now);
                 list.add(r);
             }
@@ -274,6 +279,7 @@ public class GzLineRefWriteService
                 r.setMaterialId(e.getMaterialId());
                 r.setMaterialName(matName);
                 r.setCreateBy(userId);
+                r.setCreateByName(userName);
                 r.setCreateTime(now);
                 list.add(r);
             }
