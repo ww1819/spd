@@ -434,6 +434,11 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
 
     private void runAutoLvConsumeForFetchBatch(String tenantId, String fetchBatchId, String chargeKind)
     {
+        long batchT0 = System.currentTimeMillis();
+        int pendingCount = 0;
+        int lowCount = 0;
+        int okCount = 0;
+        int failCount = 0;
         if ("INPATIENT".equals(chargeKind))
         {
             List<HisInpatientChargeMirror> pending = hisInpatientChargeMirrorMapper.selectPendingByFetchBatch(tenantId, fetchBatchId);
@@ -441,6 +446,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             {
                 return;
             }
+            pendingCount = pending.size();
             for (HisInpatientChargeMirror row : pending)
             {
                 if (row == null)
@@ -453,6 +459,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                 {
                     continue;
                 }
+                lowCount++;
                 try
                 {
                     HisMirrorManualRowBody b = new HisMirrorManualRowBody();
@@ -460,9 +467,11 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                     b.setMirrorRowId(row.getId());
                     b.setProcessParty(HisMirrorProcessConstants.PARTY_AUTO);
                     hisMirrorConsumeManualService.processLowValue(b);
+                    okCount++;
                 }
                 catch (Exception e)
                 {
+                    failCount++;
                     log.warn("HIS自动低值消耗失败 mirrorRowId={} err={}", row.getId(), e.toString());
                 }
             }
@@ -474,6 +483,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
             {
                 return;
             }
+            pendingCount = pending.size();
             for (HisOutpatientChargeMirror row : pending)
             {
                 if (row == null)
@@ -486,6 +496,7 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                 {
                     continue;
                 }
+                lowCount++;
                 try
                 {
                     HisMirrorManualRowBody b = new HisMirrorManualRowBody();
@@ -493,12 +504,25 @@ public class HisPatientChargeServiceImpl implements IHisPatientChargeService
                     b.setMirrorRowId(row.getId());
                     b.setProcessParty(HisMirrorProcessConstants.PARTY_AUTO);
                     hisMirrorConsumeManualService.processLowValue(b);
+                    okCount++;
                 }
                 catch (Exception e)
                 {
+                    failCount++;
                     log.warn("HIS自动低值消耗失败 mirrorRowId={} err={}", row.getId(), e.toString());
                 }
             }
+        }
+        long cost = System.currentTimeMillis() - batchT0;
+        if (cost >= 30000L || (lowCount >= 20 && cost >= 10000L))
+        {
+            log.error("HIS自动低值批处理慢/可能超时 costMs={} tenantId={} fetchBatchId={} kind={} pending={} low={} ok={} fail={}",
+                cost, tenantId, fetchBatchId, chargeKind, pendingCount, lowCount, okCount, failCount);
+        }
+        else if (cost >= 5000L || lowCount > 0)
+        {
+            log.warn("HIS自动低值批处理完成 costMs={} tenantId={} fetchBatchId={} kind={} pending={} low={} ok={} fail={}",
+                cost, tenantId, fetchBatchId, chargeKind, pendingCount, lowCount, okCount, failCount);
         }
     }
 

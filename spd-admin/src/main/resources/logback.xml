@@ -5,7 +5,8 @@
 	<!-- 项目启动目录下的日志路径 -->
 	<property name="log.spd.path" value="${user.dir}/log/spd" />
     <!-- 日志输出格式 -->
-	<property name="log.pattern" value="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{20} - [%method,%line] - %msg%n" />
+	<!-- requestId 来自 RequestCostFilter MDC，便于生产备份检索超时链路 -->
+	<property name="log.pattern" value="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{20} - [%method,%line] - requestId=%X{requestId} %msg%n" />
 
 	<!-- 控制台输出 -->
 	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">

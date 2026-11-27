@@ -44,6 +44,14 @@ public interface StkDepInventoryMapper
     public List<StkDepInventory> selectStkDepInventoryList(StkDepInventory stkDepInventory);
 
     /**
+     * HIS 低值核销分配专用：无相关子查询，按科室+多材料一次查出（含已确认/未确认）。
+     */
+    List<StkDepInventory> selectForConsumeAllocate(
+        @Param("tenantId") String tenantId,
+        @Param("departmentId") Long departmentId,
+        @Param("materialIds") List<Long> materialIds);
+
+    /**
      * 科室库存列表（当前筛选条件下全量数量、金额合计，用于分页条展示）
      */
     TotalInfo selectStkDepInventoryListTotal(StkDepInventory stkDepInventory);

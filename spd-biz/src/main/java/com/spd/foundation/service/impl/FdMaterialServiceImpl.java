@@ -684,6 +684,7 @@ public class FdMaterialServiceImpl implements IFdMaterialService
         try
         {
             hisChargeItemMirrorMapper.updateValueLevel(tenantId, cid, valueLevel);
+            HisMirrorValueLevelSupport.invalidateChargeItemLevelCache(tenantId, cid);
             scheduleRefreshUnifiedValueLevel(tenantId, cid, valueLevel);
         }
         catch (Exception e)

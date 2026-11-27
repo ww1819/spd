@@ -380,6 +380,7 @@ public class FdMaterialController extends BaseController
         {
             return error("收费项目不存在或不可维护");
         }
+        com.spd.his.support.HisMirrorValueLevelSupport.invalidateChargeItemLevelCache(tenantId, chargeItemId);
         // 单条保存同步刷 PENDING，避免异步未跑完时费用明细仍显示「未设置」
         int pendingUpdated = fdMaterialService.refreshPendingUnifiedValueLevelNow(tenantId, chargeItemId, valueLevel);
         return success("保存成功，已同步待核销 " + pendingUpdated + " 行");
@@ -445,6 +446,7 @@ public class FdMaterialController extends BaseController
         Map<String, String> refresh = new LinkedHashMap<>();
         for (String cid : chargeItemIds)
         {
+            com.spd.his.support.HisMirrorValueLevelSupport.invalidateChargeItemLevelCache(tenantId, cid);
             refresh.put(cid, valueLevel);
         }
         fdMaterialService.scheduleRefreshUnifiedValueLevels(tenantId, refresh);
@@ -547,6 +549,10 @@ public class FdMaterialController extends BaseController
             {
                 int end = Math.min(i + chunkSize, ids.size());
                 updated += hisChargeItemMirrorMapper.updateValueLevelBatch(tenantId, ids.subList(i, end), entry.getKey());
+            }
+            for (String cid : ids)
+            {
+                com.spd.his.support.HisMirrorValueLevelSupport.invalidateChargeItemLevelCache(tenantId, cid);
             }
         }
         // 计费统一镜像 value_level 异步刷，避免同步大表拖垮接口

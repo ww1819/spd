@@ -297,6 +297,31 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         order by IFNULL(m.name, '') asc, IFNULL(m.code, '') asc, stk.id asc
     </select>
 
+    <!-- HIS 低值核销分配：去掉 stk_io_bill 相关子查询与 HIS 收费项 join，避免无结果也 300ms+ -->
+    <select id="selectForConsumeAllocate" resultMap="StkDepInventoryResult">
+        select stk.id, stk.material_id,
+            stk.material_name as snap_material_name, stk.material_speci as snap_material_speci,
+            stk.material_model as snap_material_model, stk.material_factory_id as snap_material_factory_id,
+            stk.department_id, stk.qty, stk.unit_price, stk.amt,
+            stk.warehouse_id, stk.batch_no, stk.batch_id, stk.batch_number, stk.material_no,
+            stk.material_date, stk.warehouse_date, stk.kc_no, stk.receipt_confirm_status,
+            stk.bill_id, stk.bill_entry_id, stk.bill_no, stk.bill_type, stk.remark, stk.tenant_id, stk.settlement_type,
+            stk.main_barcode, stk.sub_barcode, stk.lv_inhospital_package_code, stk.factory_id, stk.supplier_id,
+            stk.begin_time, stk.end_time, stk.bill_no as out_order_no
+        from stk_dep_inventory stk
+        left join fd_material m on stk.material_id = m.id
+        where (stk.del_flag = 0 or stk.del_flag is null)
+          and ifnull(stk.qty, 0) &gt; 0
+          and (m.id is null or (m.del_flag is null or m.del_flag != 1))
+          and stk.tenant_id = #{tenantId}
+          and stk.department_id = #{departmentId}
+          and stk.material_id in
+          <foreach collection="materialIds" item="mid" open="(" separator="," close=")">
+              #{mid}
+          </foreach>
+        order by stk.warehouse_date asc, stk.id asc
+    </select>
+
     <select id="selectDepartmentNearExpiryReminderList" parameterType="StkDepInventory" resultType="com.spd.department.vo.DepartmentNearExpiryReminderRowVo">
         select
             IFNULL(m.code, '') as materialCode,

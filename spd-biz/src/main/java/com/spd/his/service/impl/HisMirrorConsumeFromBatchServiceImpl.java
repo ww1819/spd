@@ -118,15 +118,18 @@ public class HisMirrorConsumeFromBatchServiceImpl implements IHisMirrorConsumeFr
     private List<AllocPiece> allocateLine(String tenantId, Long departmentId, Long materialId, BigDecimal need,
         String mirrorRowId, String visitKind, String fetchBatchId)
     {
-        StkDepInventory probe = new StkDepInventory();
-        probe.setTenantId(tenantId);
-        probe.setDepartmentId(departmentId);
-        probe.setMaterialId(materialId);
-        probe.setReceiptConfirmStatus(1);
-        List<StkDepInventory> rows = stkDepInventoryMapper.selectStkDepInventoryList(probe);
-        if (rows == null)
+        List<StkDepInventory> all = stkDepInventoryMapper.selectForConsumeAllocate(
+            tenantId, departmentId, java.util.Collections.singletonList(materialId));
+        List<StkDepInventory> rows = new ArrayList<>();
+        if (all != null)
         {
-            rows = new ArrayList<>();
+            for (StkDepInventory r : all)
+            {
+                if (r != null && Integer.valueOf(1).equals(r.getReceiptConfirmStatus()))
+                {
+                    rows.add(r);
+                }
+            }
         }
         rows.sort(Comparator
             .comparing(StkDepInventory::getWarehouseDate, Comparator.nullsLast(Date::compareTo))

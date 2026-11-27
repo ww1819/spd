@@ -113,19 +113,41 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         String processParty = HisMirrorProcessConstants.resolveParty(body == null ? null : body.getProcessParty());
         String visitKind = resolveVisitKind(body == null ? null : body.getVisitKind());
         String mirrorRowId = body == null ? null : StringUtils.trimToEmpty(body.getMirrorRowId());
+        long t0 = System.currentTimeMillis();
         try
         {
-            return processLowValueInternal(body, processParty);
+            HisGenerateConsumeResultVo vo = processLowValueInternal(body, processParty);
+            long cost = System.currentTimeMillis() - t0;
+            if (cost >= 5000L)
+            {
+                log.error("HIS低值核销慢链路 costMs={} visitKind={} mirrorRowId={} party={}（超过5s易触发超时）",
+                    cost, visitKind, mirrorRowId, processParty);
+            }
+            else if (cost >= 3000L)
+            {
+                log.warn("HIS低值核销慢链路 costMs={} visitKind={} mirrorRowId={} party={}",
+                    cost, visitKind, mirrorRowId, processParty);
+            }
+            else
+            {
+                log.info("HIS低值核销完成 costMs={} visitKind={} mirrorRowId={} party={}",
+                    cost, visitKind, mirrorRowId, processParty);
+            }
+            return vo;
         }
         catch (ServiceException e)
         {
+            long cost = System.currentTimeMillis() - t0;
+            log.warn("HIS低值核销业务失败 costMs={} visitKind={} mirrorRowId={} msg={}",
+                cost, visitKind, mirrorRowId, e.getMessage());
             scheduleRecordFailure(visitKind, mirrorRowId, HisMirrorProcessConstants.OP_LOW_CONSUME,
                 HisMirrorProcessConstants.PROC_TYPE_LOW, processParty, e.getMessage());
             throw e;
         }
         catch (Exception e)
         {
-            log.error("HIS镜像低值核销异常 visitKind={}, mirrorRowId={}", visitKind, mirrorRowId, e);
+            long cost = System.currentTimeMillis() - t0;
+            log.error("HIS镜像低值核销异常 costMs={} visitKind={} mirrorRowId={}", cost, visitKind, mirrorRowId, e);
             String msg = HisMirrorProcessUserMessages.safeFailureMessage(e, HisMirrorProcessUserMessages.lowApplyFailed());
             scheduleRecordFailure(visitKind, mirrorRowId, HisMirrorProcessConstants.OP_LOW_CONSUME,
                 HisMirrorProcessConstants.PROC_TYPE_LOW, processParty, msg);
@@ -854,21 +876,19 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
 
     private boolean hasConfirmedPositiveStock(String tenantId, Long departmentId, Long materialId)
     {
-        if (departmentId == null || materialId == null)
+        if (departmentId == null || materialId == null || StringUtils.isBlank(tenantId))
         {
             return false;
         }
-        StkDepInventory probe = new StkDepInventory();
-        probe.setTenantId(tenantId);
-        probe.setDepartmentId(departmentId);
-        probe.setMaterialId(materialId);
-        probe.setReceiptConfirmStatus(1);
-        List<StkDepInventory> rows = stkDepInventoryMapper.selectStkDepInventoryList(probe);
+        List<StkDepInventory> rows = stkDepInventoryMapper.selectForConsumeAllocate(
+            tenantId, departmentId, java.util.Collections.singletonList(materialId));
         if (rows == null || rows.isEmpty())
         {
             return false;
         }
-        return rows.stream().anyMatch(r -> r != null && r.getQty() != null && r.getQty().compareTo(BigDecimal.ZERO) > 0);
+        return rows.stream().anyMatch(r -> r != null
+            && Integer.valueOf(1).equals(r.getReceiptConfirmStatus())
+            && r.getQty() != null && r.getQty().compareTo(BigDecimal.ZERO) > 0);
     }
 
     private GzDepInventory findGzByNormalizedCode(String tenantId, FdDepartment dept, FdMaterial mat, String scanCode,
@@ -1021,6 +1041,7 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
 
     /**
      * 按收费项汇总核销科室各对照档案的已确认同价库存：总量不足先报错；足量再 FIFO 分配（可跨档案/仓库）。
+     * 库存一次查出（轻量 SQL），避免对每个材料各查 status=1/0 共 2N 次重 SQL。
      */
     private List<AllocPiece> allocateLineByChargeItem(String tenantId, FdDepartment dept, List<FdMaterial> materials,
         String chargeItemId, String itemName, BigDecimal need, BigDecimal mirrorUnitPrice,
@@ -1030,30 +1051,45 @@ public class HisMirrorConsumeManualServiceImpl implements IHisMirrorConsumeManua
         String deptLabel = formatDeptLabel(dept);
         String displayName = StringUtils.isNotBlank(itemName) ? itemName.trim() : productDisplayName(materials.get(0));
 
+        List<Long> materialIds = materials.stream()
+            .filter(m -> m != null && m.getId() != null)
+            .map(FdMaterial::getId)
+            .distinct()
+            .collect(Collectors.toList());
+        if (materialIds.isEmpty())
+        {
+            throw new ServiceException(HisMirrorProcessUserMessages.notMapped(chargeItemId, itemName));
+        }
+
+        long invT0 = System.currentTimeMillis();
+        List<StkDepInventory> allRows = stkDepInventoryMapper.selectForConsumeAllocate(tenantId, departmentId, materialIds);
+        long invCost = System.currentTimeMillis() - invT0;
+        if (invCost >= 500L)
+        {
+            log.warn("HIS低值库存分配查询偏慢 costMs={} deptId={} materialCount={} rowCount={}",
+                invCost, departmentId, materialIds.size(), allRows == null ? 0 : allRows.size());
+        }
+        if (allRows == null)
+        {
+            allRows = new ArrayList<>();
+        }
+
         List<StkDepInventory> confirmed = new ArrayList<>();
         boolean hasUnconfirmed = false;
-        for (FdMaterial mat : materials)
+        for (StkDepInventory r : allRows)
         {
-            StkDepInventory probe = new StkDepInventory();
-            probe.setTenantId(tenantId);
-            probe.setDepartmentId(departmentId);
-            probe.setMaterialId(mat.getId());
-            probe.setReceiptConfirmStatus(1);
-            List<StkDepInventory> rows = stkDepInventoryMapper.selectStkDepInventoryList(probe);
-            if (rows != null && !rows.isEmpty())
+            if (r == null || r.getQty() == null || r.getQty().compareTo(BigDecimal.ZERO) <= 0)
             {
-                confirmed.addAll(rows);
+                continue;
             }
-            if (!hasUnconfirmed)
+            if (Integer.valueOf(1).equals(r.getReceiptConfirmStatus()))
             {
-                StkDepInventory unconfirmedProbe = new StkDepInventory();
-                unconfirmedProbe.setTenantId(tenantId);
-                unconfirmedProbe.setDepartmentId(departmentId);
-                unconfirmedProbe.setMaterialId(mat.getId());
-                unconfirmedProbe.setReceiptConfirmStatus(0);
-                List<StkDepInventory> unconfirmed = stkDepInventoryMapper.selectStkDepInventoryList(unconfirmedProbe);
-                hasUnconfirmed = unconfirmed != null && unconfirmed.stream()
-                    .anyMatch(r -> r != null && r.getQty() != null && r.getQty().compareTo(BigDecimal.ZERO) > 0);
+                confirmed.add(r);
+            }
+            else if (Integer.valueOf(0).equals(r.getReceiptConfirmStatus())
+                || r.getReceiptConfirmStatus() == null)
+            {
+                hasUnconfirmed = true;
             }
         }
 

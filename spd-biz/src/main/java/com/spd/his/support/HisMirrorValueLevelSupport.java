@@ -1,5 +1,6 @@
 package com.spd.his.support;
 
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.lang3.StringUtils;
 import com.spd.common.exception.ServiceException;
 import com.spd.foundation.domain.FdMaterial;
@@ -26,6 +27,10 @@ public final class HisMirrorValueLevelSupport
 
     public static final String MSG_UNKNOWN =
         "收费项目未维护高低值标识，请先在「HIS收费项目」维护高低值后再核销";
+
+    /** 进程内短缓存，避免同一收费项在批处理/列表中连查 6 次 */
+    private static final ConcurrentHashMap<String, String> LEVEL_CACHE = new ConcurrentHashMap<>();
+    private static final int LEVEL_CACHE_MAX = 4000;
 
     private HisMirrorValueLevelSupport()
     {
@@ -72,8 +77,31 @@ public final class HisMirrorValueLevelSupport
         {
             return LEVEL_UNKNOWN;
         }
-        HisChargeItemMirror item = mapper.selectByTenantAndChargeItemId(tenantId, chargeItemId.trim());
-        return resolveFromChargeItem(item);
+        String cid = chargeItemId.trim();
+        String cacheKey = tenantId + "|" + cid;
+        String cached = LEVEL_CACHE.get(cacheKey);
+        if (cached != null)
+        {
+            return cached;
+        }
+        HisChargeItemMirror item = mapper.selectByTenantAndChargeItemId(tenantId, cid);
+        String level = resolveFromChargeItem(item);
+        if (LEVEL_CACHE.size() >= LEVEL_CACHE_MAX)
+        {
+            LEVEL_CACHE.clear();
+        }
+        LEVEL_CACHE.put(cacheKey, level);
+        return level;
+    }
+
+    /** 收费项高低值变更后可调用，避免短缓存读到旧值 */
+    public static void invalidateChargeItemLevelCache(String tenantId, String chargeItemId)
+    {
+        if (StringUtils.isBlank(tenantId) || StringUtils.isBlank(chargeItemId))
+        {
+            return;
+        }
+        LEVEL_CACHE.remove(tenantId + "|" + chargeItemId.trim());
     }
 
     /**

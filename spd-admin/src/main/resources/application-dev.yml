@@ -41,6 +41,10 @@ spd:
     addressEnabled: false
     # 验证码类型 math 数字计算 char 字符验证
     captchaType: math
+    # 慢请求日志阈值（RequestCostFilter；生产备份搜 SLOW_REQUEST / TIMEOUT）
+    request:
+        slow-warn-ms: 3000
+        slow-error-ms: 5000
     # 服务器interface配置
     interface:
         # 服务器interface接口URL

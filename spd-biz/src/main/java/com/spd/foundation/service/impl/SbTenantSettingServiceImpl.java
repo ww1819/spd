@@ -1,6 +1,7 @@
 package com.spd.foundation.service.impl;
 
 import java.util.Date;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,11 @@ import com.spd.foundation.service.ISbTenantSettingService;
 @Service
 public class SbTenantSettingServiceImpl implements ISbTenantSettingService
 {
+    /** 空配置占位：避免 his.internal.operator_user_id 等缺省键在单笔链路内反复查库 */
+    private static final String ABSENT = "\u0000";
+
+    private final ConcurrentHashMap<String, String> valueCache = new ConcurrentHashMap<>();
+
     @Autowired
     private SbTenantSettingMapper sbTenantSettingMapper;
 
@@ -23,12 +29,21 @@ public class SbTenantSettingServiceImpl implements ISbTenantSettingService
         {
             return defaultValue;
         }
+        String key = cacheKey(tenantId, settingKey);
+        String cached = valueCache.get(key);
+        if (cached != null)
+        {
+            return ABSENT.equals(cached) ? defaultValue : cached;
+        }
         SbTenantSetting row = sbTenantSettingMapper.selectByTenantAndKey(tenantId, settingKey.trim());
         if (row == null || StringUtils.isBlank(row.getSettingValue()))
         {
+            valueCache.put(key, ABSENT);
             return defaultValue;
         }
-        return row.getSettingValue().trim();
+        String value = row.getSettingValue().trim();
+        valueCache.put(key, value);
+        return value;
     }
 
     @Override
@@ -51,6 +66,7 @@ public class SbTenantSettingServiceImpl implements ISbTenantSettingService
             u.setUpdateBy(uid);
             u.setUpdateTime(now);
             sbTenantSettingMapper.updateSbTenantSetting(u);
+            valueCache.remove(cacheKey(tenantId, settingKey));
             return;
         }
         SbTenantSetting ins = new SbTenantSetting();
@@ -65,5 +81,11 @@ public class SbTenantSettingServiceImpl implements ISbTenantSettingService
         ins.setUpdateBy(uid);
         ins.setUpdateTime(now);
         sbTenantSettingMapper.insertSbTenantSetting(ins);
+        valueCache.remove(cacheKey(tenantId, settingKey));
+    }
+
+    private static String cacheKey(String tenantId, String settingKey)
+    {
+        return tenantId + "|" + settingKey.trim();
     }
 }

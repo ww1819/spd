@@ -1,9 +1,13 @@
 package com.spd.framework.web.exception;
 
+import java.net.SocketTimeoutException;
+import java.sql.SQLTimeoutException;
+import java.util.concurrent.TimeoutException;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.catalina.connector.ClientAbortException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -20,6 +24,7 @@ import com.spd.common.exception.DocRefQtyValidationException;
 import com.spd.common.exception.GzInventoryValidationException;
 import com.spd.common.utils.StringUtils;
 import com.spd.common.utils.SecurityUtils;
+import com.spd.framework.web.filter.RequestCostFilter;
 
 /**
  * 全局异常处理器
@@ -120,13 +125,37 @@ public class GlobalExceptionHandler
     }
 
     /**
+     * 超时类异常（DB socket / 连接池等待 / Future 超时等），生产备份按 TIMEOUT 关键字检索。
+     */
+    @ExceptionHandler({
+        SocketTimeoutException.class,
+        SQLTimeoutException.class,
+        TimeoutException.class
+    })
+    public AjaxResult handleTimeoutException(Exception e, HttpServletRequest request)
+    {
+        String requestURI = request.getRequestURI();
+        String requestId = MDC.get(RequestCostFilter.MDC_REQUEST_ID);
+        log.error("TIMEOUT requestId={} uri={} type={} msg={}",
+            requestId, requestURI, e.getClass().getSimpleName(), e.getMessage(), e);
+        return AjaxResult.error("请求处理超时，请稍后重试或联系管理员排查");
+    }
+
+    /**
      * 拦截未知的运行时异常
      */
     @ExceptionHandler(RuntimeException.class)
     public AjaxResult handleRuntimeException(RuntimeException e, HttpServletRequest request)
     {
         String requestURI = request.getRequestURI();
-        log.error("请求地址'{}',发生未知异常.", requestURI, e);
+        String requestId = MDC.get(RequestCostFilter.MDC_REQUEST_ID);
+        if (isTimeoutLike(e))
+        {
+            log.error("TIMEOUT requestId={} uri={} type={} msg={}",
+                requestId, requestURI, e.getClass().getName(), e.getMessage(), e);
+            return AjaxResult.error("请求处理超时，请稍后重试或联系管理员排查");
+        }
+        log.error("请求地址'{}' requestId={},发生未知异常.", requestURI, requestId, e);
         String errorMessage = e.getMessage() != null ? e.getMessage() : "系统运行时异常";
         return AjaxResult.error(errorMessage);
     }
@@ -138,7 +167,8 @@ public class GlobalExceptionHandler
     public void handleClientAbort(ClientAbortException e, HttpServletRequest request)
     {
         String requestURI = request.getRequestURI();
-        log.warn("客户端中止或响应写入超时(可忽略): {}", requestURI);
+        String requestId = MDC.get(RequestCostFilter.MDC_REQUEST_ID);
+        log.warn("CLIENT_ABORT requestId={} uri={}（客户端中止或响应写入超时）", requestId, requestURI);
     }
 
     /**
@@ -148,9 +178,40 @@ public class GlobalExceptionHandler
     public AjaxResult handleException(Exception e, HttpServletRequest request)
     {
         String requestURI = request.getRequestURI();
-        log.error("请求地址'{}',发生系统异常.", requestURI, e);
+        String requestId = MDC.get(RequestCostFilter.MDC_REQUEST_ID);
+        if (isTimeoutLike(e))
+        {
+            log.error("TIMEOUT requestId={} uri={} type={} msg={}",
+                requestId, requestURI, e.getClass().getName(), e.getMessage(), e);
+            return AjaxResult.error("请求处理超时，请稍后重试或联系管理员排查");
+        }
+        log.error("请求地址'{}' requestId={},发生系统异常.", requestURI, requestId, e);
         String errorMessage = e.getMessage() != null ? e.getMessage() : "系统异常";
         return AjaxResult.error(errorMessage);
+    }
+
+    private static boolean isTimeoutLike(Throwable e)
+    {
+        Throwable cur = e;
+        int depth = 0;
+        while (cur != null && depth++ < 12)
+        {
+            if (cur instanceof SocketTimeoutException
+                || cur instanceof SQLTimeoutException
+                || cur instanceof TimeoutException)
+            {
+                return true;
+            }
+            String name = cur.getClass().getName();
+            String msg = cur.getMessage() == null ? "" : cur.getMessage().toLowerCase();
+            if (name.contains("Timeout") || msg.contains("timed out") || msg.contains("timeout")
+                || (msg.contains("getconnection") && msg.contains("wait")))
+            {
+                return true;
+            }
+            cur = cur.getCause();
+        }
+        return false;
     }
 
     /**
