@@ -168,13 +168,28 @@ public class DeptBatchConsumeServiceImpl implements IDeptBatchConsumeService
         SecurityUtils.ensureTenantAccess(deptBatchConsume.getTenantId());
         assertDepartmentInUserScope(deptBatchConsume.getDepartmentId());
         List<DeptBatchConsumeEntry> deptBatchConsumeEntryList = deptBatchConsume.getDeptBatchConsumeEntryList();
-        if (deptBatchConsumeEntryList != null) {
-            for (DeptBatchConsumeEntry deptBatchConsumeEntry : deptBatchConsumeEntryList) {
-                if (deptBatchConsumeEntry == null) {
-                    continue;
+        if (deptBatchConsumeEntryList != null && !deptBatchConsumeEntryList.isEmpty()) {
+            List<Long> materialIds = new ArrayList<>();
+            for (DeptBatchConsumeEntry e : deptBatchConsumeEntryList) {
+                if (e != null && e.getMaterialId() != null && !materialIds.contains(e.getMaterialId())) {
+                    materialIds.add(e.getMaterialId());
                 }
-                FdMaterial material = this.fdMaterialMapper.selectFdMaterialById(deptBatchConsumeEntry.getMaterialId());
-                deptBatchConsumeEntry.setMaterial(material);
+            }
+            Map<Long, FdMaterial> materialMap = new HashMap<>();
+            if (!materialIds.isEmpty()) {
+                List<FdMaterial> mats = fdMaterialMapper.selectFdMaterialByIds(materialIds);
+                if (mats != null) {
+                    for (FdMaterial m : mats) {
+                        if (m != null && m.getId() != null) {
+                            materialMap.put(m.getId(), m);
+                        }
+                    }
+                }
+            }
+            for (DeptBatchConsumeEntry e : deptBatchConsumeEntryList) {
+                if (e != null && e.getMaterialId() != null) {
+                    e.setMaterial(materialMap.get(e.getMaterialId()));
+                }
             }
         }
         return deptBatchConsume;

@@ -12,8 +12,8 @@ import java.util.Set;
 import com.spd.common.core.page.TotalInfo;
 import com.spd.common.utils.SecurityUtils;
 import com.spd.common.utils.StringUtils;
-import com.spd.foundation.domain.FdMaterial;
-import com.spd.foundation.mapper.FdMaterialMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.spd.department.mapper.StkDepInventoryMapper;
@@ -34,10 +34,10 @@ import com.spd.system.service.ITenantScopeService;
 @Service
 public class StkDepInventoryServiceImpl implements IStkDepInventoryService 
 {
+    private static final Logger log = LoggerFactory.getLogger(StkDepInventoryServiceImpl.class);
+
     @Autowired
     private StkDepInventoryMapper stkDepInventoryMapper;
-    @Autowired
-    private FdMaterialMapper fdMaterialMapper;
 
     @Autowired
     private ITenantScopeService tenantScopeService;
@@ -89,11 +89,23 @@ public class StkDepInventoryServiceImpl implements IStkDepInventoryService
         if (stkDepInventory != null && StringUtils.isEmpty(stkDepInventory.getTenantId()) && StringUtils.isNotEmpty(SecurityUtils.getCustomerId())) {
             stkDepInventory.setTenantId(SecurityUtils.getCustomerId());
         }
+        long t0 = System.currentTimeMillis();
+        // material 等已由 Mapper 关联查出，勿再按行 selectFdMaterialById（N+1 易超时）
         List<StkDepInventory> list = stkDepInventoryMapper.selectStkDepInventoryList(stkDepInventory);
         fillOutboundAuditDates(list);
-        for (StkDepInventory depInventory : list) {
-            FdMaterial fdMaterial = this.fdMaterialMapper.selectFdMaterialById(depInventory.getMaterialId());
-            depInventory.setMaterial(fdMaterial);
+        long cost = System.currentTimeMillis() - t0;
+        int size = list == null ? 0 : list.size();
+        if (cost >= 3000L)
+        {
+            log.error("科室库存列表慢查询 costMs={} rows={} departmentId={} materialId={}",
+                cost, size,
+                stkDepInventory == null ? null : stkDepInventory.getDepartmentId(),
+                stkDepInventory == null ? null : stkDepInventory.getMaterialId());
+        }
+        else if (cost >= 1000L)
+        {
+            log.warn("科室库存列表偏慢 costMs={} rows={} departmentId={}",
+                cost, size, stkDepInventory == null ? null : stkDepInventory.getDepartmentId());
         }
         return list;
     }

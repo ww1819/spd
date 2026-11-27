@@ -125,11 +125,28 @@ public class BasApplyServiceImpl implements IBasApplyService
         SecurityUtils.ensureTenantAccess(basApply.getTenantId());
         assertBasApplyDepartmentInUserScope(basApply);
         List<BasApplyEntry> basApplyEntryList = basApply.getBasApplyEntryList();
-        if (basApplyEntryList != null) {
+        if (basApplyEntryList != null && !basApplyEntryList.isEmpty()) {
+            List<Long> materialIds = new ArrayList<>();
             for (BasApplyEntry basApplyEntry : basApplyEntryList) {
-                if (basApplyEntry.getMaterialId() != null) {
-                    FdMaterial material = this.fdMaterialMapper.selectFdMaterialById(basApplyEntry.getMaterialId());
-                    basApplyEntry.setMaterial(material);
+                if (basApplyEntry != null && basApplyEntry.getMaterialId() != null
+                    && !materialIds.contains(basApplyEntry.getMaterialId())) {
+                    materialIds.add(basApplyEntry.getMaterialId());
+                }
+            }
+            Map<Long, FdMaterial> materialMap = new HashMap<>();
+            if (!materialIds.isEmpty()) {
+                List<FdMaterial> mats = fdMaterialMapper.selectFdMaterialByIds(materialIds);
+                if (mats != null) {
+                    for (FdMaterial m : mats) {
+                        if (m != null && m.getId() != null) {
+                            materialMap.put(m.getId(), m);
+                        }
+                    }
+                }
+            }
+            for (BasApplyEntry basApplyEntry : basApplyEntryList) {
+                if (basApplyEntry != null && basApplyEntry.getMaterialId() != null) {
+                    basApplyEntry.setMaterial(materialMap.get(basApplyEntry.getMaterialId()));
                 }
             }
         }
